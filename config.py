@@ -6,4 +6,4 @@ def load_dotenv():
         lines = f.readlines()
     for line in lines:
         varname, value = line.split("=")
-        os.environ[varname] = value
+        os.environ[varname] = value.replace("\n", "")
