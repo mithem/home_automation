@@ -1,15 +1,15 @@
 import os
 import grequests
 import fileloghelper
-import dotenv
+import config
 
-dotenv.load_dotenv()
+config.load_dotenv()
 
 root = "/volume2/Hausaufgaben/HAs"
 blacklist = ["@eaDir"]
-home_assistant_token = os.environ("HASS_TOKEN")
-home_assistant_base_url = os.environ("HASS_BASE_URL")
-things_server_url = os.environ("THINGS_SERVER_URL")
+home_assistant_token = os.environ.get("HASS_TOKEN")
+home_assistant_base_url = os.environ.get("HASS_BASE_URL")
+things_server_url = os.environ.get("THINGS_SERVER_URL")
 timeout = 10
 
 logger = fileloghelper.Logger("/volume2/administration/auto_compress_pdf.log",

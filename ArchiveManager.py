@@ -4,7 +4,7 @@ import fileloghelper
 import os
 import yagmail
 import argparse
-from constants import email_address, email_passwd
+import config
 
 month_to_dir = {
     1: "Januar",
@@ -36,6 +36,7 @@ abbr_to_subject = {
     "SP": "Sport"
 }
 
+config.load_dotenv()
 
 blacklist_files = [".DS_Store", "@eaDir"]
 blacklist_ext = ["sh", "@SynoRessource"]
@@ -67,8 +68,9 @@ class ArchiveManager:
         self.not_transferred_files = []
         self.debug = debug
         try:
-            self.email_address = email_address
-            self.smtp = yagmail.SMTP(email_address, email_passwd)
+            self.email_address = os.environ.get("EMAIL_ADDRESS")
+            self.smtp = yagmail.SMTP(self.email_address,
+                                     os.environ.get("EMAIL_PASSWD"))
         except TypeError:  # running tests
             self.email_address = ""
             self.smtp = None
