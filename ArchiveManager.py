@@ -131,6 +131,8 @@ class ArchiveManager:
             if m is None:
                 m = month
             destination = self.get_destination_for_file(fname)
+            if destination == fname:
+                return
             dest_dir = os.path.split(destination)[-1]
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
@@ -160,19 +162,19 @@ class ArchiveManager:
             ext = f.split(".")[-1]
             if (ext not in blacklist_ext) and (not f.startswith("@"))\
                     and (f not in blacklist_files):
-                if os.path.isdir(filepath):
-                    self.transfer_directory(filepath)
-                else:
-                    try:
+                try:
+                    if os.path.isdir(filepath):
+                        self.transfer_directory(filepath)
+                    else:
                         self.transfer_file(filepath)
-                    except InvalidFormattingException:
-                        self.logger.error(f"Invalid formatting on {f}")
-                    except IsCompressedFileException:
-                        self.logger.warning(f"Is compressed file: {f}", False)
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error occured when transferring {f}.")
-                        self.logger.handle_exception(e)
+                except InvalidFormattingException:
+                    self.logger.error(f"Invalid formatting on {f}")
+                except IsCompressedFileException:
+                    self.logger.warning(f"Is compressed file: {f}", False)
+                except Exception as e:
+                    self.logger.error(
+                        f"Error occured when transferring {f}.")
+                    self.logger.handle_exception(e)
 
     def transfer_all_files(self):
         self.logger.context = "mail"
