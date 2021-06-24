@@ -2,3 +2,5 @@
 __pycache__
 .coverage
 cov.xml
+.DS_Store
+constants.py

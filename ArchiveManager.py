@@ -2,9 +2,9 @@ import re
 import datetime
 import fileloghelper
 import os
-import dotenv
 import yagmail
 import argparse
+from constants import email_address, email_passwd
 
 month_to_dir = {
     1: "Januar",
@@ -36,7 +36,6 @@ abbr_to_subject = {
     "SP": "Sport"
 }
 
-dotenv.load_dotenv()
 
 blacklist_files = [".DS_Store", "@eaDir"]
 blacklist_ext = ["sh", "@SynoRessource"]
@@ -68,9 +67,8 @@ class ArchiveManager:
         self.not_transferred_files = []
         self.debug = debug
         try:
-            self.email_address = os.environ("EMAIL_ADDRESS")
-            self.smtp = yagmail.SMTP(os.environ(
-                "EMAIL_ADDRESS"), os.environ("EMAIL_PASSWD"))
+            self.email_address = email_address
+            self.smtp = yagmail.SMTP(email_address, email_passwd)
         except TypeError:  # running tests
             self.email_address = ""
             self.smtp = None
