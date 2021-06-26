@@ -8,7 +8,7 @@ Documents/MarkHomeworkAsDone.scpt"
 script_loc_create_things_task_to_update_hass = "/Users/miguel/Library/Mobile Documents/com~apple~Automator/Documents/CreateThingsTaskToUpdateHass.scpt"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--port", "-p", type=int)
+parser.add_argument("--port", "-p", type=int, default=8001)
 args = parser.parse_args()
 
 app = Flask("auto_react_to_changes_in_homework_server")
