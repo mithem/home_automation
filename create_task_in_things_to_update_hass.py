@@ -1,4 +1,5 @@
 # a script meant to be invoked by pyscript (available via HACS)
+# hence so many symbols not found to be defined by syntax highlighters
 
 import aiohttp
 

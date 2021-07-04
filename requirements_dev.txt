@@ -1,4 +1,7 @@
+argparse
+flask
 yagmail
 argparse
 fileloghelper
 grequests
+pytest

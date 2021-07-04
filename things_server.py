@@ -5,7 +5,9 @@ import argparse
 
 script_loc_mark_homework_as_done = "/Users/miguel/Library/Mobile Documents/com~apple~Automator/\
 Documents/MarkHomeworkAsDone.scpt"
-script_loc_create_things_task_to_update_hass = "/Users/miguel/Library/Mobile Documents/com~apple~Automator/Documents/CreateThingsTaskToUpdateHass.scpt"
+script_loc_create_things_task_to_update_hass = "/Users/miguel/Library/"\
+    + "Mobile Documents/com~apple~Automator/Documents/"\
+    + "CreateThingsTaskToUpdateHass.scpt"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--port", "-p", type=int, default=8001)
