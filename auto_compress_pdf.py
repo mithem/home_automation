@@ -8,7 +8,7 @@ config.load_dotenv()
 root = "/volume2/Hausaufgaben/HAs"
 blacklist = ["@eaDir"]
 home_assistant_token = os.environ.get("HASS_TOKEN")
-home_assistant_base_url = os.environ.get("HASS_BASE_URL")
+home_assistant_url = os.environ.get("HASS_BASE_URL")
 things_server_url = os.environ.get("THINGS_SERVER_URL")
 timeout = 10
 
@@ -17,7 +17,8 @@ logger = fileloghelper.Logger("/volume2/administration/auto_compress_pdf.log",
 
 
 def clean_up_directory(directory: str):
-    """Clean files added by another service, like ".M HA" etc. (might come from Documents by Readdle or so)"""
+    """Clean files added by another service, like ".M HA" etc.\
+            (might come from Documents by Readdle or so)"""
     global logger
     logger.context = "clean_up"
     logger.debug(f"Cleaning up directory: {directory}")
@@ -49,7 +50,8 @@ def flash_lights_in_home_assistant():
         logger.debug("Trying to flash lights")
         h = {"Authorization": "Bearer " + home_assistant_token}
         action_item = grequests.post(
-            home_assistant_base_url + "/api/services/script/flash_miguels_room", headers=h, timeout=timeout)
+            home_assistant_url + "/api/services/script/flash_miguels_room",
+            headers=h, timeout=timeout)
         responses = grequests.map([action_item])
         for r in responses:
             handle_response(r)
@@ -90,7 +92,7 @@ def compress_directory(directory: str):
             try:
                 tf = open(f"/volume2/Hausaufgaben/HAs/{f}", "r+")
                 tf.close()
-            except:
+            except (FileNotFoundError, PermissionError):
                 continue
             path = root + "/" + fname
             if not (fname.startswith("Scan ") or fname == "" or
