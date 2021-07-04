@@ -62,8 +62,8 @@ class IsCompressedFileException(Exception):
 
 class ArchiveManager:
     def __init__(self, debug=False):
-        self.logger = fileloghelper.Logger(
-            "/volume2/administration/auto_archive_files.log")
+        self.logger = fileloghelper.Logger(os.path.join(
+            os.environ.get("LOG_DIR"), "ArchiveManager.log"), autosave=debug)
         self.transferred_files = []
         self.not_transferred_files = []
         self.debug = debug
