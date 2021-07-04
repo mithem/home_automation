@@ -5,9 +5,9 @@ from ArchiveManager import (ArchiveManager,
                             abbr_to_subject,
                             month_to_dir,
                             blacklist_files,
-                            blacklist_ext)
+                            blacklist_ext,
+                            treshold_date)
 import pytest
-import datetime
 
 
 class AnyTestCase(TestCase):
@@ -19,8 +19,8 @@ class AnyTestCase(TestCase):
         except FileNotFoundError:
             pass
         self.useful_data = {
-            "year": datetime.datetime.now().year,
-            "month": datetime.datetime.now().month
+            "year": treshold_date.year,
+            "month": treshold_date.month
         }
 
 
@@ -190,7 +190,7 @@ class TestTransferFile(AnyTestCase):
 
     def test_transfer_file_same_origin_and_destination(self):
         s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-                + "PH HA 22-06-2021.pdf"
+            + "PH HA 22-06-2021.pdf"
         self.fs.create_file(s)
 
         self.manager.transfer_file(s)
