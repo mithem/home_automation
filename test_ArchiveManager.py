@@ -8,6 +8,7 @@ from ArchiveManager import (ArchiveManager,
                             blacklist_ext,
                             treshold_date)
 import pytest
+import os
 
 
 class AnyTestCase(TestCase):
@@ -19,8 +20,8 @@ class AnyTestCase(TestCase):
         except FileNotFoundError:
             pass
         self.useful_data = {
-            "year": treshold_date.year,
-            "month": treshold_date.month
+            "year": str(treshold_date.year),
+            "month": month_to_dir[treshold_date.month]
         }
 
 
@@ -95,6 +96,13 @@ class TestGetDestinationForFile(AnyTestCase):
             + abbr_to_subject["PH"] + "/2021/" + \
             month_to_dir[6] + "/PH HA 22-06-2021.pdf"
 
+    def test_get_destination_for_file_messed_up_archive_3(self):
+        s = "/volume2/Hausaufgaben/Archive/Mathe/2021/Juni/PH KW25.pdf"
+
+        dest = self.manager.get_destination_for_file(s)
+
+        assert dest == s.replace("Mathe", "Physik")
+
     def test_get_destination_for_file_from_HAs_date_parsable(self):
         s = "/volume2/Hausaufgaben/HAs/PH HA 22-06-2021.pdf"
         expected = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
@@ -107,8 +115,8 @@ class TestGetDestinationForFile(AnyTestCase):
     def test_get_destination_for_file_from_HAs_date_not_parsable(self):
         s = "/volume2/Hausaufgaben/HAs/PH Klausurvorbereitung.pdf"
         expected = "/volume2/Hausaufgaben/Archive/Physik/"\
-            + str(self.useful_data['year']) + "/" + \
-            month_to_dir[self.useful_data['month']] + \
+            + self.useful_data['year'] + "/" + \
+            self.useful_data['month'] + \
             "/PH Klausurvorbereitung.pdf"
 
         dest = self.manager.get_destination_for_file(s)
@@ -199,6 +207,23 @@ class TestTransferFile(AnyTestCase):
         assert self.manager.transferred_files == []
         assert self.manager.not_transferred_files == []
 
+    def test_transfer_file_uhm_actually_its_a_dir(self):
+        root = "/volume2/Hausaufgaben/HAs/PH KW25"
+        f_list = ["Text 1.md", "Text 2.txt", "Text 3.pdf"]
+        self.fs.create_dir(root)
+        for f in f_list:
+            self.fs.create_file(os.path.join(root, f))
+
+        self.manager.transfer_file(root)
+
+        new_root = "/volume2/Hausaufgaben/Archive/Physik/" + \
+            str(self.useful_data["year"]) + "/" + \
+            self.useful_data["month"] + "/PH KW25/"
+        assert not self.fs.exists(root)
+        assert self.fs.exists(new_root)
+        for f in f_list:
+            assert self.fs.exists(os.path.join(new_root, f))
+
 
 class TestTransferDirectory(AnyTestCase):
     def test_transfer_directory(self):
@@ -230,8 +255,7 @@ class TestTransferDirectory(AnyTestCase):
         assert self.manager.transferred_files == [s1, s2, s3]
         assert self.manager.not_transferred_files == [s5]
 
-    @pytest.mark.skip
-    def test_transfer_directory_with_folders(self):
+    def test_transfer_directory_with_folder_valid_formatting(self):
         def f1(name: str) -> str:
             return "/volume2/Hausaufgaben/HAs"\
                 + ("/" if len(name) > 0 else "")\
@@ -240,9 +264,9 @@ class TestTransferDirectory(AnyTestCase):
         def f2(name: str) -> str:
             return "/volume2/Hausaufgaben/Archive/" + abbr_to_subject['PH'] \
                 + "/"\
-                + str(self.useful_data['year'])\
+                + self.useful_data['year']\
                 + "/"\
-                + month_to_dir[self.useful_data['month']]\
+                + self.useful_data['month']\
                 + "/PH KW25/" + name
         dir_files = ["PH run.py", "PH lib.py"]
         self.fs.create_dir(f1(""))
@@ -253,11 +277,64 @@ class TestTransferDirectory(AnyTestCase):
 
         for fname in dir_files:
             assert self.fs.exists(f2(fname))
-            assert not self.fs.exists(f1("PH KW"))
-            assert f2(fname) in self.manager.transferred_files
 
+        assert not self.fs.exists(f1("PH KW"))
+
+        assert self.manager.transferred_files == [f1("PH KW25")]
+        assert self.manager.not_transferred_files == []
+
+    def test_transfer_directory_with_folder_invalid_formatting_files_valid(self):
+        def f1(name: str) -> str:
+            return "/volume2/Hausaufgaben/HAs"\
+                + ("/" if len(name) > 0 else "")\
+                + name
+
+        def f2(name: str) -> str:
+            return "/volume2/Hausaufgaben/Archive/" + abbr_to_subject['PH'] \
+                + "/"\
+                + self.useful_data['year']\
+                + "/"\
+                + self.useful_data['month']\
+                + "/"\
+                + name
+
+        dir_files = ["PH HA 22-06-2021.pdf", "PH HA 23-06-2021.pdf"]
+        self.fs.create_dir(f1(""))
+
+        for fname in dir_files:
+            self.fs.create_file(f1("Material/") + fname)
+
+        self.manager.transfer_directory(f1(""))
+
+        for fname in dir_files:
+            assert self.fs.exists(f2(fname))
+
+        assert not self.fs.exists(f1("Material"))
+        for fname in dir_files:
+            assert f1("Material/" + fname) in self.manager.transferred_files
         assert len(self.manager.transferred_files) == len(dir_files)
         assert self.manager.not_transferred_files == []
+
+    def test_transfer_directory_with_folder_invalid_formatting_files_invalid(self):
+        def f1(name: str) -> str:
+            return "/volume2/Hausaufgaben/HAs"\
+                + ("/" if len(name) > 0 else "")\
+                + name
+
+        dir_files = ["lib.py", "main.py"]
+        self.fs.create_dir(f1(""))
+
+        for fname in dir_files:
+            self.fs.create_file(f1("Scripts/") + fname)
+
+        self.manager.transfer_directory(f1(""))
+
+        assert self.fs.exists(f1("Scripts"))
+        for fname in dir_files:
+            assert self.fs.exists(f1("Scripts/") + fname)
+            assert f1("Scripts/") + fname in self.manager.not_transferred_files
+        assert len(self.manager.not_transferred_files) == len(dir_files)
+        assert self.manager.transferred_files == []
 
     def test_transfer_directory_blacklist_files(self):
         def f(name: str) -> str:
@@ -296,9 +373,3 @@ class TestTransferDirectory(AnyTestCase):
 
         assert self.manager.transferred_files == []
         assert self.manager.not_transferred_files == []
-
-
-if __name__ == "__main__":
-    obj = TestTransferDirectory()
-    obj.setUp()
-    obj.test_transfer_directory_with_folders()

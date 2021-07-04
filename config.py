@@ -1,3 +1,4 @@
+# just need to implement this by myself as dotenv isn't easily available on Synology DSM.
 import os
 
 
@@ -11,4 +12,4 @@ def load_dotenv():
     try:
         load(".env")
     except FileNotFoundError:
-        load("/volume2/repos/nas-automation/.env")
+        load("/volume2/repos/home-automation/.env")

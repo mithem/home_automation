@@ -120,8 +120,11 @@ class ArchiveManager:
             return None
 
     def transfer_file(self, fname: str):
-        """Might throw InvalidFormattingException or \
-                IsCompressedFileException"""
+        """Transfer file in corresponding, correct (worked out in this method) spot.
+        Might also not be a file but directory instead, which will then also be
+        transferred as a whole in the archive.
+        Might throw InvalidFormattingException or
+        IsCompressedFileException"""
         if fname.endswith(".small.pdf"):
             raise IsCompressedFileException()
         try:
@@ -147,9 +150,6 @@ class ArchiveManager:
                 os.remove(small_f)
                 self.logger.debug(f"Deleted {small_f}")
             self.transferred_files.append(fname)
-        except KeyError:
-            self.not_transferred_files.append(fname)
-            raise InvalidFormattingException()
         except InvalidFormattingException as e:
             self.not_transferred_files.append(fname)
             raise e
@@ -164,7 +164,19 @@ class ArchiveManager:
                     and (f not in blacklist_files):
                 try:
                     if os.path.isdir(filepath):
-                        self.transfer_directory(filepath)
+                        did_move_invalidly_formatted_directory = False
+                        s = None
+                        try:
+                            s, y, m = self.parse_filename(filepath)
+                        except InvalidFormattingException:
+                            did_move_invalidly_formatted_directory = True
+                            # ...with validly formatted files
+                        if s is not None:
+                            self.transfer_file(filepath)
+                        else:
+                            self.transfer_directory(filepath)
+                            if did_move_invalidly_formatted_directory:
+                                os.removedirs(filepath)
                     else:
                         self.transfer_file(filepath)
                 except InvalidFormattingException:
@@ -190,28 +202,14 @@ class ArchiveManager:
         self.smtp.send(self.email_address, mail_subject, mail_body)
         self.logger.success("Sent mail notifying of the archiving process.")
 
-    def reorganize_all_files(self, directory: str = transfer_to_root):
+    def reorganize_all_files(self):
         """For every file, use `transfer_file` to reorganize it."""
         self.logger.context = "reorganization"
-        self.logger.debug(f"Reorganizing {directory}")
-        for root, dirs, files in os.walk(directory):
-            for f in files:
-                blacklist = False
-                for ext in blacklist_ext:
-                    if f.endswith(ext):
-                        blacklist = True
-                if f in blacklist_files or blacklist:
-                    continue
-                try:
-                    self.transfer_file(os.path.join(root, f))
-                except (InvalidFormattingException, TypeError):
-                    self.logger.warning(f"Error parsing {f}", False)
-                except FileNotFoundError as e:
-                    self.logger.error(f"File not found: {e}")
-        if directory == transfer_to_root:
-            self.logger.info(
-                f"Transferred {len(self.transferred_files)} files:", True)
-            [self.logger.debug(f, self.debug) for f in self.transferred_files]
+        self.logger.debug("Reorganizing!")
+        self.transfer_directory(transfer_to_root)
+        self.logger.info(
+            f"Transferred {len(self.transferred_files)} files:", True)
+        [self.logger.debug(f, self.debug) for f in self.transferred_files]
 
 
 def main():
