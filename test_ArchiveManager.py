@@ -290,12 +290,9 @@ class TestTransferDirectory(AnyTestCase):
                 + name
 
         def f2(name: str) -> str:
-            return "/volume2/Hausaufgaben/Archive/" + abbr_to_subject['PH'] \
-                + "/"\
-                + self.useful_data['year']\
-                + "/"\
-                + self.useful_data['month']\
-                + "/"\
+            return "/volume2/Hausaufgaben/Archive/"\
+                + abbr_to_subject['PH'] \
+                + "/2021/Juni/" \
                 + name
 
         dir_files = ["PH HA 22-06-2021.pdf", "PH HA 23-06-2021.pdf"]

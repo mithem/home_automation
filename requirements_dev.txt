@@ -5,3 +5,4 @@ argparse
 fileloghelper
 grequests
 pytest
+requests_mock

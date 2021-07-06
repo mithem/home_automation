@@ -1,4 +1,4 @@
 yagmail
 argparse
 fileloghelper
-grequests
+httpx
