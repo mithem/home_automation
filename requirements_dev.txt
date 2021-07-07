@@ -3,6 +3,10 @@ flask
 yagmail
 argparse
 fileloghelper
-grequests
+httpx
 pytest
-requests_mock
+pytest-cov
+pytest-asyncio
+pytest-httpx
+pytest-flask
+pyfakefs
