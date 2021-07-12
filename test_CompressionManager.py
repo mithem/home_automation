@@ -9,6 +9,7 @@ import pytest
 import os
 import httpx
 import re
+from typing import List
 
 
 @pytest.mark.usefixtures("do_setup")
@@ -21,16 +22,18 @@ class AnyTestCase:
         except FileNotFoundError:
             pass
 
-    def create_file(self, fs, name: str):
-        dest = os.path.join(root, name)
-        d, f = os.path.split(dest)
-        if not fs.isdir(d):
-            fs.create_dir(d)
-        fs.create_file(dest)
 
-    def file_exists(self, fs, name: str):
-        exists = fs.exists(os.path.join(root, name))
-        return exists
+def create_file(fs, name: str):
+    dest = os.path.join(root, name)
+    d, f = os.path.split(dest)
+    if not fs.isdir(d):
+        fs.create_dir(d)
+    fs.create_file(dest)
+
+
+def file_exists(fs, name: str):
+    exists = fs.exists(os.path.join(root, name))
+    return exists
 
 
 @pytest.mark.asyncio
@@ -44,6 +47,46 @@ class TestCompressDirectory(AnyTestCase):
                              r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
         httpx_mock.add_response(method="POST", url=pattern)
 
+    # TODO: see docstring
+    @pytest.fixture
+    def manager_did_compress_files(self, fs):
+        """Only checks logs, not if files are actually being compressed."""
+        manager = self.manager
+
+        class ManagerDidTryCompressingFilesHelper:
+            def __init__(self):
+                self.did_try_to_compress_files = {}
+                self.files = {}
+                self.did_evaluate = False
+
+            def prepare(self, files: List[str]):
+                """Create required files."""
+                self.files = files
+                for f in files:
+                    self.did_try_to_compress_files[f] = False
+                    try:
+                        create_file(fs, f)
+                    except FileExistsError:
+                        pass
+
+            def evaluate(self):
+                """Assert whether files were compressed.
+                Got a better synonyme for 'assert'?"""
+                self.did_evaluate = True
+                for line in manager.logger._lines:
+                    for f in self.files:
+                        path = os.path.join(root, f)
+                        if f"Compressing '{path}'" in line:
+                            self.did_try_to_compress_files[f] = True
+
+                # don't double newlines
+                [print(line[:-1]) for line in manager.logger._lines]
+
+                for k, v in self.did_try_to_compress_files.items():
+                    assert v, \
+                        f"CompressionManager did not try to compress '{k}'"
+        return ManagerDidTryCompressingFilesHelper()
+
     @pytest.mark.usefixtures("configure_mock_responses")
     async def test_compress_directory_is_nondestructive(self, fs):
         files = [
@@ -54,14 +97,14 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
 
         await self.manager.compress_directory(root)
 
         for f in files:
-            assert self.file_exists(fs, f)
+            assert file_exists(fs, f)
 
         assert len(fs.listdir(root)) == len(files)
 
@@ -74,14 +117,14 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
 
         await self.manager.compress_directory(root)
 
         for f in files:
-            assert self.file_exists(fs, f)
+            assert file_exists(fs, f)
 
         assert len(fs.listdir(root)) == len(files)
 
@@ -98,14 +141,14 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
 
         await self.manager.compress_directory(root)
 
         for f in files:
-            assert self.file_exists(fs, f)
+            assert file_exists(fs, f)
 
         assert len(fs.listdir(root)) == len(files)
 
@@ -121,41 +164,70 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
 
         await self.manager.compress_directory(root)
 
         for f in files:
-            assert self.file_exists(fs, f)
+            assert file_exists(fs, f)
 
         assert len(fs.listdir(root)) == len(files)
         assert len(httpx_mock.get_requests()) == 0
 
-    @pytest.mark.xfail(True,
-                       reason="Ghostscript doesn't use fake files. "
-                       + "Cannot say if they're getting compressed.")
     @pytest.mark.usefixtures("configure_mock_responses")
-    async def test_compress_directory_compresses_uncompressed_files(self, fs):
+    async def test_compress_directory_compresses_uncompressed_files(
+            self, fs, manager_did_compress_files):
+        """'Alternative' to actually ensuring files are getting compressed.
+        See `test_compress_directory_compresses_uncompressed_files`."""
         files = [
             "test.pdf",
             "PH KW25.pdf",
             "PH HA 22-06-2021.pdf"
         ]
-        for f in files:
-            try:
-                self.create_file(fs, f)
-            except FileExistsError:
-                pass
+        manager_did_compress_files.prepare(files)
 
         await self.manager.compress_directory(root)
 
-        for f in files:
-            assert self.file_exists(fs, f)
-            assert self.file_exists(fs, f.replace(".pdf", ".small.pdf"))
+        manager_did_compress_files.evaluate()
 
-        assert len(fs.listdir(root)) == 2*len(files)
+    async def test_compress_directory_compresses_directories(
+            self, fs, manager_did_compress_files):
+        files = [
+            "test.pdf",
+            "PH Material/text1.pdf",
+            "PH Material/text2.pdf",
+            "PH Material/text3.pdf"
+        ]
+        manager_did_compress_files.prepare(files)
+
+        await self.manager.compress_directory(root)
+
+        manager_did_compress_files.evaluate()
+
+    @pytest.mark.usefixtures("configure_mock_responses")
+    async def test_compress_directory_compresses_directories_and_handles_subfiles_appropriately(self, fs, manager_did_compress_files, httpx_mock):
+        files = [
+            "PH Material/text1.pdf",
+            "PH Material/PH kW25.pdf"
+        ]
+
+        expected = [
+            f"{home_assistant_url}/api/services/"
+            + "script/flash_miguels_room",
+            f"{things_server_url}/api/v1/markhomeworkasdone?subject=PH"
+        ]
+        manager_did_compress_files.prepare(files)
+
+        await self.manager.compress_directory(root)
+
+        manager_did_compress_files.evaluate()
+
+        requests = httpx_mock.get_requests()
+        assert len(requests) == len(expected)
+        for r in requests:
+            assert str(r.url) in expected
 
     @pytest.mark.usefixtures("configure_mock_responses")
     async def test_compress_directory_tries_to_flash_lights(self,
@@ -171,7 +243,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
 
@@ -200,7 +272,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
         expected = {
@@ -237,7 +309,7 @@ class TestCleanUpDirectory(AnyTestCase):
         ]
         for f in files:
             try:
-                self.create_file(fs, f)
+                create_file(fs, f)
             except FileExistsError:
                 pass
         # referring to `files`: files up to this idx are supposed to be deleted
@@ -246,9 +318,9 @@ class TestCleanUpDirectory(AnyTestCase):
         self.manager.clean_up_directory(root)
 
         for f in files[:idx_up_to_files_to_be_kept]:
-            assert not self.file_exists(fs, f)
+            assert not file_exists(fs, f)
         for f in files[idx_up_to_files_to_be_kept:]:
-            assert self.file_exists(fs, f)
+            assert file_exists(fs, f)
 
         assert len(fs.listdir(root)) == len(
             files[idx_up_to_files_to_be_kept:])
@@ -273,8 +345,6 @@ class TestCommunicationSystems:
         manager._handle_response(r, s)  # s doesn't matter
 
         assert s in manager.logger._lines[-1]
-
-    # Can't use the httpx_mock fixture in a class?
 
     @pytest.mark.asyncio
     async def test_flashes_lights_in_home_assistant(self, httpx_mock):

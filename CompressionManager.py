@@ -3,6 +3,7 @@ import httpx
 import fileloghelper
 import config
 import asyncio
+from ArchiveManager import abbr_to_subject
 
 config.load_dotenv()
 
@@ -14,6 +15,8 @@ home_assistant_token = os.environ.get("HASS_TOKEN")
 home_assistant_url = os.environ.get("HASS_BASE_URL")
 things_server_url = os.environ.get("THINGS_SERVER_URL")
 timeout = 1
+subject_abbrs = abbr_to_subject.keys()
+
 
 class LoopBreakingException(Exception):
     pass
@@ -41,47 +44,48 @@ class CompressionManager:
         dirlist = os.listdir(directory)
 
         for f in dirlist:
-            if os.path.isdir(f) or os.path.islink(f):
-                if f not in blacklist:
-                    self.compress_directory(f)
-            elif f.endswith(".pdf"):
-                if f.endswith(".small.pdf"):
-                    fname = f[:-10]
-                else:
-                    fname = ".".join(f.split(".")[:-1])
-                try:
-                    tf = open(os.path.join(directory, f), "r+")
-                    tf.close()
-                except (FileNotFoundError, PermissionError):
-                    continue
-                path = root + "/" + fname
+            path = os.path.join(directory, f)
+            try:
+                if os.path.isdir(path):
+                    if f not in blacklist:
+                        await self.compress_directory(path)
+                elif f.endswith(".pdf"):
+                    if f.endswith(".small.pdf"):
+                        fname = f[:-10]
+                    else:
+                        fname = ".".join(f.split(".")[:-1])
+                    try:
+                        tf = open(os.path.join(directory, f), "r+")
+                        tf.close()
+                    except (FileNotFoundError, PermissionError):
+                        continue
 
-                if fname in blacklist or fname + ".small.pdf" in dirlist:
-                    skip(fname)
-                    continue
-                try:
-                    for beg in blacklist_beginnings:
-                        if fname.startswith(beg):
-                            skip(fname)
-                            raise LoopBreakingException()
-                except LoopBreakingException:
-                    continue
-                try:
-                    for end in blacklist_endings:
-                        if f.endswith(end):
-                            skip(fname)
-                            raise LoopBreakingException()
-                except LoopBreakingException:
-                    continue
+                    if fname in blacklist or fname + ".small.pdf" in dirlist:
+                        skip(fname)
+                        continue
+                    try:
+                        for beg in blacklist_beginnings:
+                            if fname.startswith(beg):
+                                skip(fname)
+                                raise LoopBreakingException()
+                        for end in blacklist_endings:
+                            if f.endswith(end):
+                                skip(fname)
+                                raise LoopBreakingException()
+                    except LoopBreakingException:
+                        continue
 
-                subject = fname.split(" ")[0].upper()
-                await self.change_status_in_things(subject)
-                await self.flash_lights_in_home_assistant()
-                self.logger.info(f"Compressing '{path}'")
-                cmd = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
-                        -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH \
-                        -sOutputFile='{path}.small.pdf' '{path}.pdf'"
-                os.system(cmd)
+                    self.logger.info(f"Compressing '{path}'")
+                    cmd = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
+                            -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH \
+                            -sOutputFile='{path}.small.pdf' '{path}.pdf'"
+                    subject = fname.split(" ")[0].upper()
+                    if subject in subject_abbrs:
+                        await self.change_status_in_things(subject)
+                        await self.flash_lights_in_home_assistant()
+                    os.system(cmd)
+            except KeyError as e:
+                self.logger.handle_exception(e)
 
     def clean_up_directory(self, directory: str):
         """Clean files added by another service, like ".M HA" etc.\
