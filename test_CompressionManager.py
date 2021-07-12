@@ -2,12 +2,14 @@ from CompressionManager import (
     CompressionManager,
     root,
     home_assistant_url,
-    home_assistant_token,
     things_server_url
+)
+from CompressionMiddleware import (
+    FlashLightsInHomeAssistantMiddleware,
+    ChangeStatusInThingsMiddleware
 )
 import pytest
 import os
-import httpx
 import re
 from typing import List
 
@@ -17,6 +19,9 @@ class AnyTestCase:
     @pytest.fixture
     def do_setup(self, fs):
         self.manager = CompressionManager(debug=True, testing=True)
+        [self.manager.register_middleware(m(self.manager.logger)) for m in [
+            FlashLightsInHomeAssistantMiddleware,
+            ChangeStatusInThingsMiddleware]]
         try:
             fs.rmdir("/volume2")
         except FileNotFoundError:
@@ -36,16 +41,18 @@ def file_exists(fs, name: str):
     return exists
 
 
+@pytest.fixture
+def configure_mock_responses(httpx_mock):
+    httpx_mock.add_response(
+        method="POST",
+        url=home_assistant_url + "/api/services/script/flash_miguels_room")
+    pattern = re.compile(things_server_url +
+                         r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
+    httpx_mock.add_response(method="POST", url=pattern)
+
+
 @pytest.mark.asyncio
 class TestCompressDirectory(AnyTestCase):
-    @pytest.fixture
-    def configure_mock_responses(self, httpx_mock):
-        httpx_mock.add_response(
-            method="POST",
-            url=home_assistant_url + "/api/services/script/flash_miguels_room")
-        pattern = re.compile(things_server_url +
-                             r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
-        httpx_mock.add_response(method="POST", url=pattern)
 
     # TODO: see docstring
     @pytest.fixture
@@ -192,13 +199,14 @@ class TestCompressDirectory(AnyTestCase):
 
         manager_did_compress_files.evaluate()
 
+    @pytest.mark.usefixtures("configure_mock_responses")
     async def test_compress_directory_compresses_directories(
             self, fs, manager_did_compress_files):
         files = [
             "test.pdf",
             "PH Material/text1.pdf",
             "PH Material/text2.pdf",
-            "PH Material/text3.pdf"
+            "PH Material/PH KW25.pdf"
         ]
         manager_did_compress_files.prepare(files)
 
@@ -210,12 +218,13 @@ class TestCompressDirectory(AnyTestCase):
     async def test_compress_directory_compresses_directories_and_handles_subfiles_appropriately(self, fs, manager_did_compress_files, httpx_mock):
         files = [
             "PH Material/text1.pdf",
-            "PH Material/PH kW25.pdf"
+            "PH Material/PH KW25.pdf"
         ]
-
+        hass_url = f"{home_assistant_url}/api/services/" + \
+            "script/flash_miguels_room"
         expected = [
-            f"{home_assistant_url}/api/services/"
-            + "script/flash_miguels_room",
+            hass_url,
+            hass_url,
             f"{things_server_url}/api/v1/markhomeworkasdone?subject=PH"
         ]
         manager_did_compress_files.prepare(files)
@@ -324,53 +333,3 @@ class TestCleanUpDirectory(AnyTestCase):
 
         assert len(fs.listdir(root)) == len(
             files[idx_up_to_files_to_be_kept:])
-
-
-class TestCommunicationSystems:
-
-    def test_handle_response_valid(self):
-        r = httpx.Response(status_code=200, content="Successful.")
-        s = "Hello, world!"
-        manager = CompressionManager()
-
-        manager._handle_response(r, s)
-
-        assert s in manager.logger._lines[-1]
-
-    def test_handle_response_not_found(self):
-        s = "Not found."
-        r = httpx.Response(status_code=404, content=s)
-        manager = CompressionManager()
-
-        manager._handle_response(r, s)  # s doesn't matter
-
-        assert s in manager.logger._lines[-1]
-
-    @pytest.mark.asyncio
-    async def test_flashes_lights_in_home_assistant(self, httpx_mock):
-        httpx_mock.add_response(method="POST", url=home_assistant_url +
-                                "/api/services/script/flash_miguels_room")
-        manager = CompressionManager()
-
-        await manager.flash_lights_in_home_assistant()
-
-        assert "flash_lights_in_home_assistant" in manager.logger.context
-        assert "Flashed lights." in manager.logger._lines[-1]
-        req = httpx_mock.get_request()
-        assert req.headers["authorization"] == "Bearer " + home_assistant_token
-
-    @pytest.mark.asyncio
-    async def test_changes_status_in_things(self, httpx_mock):
-        """Of course, only check whether a valid request to Things server is
-        made."""
-        s = "PH"
-        pattern = re.compile(things_server_url +
-                             r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
-        httpx_mock.add_response(method="POST", url=pattern)
-        manager = CompressionManager()
-
-        await manager.change_status_in_things(s)
-
-        assert "change_status_in_things" in manager.logger.context
-        assert f"Checked homework ({s}) in Things." in \
-            manager.logger._lines[-1]

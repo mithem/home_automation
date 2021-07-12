@@ -1,9 +1,15 @@
 import os
-import httpx
 import fileloghelper
 import config
 import asyncio
+import argparse
+
+import CompressionMiddleware
 from ArchiveManager import abbr_to_subject
+from CompressionMiddleware import (
+    FlashLightsInHomeAssistantMiddleware,
+    ChangeStatusInThingsMiddleware
+)
 
 config.load_dotenv()
 
@@ -31,6 +37,7 @@ class CompressionManager:
             # introduces weird fomatting in pytest
             self.logger.header(True, True)
         self.debug = debug
+        self.middleware = []
 
     async def compress_directory(self, directory: str):
 
@@ -75,14 +82,25 @@ class CompressionManager:
                     except LoopBreakingException:
                         continue
 
+                    for m in self.middleware:
+                        task = asyncio.create_task(
+                            m.act(f))
+                        if self.debug:
+                            self.logger.debug(
+                                "Invoking middleware: '"
+                                + m.__class__.__name__
+                                + "' for '"
+                                + path
+                                + "'")
+                        try:
+                            await task
+                        except Exception as e:
+                            self.logger.handle_exception(e)
+
                     self.logger.info(f"Compressing '{path}'")
                     cmd = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
                             -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH \
-                            -sOutputFile='{path}.small.pdf' '{path}.pdf'"
-                    subject = fname.split(" ")[0].upper()
-                    if subject in subject_abbrs:
-                        await self.change_status_in_things(subject)
-                        await self.flash_lights_in_home_assistant()
+                            -sOutputFile='{path[:-4]}.small.pdf' '{path}'"
                     os.system(cmd)
             except KeyError as e:
                 self.logger.handle_exception(e)
@@ -105,51 +123,28 @@ class CompressionManager:
                 except Exception as e:
                     self.logger.handle_exception(e)
 
-    def _handle_response(self, response: httpx.Response, whenSuccessful: str):
-        """Check if response is OK and, if so, log a success message.
-        Otherwise log the error."""
-        try:
-            if not response.status_code == 200:
-                raise Exception(response.text)
-            else:
-                self.logger.success(whenSuccessful)
-        except Exception as e:
-            self.logger.handle_exception(e)
-
-    async def flash_lights_in_home_assistant(self):
-        try:
-            self.logger.context = "flash_lights_in_home_assistant"
-            self.logger.debug("Trying to flash lights")
-            h = {"Authorization": "Bearer " + home_assistant_token}
-            async with httpx.AsyncClient() as client:
-                r = await client.post(
-                    home_assistant_url
-                    + "/api/services/script/flash_miguels_room",
-                    headers=h, timeout=timeout)
-            self._handle_response(r, "Flashed lights.")
-        except Exception as e:
-            self.logger.handle_exception(e)
-
-    async def change_status_in_things(self, subject: str):
-        self.logger.context = "change_status_in_things"
-        self.logger.debug("Trying to change status in things")
-        if subject.startswith(".") or subject.startswith("_"):
-            return
-        try:
-            async with httpx.AsyncClient() as client:
-                r = await client.post(things_server_url +
-                                      "/api/v1/markhomeworkasdone?"
-                                      + f"subject={subject}",
-                                      timeout=timeout)
-            self._handle_response(
-                r, f"Checked homework ({subject}) in Things.")
-        except Exception as e:
-            self.logger.handle_exception(e)
+    def register_middleware(self, middleware: CompressionMiddleware):
+        self.middleware.append(middleware)
+        self.logger.info("Registered middleware "
+                         + f"'{middleware.__class__.__name__}'", self.debug)
 
 
 async def main():
-    manager = CompressionManager()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", "--verbose", "-d", "-v",
+                        action="store_true", help="debug/verbose mode")
+    args = parser.parse_args()
+
+    middleware = [
+        FlashLightsInHomeAssistantMiddleware,
+        ChangeStatusInThingsMiddleware
+    ]
+    manager = CompressionManager(args.debug)
+
+    [manager.register_middleware(m(manager.logger)) for m in middleware]
+
     await manager.compress_directory(root)
+
     manager.clean_up_directory(root)
 
 if __name__ == "__main__":

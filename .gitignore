@@ -8,3 +8,4 @@ cov.xml
 bin
 lib
 pyvenv.cfg
+*.log
