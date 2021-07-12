@@ -5,3 +5,7 @@ __pycache__
 cov.xml
 .DS_Store
 .vscode
+bin
+lib
+pyvenv.cfg
+*.log
