@@ -1,4 +1,8 @@
 from pyfakefs.fake_filesystem_unittest import TestCase
+import pytest
+import os
+import datetime
+
 from ArchiveManager import (ArchiveManager,
                             InvalidFormattingException,
                             IsCompressedFileException,
@@ -7,8 +11,9 @@ from ArchiveManager import (ArchiveManager,
                             blacklist_files,
                             blacklist_ext,
                             treshold_date)
-import pytest
-import os
+
+_now = datetime.datetime.now()
+current_year = str(_now.year)
 
 
 class AnyTestCase(TestCase):
@@ -26,12 +31,34 @@ class AnyTestCase(TestCase):
 
 
 class TestParseFilename(AnyTestCase):
-    def test_parse_filename_good_formatting(self):
-        s, y, m = self.manager.parse_filename("/volume1/PH HA 22-06-2021.pdf")
 
-        assert s == abbr_to_subject["PH"]
-        assert y == "2021"
-        assert m == month_to_dir[6]
+    def evaluate(self, f, s, y, m):
+        _s, _y, _m = self.manager.parse_filename(f)
+        assert _s == abbr_to_subject[s] and _y == str(
+            y) and _m == month_to_dir[m]
+
+    def year_and_month_for_calendar_week(self, week):
+        # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
+        # using iso weeks
+        date_str = current_year + "-W" + str(week).zfill(2) + "-1"
+        d = datetime.datetime.strptime(date_str, "%G-W%V-%u")
+        return (d.year, d.month)
+
+    def test_parse_filename_standard_formatting(self):
+        self.evaluate("/volume2/PH HA 22-06-2021.pdf", "PH", 2021, 6)
+        self.evaluate("/volume2/PH HA 01-12-2021.pdf", "PH", 2021, 12)
+
+    def test_parse_filename_calendar_weeks(self):
+        y, m = self.year_and_month_for_calendar_week(7)
+        self.evaluate("/volume2/PH HA KW7.pdf", "PH", y, m)
+        y, m = self.year_and_month_for_calendar_week(1)
+        self.evaluate("/volume2/PH HA KW01.pdf", "PH", y, m)
+        y, m = self.year_and_month_for_calendar_week(50)
+        self.evaluate("/volume2/PH HA KW50.pdf", "PH", y, m)
+
+    def test_parse_filename_iso_formatting(self):
+        self.evaluate("/volume2/PH HA 2021-06-22.pdf", "PH", 2021, 6)
+        self.evaluate("/volume2/PH HA 2021-12-01.pdf", "PH", 2021, 12)
 
     def test_parse_filename_partial_formatting(self):
         s, y, m = self.manager.parse_filename(
@@ -43,7 +70,10 @@ class TestParseFilename(AnyTestCase):
 
     def test_parse_filename_raises_invalid_formatting_exception(self):
         with pytest.raises(InvalidFormattingException):
-            s, y, m = self.manager.parse_filename("/volume1/test.pdf")
+            _ = self.manager.parse_filename("/volume1/test.pdf")
+
+        with pytest.raises(InvalidFormattingException):
+            _ = self.manager.parse_filename("/volume2/PH KW55.pdf")
 
 
 class TestGetDestinationForFile(AnyTestCase):

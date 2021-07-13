@@ -46,7 +46,7 @@ treshold_date = today - datetime.timedelta(days=5)
 year = str(treshold_date.year)
 month = month_to_dir[treshold_date.month]
 
-date_regex = r"^[\w\s_\-]*(?P<date>\d{2}\-\d{2}\-\d{4})\.pdf$"
+date_regex = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
 
 transfer_from_root = "/volume2/Hausaufgaben/HAs"
 transfer_to_root = "/volume2/Hausaufgaben/Archive"
@@ -77,20 +77,34 @@ class ArchiveManager:
 
     def parse_filename(self, fname: str):
         date = None
+        calendar_week = None
         f = os.path.split(fname)[1]
         try:
             groups = re.match(date_regex, f).groupdict()
             date = groups.get("date", None)
+            calendar_week = groups.get("calendar_week", None)
         except AttributeError:
             pass
         try:
             abbr = f.split(" ")[0]
             s = abbr_to_subject[abbr]
         except KeyError:
-            raise InvalidFormattingException()
-        if date is not None:
-            d = datetime.datetime.strptime(date, "%d-%m-%Y")
-            return (s, str(d.year), month_to_dir[d.month])
+            raise InvalidFormattingException(fname)
+        try:
+            if date is not None:
+                try:
+                    d = datetime.datetime.strptime(date, "%d-%m-%Y")
+                except ValueError:
+                    d = datetime.datetime.strptime(date, "%Y-%m-%d")
+                return (s, str(d.year), month_to_dir[d.month])
+            if calendar_week is not None:
+                # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
+                # using isoweeks
+                d = datetime.datetime.strptime(
+                    f"{today.year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
+                return (s, str(d.year), month_to_dir[d.month])
+        except ValueError:
+            raise InvalidFormattingException(fname)
         return (s, None, None)
 
     def get_destination_for_file(self, filename: str):
