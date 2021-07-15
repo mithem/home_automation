@@ -1,10 +1,10 @@
-from CompressionManager import (
+from Home_Automation.CompressionManager import (
     CompressionManager,
     root,
     home_assistant_url,
     things_server_url
 )
-from CompressionMiddleware import (
+from Home_Automation.CompressionMiddleware import (
     FlashLightsInHomeAssistantMiddleware,
     ChangeStatusInThingsMiddleware
 )

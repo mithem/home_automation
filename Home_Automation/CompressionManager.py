@@ -1,14 +1,14 @@
 import os
 import fileloghelper
-import config
 import asyncio
 import argparse
 
-import CompressionMiddleware
-from ArchiveManager import abbr_to_subject
-from CompressionMiddleware import (
+from Home_Automation import config
+from Home_Automation.ArchiveManager import abbr_to_subject
+from Home_Automation.CompressionMiddleware import (
     FlashLightsInHomeAssistantMiddleware,
-    ChangeStatusInThingsMiddleware
+    ChangeStatusInThingsMiddleware,
+    CompressionMiddleware
 )
 
 config.load_dotenv()
@@ -131,15 +131,15 @@ class CompressionManager:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--debug", "--verbose", "-d", "-v",
-                        action="store_true", help="debug/verbose mode")
+    parser.add_argument("--verbose", "-v",
+                        action="store_true", help="verbose mode")
     args = parser.parse_args()
 
     middleware = [
         FlashLightsInHomeAssistantMiddleware,
         ChangeStatusInThingsMiddleware
     ]
-    manager = CompressionManager(args.debug)
+    manager = CompressionManager(args.verbose)
 
     [manager.register_middleware(m(manager.logger)) for m in middleware]
 

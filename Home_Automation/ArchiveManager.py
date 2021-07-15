@@ -4,7 +4,7 @@ import fileloghelper
 import os
 import yagmail
 import argparse
-import config
+from Home_Automation import config
 
 month_to_dir = {
     1: "Januar",
@@ -233,10 +233,10 @@ def main():
         description="Archive files from HAs or reorganize Archive.")
     parser.add_argument("action", type=str,
                         help="Action to perform (archive, reorganize)")
-    parser.add_argument("--debug", "-d", action="store_true",
-                        help="debug mode (additional logging)")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="verbose mode (additional logging (to stdout))")
     args = parser.parse_args()
-    manager.debug = args.debug
+    manager.debug = args.verbose
     manager.logger.autosave = manager.debug
     if args.action == "archive":
         manager.transfer_all_files()

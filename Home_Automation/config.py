@@ -50,4 +50,7 @@ def load_dotenv():
     try:
         load(".env")
     except FileNotFoundError:
-        load("/volume2/repos/home-automation/.env")
+        try:
+            load("../.env")
+        except FileNotFoundError:
+            load("/volume2/repos/home-automation/.env")

@@ -1,4 +1,8 @@
-from config import parse_config, load_into_environment, ConfigError
+from Home_Automation.config import (
+    parse_config,
+    load_into_environment,
+    ConfigError
+)
 import pytest
 import os
 

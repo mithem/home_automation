@@ -4,15 +4,16 @@ import os
 from fileloghelper import Logger
 
 import test_CompressionManager
-from test_CompressionManager import configure_mock_responses
-from CompressionMiddleware import (
+from Home_Automation.CompressionMiddleware import (
     CompressionMiddleware,
     SubjectCompressionMiddleware,
     FlashLightsInHomeAssistantMiddleware,
     ChangeStatusInThingsMiddleware,
     InvalidResponseError
 )
-from CompressionManager import root
+from Home_Automation.CompressionManager import root
+# pytest needs this to be imported in this module
+from test_CompressionManager import configure_mock_responses
 
 _logger = Logger()
 home_assistant_url = os.environ.get("HASS_BASE_URL")

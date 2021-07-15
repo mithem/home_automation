@@ -9,3 +9,6 @@ bin
 lib
 pyvenv.cfg
 *.log
+Home_Automation.egg-info
+dist
+.tox

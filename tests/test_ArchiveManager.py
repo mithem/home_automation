@@ -3,14 +3,14 @@ import pytest
 import os
 import datetime
 
-from ArchiveManager import (ArchiveManager,
-                            InvalidFormattingException,
-                            IsCompressedFileException,
-                            abbr_to_subject,
-                            month_to_dir,
-                            blacklist_files,
-                            blacklist_ext,
-                            treshold_date)
+from Home_Automation.ArchiveManager import (ArchiveManager,
+                                            InvalidFormattingException,
+                                            IsCompressedFileException,
+                                            abbr_to_subject,
+                                            month_to_dir,
+                                            blacklist_files,
+                                            blacklist_ext,
+                                            treshold_date)
 
 _now = datetime.datetime.now()
 current_year = str(_now.year)

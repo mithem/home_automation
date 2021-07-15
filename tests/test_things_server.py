@@ -1,5 +1,5 @@
 from flask.helpers import url_for
-from things_server import create_app, ran_script
+from Home_Automation.things_server import create_app, ran_script
 import pytest
 from flask import Flask
 
