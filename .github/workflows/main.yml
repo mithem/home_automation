@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install dependencies (only tox as it installs the rest)
-        run: pip3 install tox
+      - name: Run setup script
+        run: ./continuous_integration_setup.sh
       - name: Run tox
         run: tox

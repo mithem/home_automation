@@ -20,7 +20,8 @@ requirements = [
     "pylint-exit",
     "aiohttp",
     "mypy",
-    "mypy-extensions"
+    "mypy-extensions",
+    "tox"
 ]
 
 with open("requirements_dev.txt", "w") as f:
