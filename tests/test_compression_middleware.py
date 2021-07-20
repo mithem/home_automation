@@ -1,24 +1,22 @@
-import pytest
-import httpx
 import os
-from fileloghelper import Logger
 
-import test_CompressionManager
-from Home_Automation.CompressionMiddleware import (
-    CompressionMiddleware,
-    SubjectCompressionMiddleware,
-    FlashLightsInHomeAssistantMiddleware,
-    ChangeStatusInThingsMiddleware,
-    InvalidResponseError
-)
-from Home_Automation.CompressionManager import root
+import httpx
+import pytest
+from fileloghelper import Logger
+from home_automation.compression_manager import ROOT_DIR
+from home_automation.compression_middleware import (
+    ChangeStatusInThingsMiddleware, CompressionMiddleware,
+    FlashLightsInHomeAssistantMiddleware, InvalidResponseError,
+    SubjectCompressionMiddleware)
+
+import test_compression_manager
 # pytest needs this to be imported in this module
-from test_CompressionManager import configure_mock_responses
+from test_compression_manager import configure_mock_responses
 
 _logger = Logger()
-home_assistant_url = os.environ.get("HASS_BASE_URL")
-home_assistant_token = os.environ.get("HASS_TOKEN")
-things_server_url = os.environ.get("THINGS_SERVER_URL")
+HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
+HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
+THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 
 
 @pytest.fixture
@@ -112,13 +110,13 @@ class TestFlashLightsInHomeAssistantMiddleware:
     @pytest.mark.asyncio
     async def test_tries_to_flash_lights_in_home_assistant(self, httpx_mock):
         httpx_mock.add_response(
-            method="POST", url=home_assistant_url
+            method="POST", url=HOME_ASSISTANT_URL
             + "/api/services/script/flash_miguels_room")
 
         await self.middleware.act("test.pdf")
 
         req = httpx_mock.get_request()
-        assert req.headers["authorization"] == "Bearer " + home_assistant_token
+        assert req.headers["authorization"] == "Bearer " + HOME_ASSISTANT_TOKEN
 
 
 @pytest.mark.usefixtures("setup_middleware")
@@ -132,19 +130,19 @@ class TestChangesStatusInThings:
     async def test_tries_to_check_homework_in_things(self, httpx_mock):
         httpx_mock.add_response(
             method="POST",
-            url=things_server_url + "/api/v1/markhomeworkasdone?subject=PH")
+            url=THINGS_SERVER_URL + "/api/v1/markhomeworkasdone?subject=PH")
 
         # don't need to check manually as pytest-httpx automatically raises
         # an error when mock endpoints remain uncontacted.
         await self.middleware.act("PH HA 22-06-2021.pdf")
 
 
-# referring this class in this module: feels like this is more at home here
-# than in test_CompressionManager
+# referring to this class being in this module: feels like this is more at home here
+# than in test_compression_manager
 
 @pytest.mark.asyncio
 class TestMiddlewareIntegration(
-        test_CompressionManager.AnyTestCase):
+        test_compression_manager.AnyTestCase):
 
     @pytest.fixture
     def setup_middleware_checking_being_invoked(self, logger):
@@ -183,17 +181,17 @@ class TestMiddlewareIntegration(
             "something.txt"
         ]
         for f in files:
-            test_CompressionManager.create_file(fs, f)
+            test_compression_manager.create_file(fs, f)
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
-        assert self.middleware.files_invoked_for == files[:3]
+        assert self.middleware.files_invoked_for == [os.path.join("/volume2/Hausaufgaben/HAs", fname) for fname in files[:3]]
 
     @pytest.mark.usefixtures("do_setup",
                              "configure_mock_responses",
                              "setup_faulty_middleware")
     async def test_exceptions_in_middleware_handled_appropriately(self, fs):
         f = "PH HA 22-06-2021.pdf"
-        test_CompressionManager.create_file(fs, f)
+        test_compression_manager.create_file(fs, f)
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)

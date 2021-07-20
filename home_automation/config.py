@@ -1,5 +1,4 @@
-# just need to implement this by myself as dotenv isn't easily available on
-# Synology DSM.
+"""A workaround for dotenv not being available on Synology DSM."""
 import os
 from typing import List, Dict
 
@@ -14,39 +13,42 @@ _required_keys = [
 
 
 class ConfigError(Exception):
-    pass
+    """An exception thrown when the config is oncomplete or invalid."""
 
 
 def parse_config(lines: List[str]) -> Dict[str, str]:
-    d = {}
+    """Parse config and return parsed dict."""
+    config = {}
     for line in lines:
         key, value = line.split("=")
         if value.endswith("\n"):
             value = value.replace("\n", "")
-        d[key] = value
+        config[key] = value
 
     keys_not_found = []
-    keys = d.keys()
+    keys = config.keys()
     for key in _required_keys:
         if key not in keys:
             keys_not_found.append(key)
 
-    if len(keys_not_found):
+    if keys_not_found:
         raise ConfigError(
             "The following variables could not be found in the environment: "
             + ", ".join(keys_not_found))
-    return d
+    return config
 
 
 def load_into_environment(config: Dict[str, str]):
+    """Load the dict into the environment."""
     for key, value in config.items():
         os.environ[key] = value
 
 
 def load_dotenv():
+    """Find the appropriate file and load it's content into the environment."""
     def load(path: str):
-        with open(path, "r") as f:
-            load_into_environment(parse_config(f.readlines()))
+        with open(path, "r") as file:
+            load_into_environment(parse_config(file.readlines()))
     try:
         load(".env")
     except FileNotFoundError:

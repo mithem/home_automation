@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-packages = ["Home_Automation"]
+packages = ["home_automation"]
 
 requirements = [
     "argparse",
@@ -15,14 +15,19 @@ requirements = [
     "pytest-asyncio",
     "pytest-httpx",
     "pytest-flask",
-    "pyfakefs"
+    "pyfakefs",
+    "pylint",
+    "pylint-exit",
+    "aiohttp",
+    "mypy",
+    "mypy-extensions"
 ]
 
 with open("requirements_dev.txt", "w") as f:
     f.writelines([r + "\n" for r in requirements])
 
 setup(
-    name="Home-Automation",
+    name="home_automation",
     version="1.0.0",
     packages=packages,
     install_requires=requirements

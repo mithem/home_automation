@@ -1,7 +1,6 @@
-from flask.helpers import url_for
-from Home_Automation.things_server import create_app, ran_script
 import pytest
-from flask import Flask
+from flask.helpers import url_for
+from home_automation.things_server import RAN_SCRIPT, create_app
 
 
 @pytest.fixture
@@ -24,7 +23,7 @@ class TestMarkHomeworkAsDone:
         r = client.post(url_for("mark_homework_as_done",
                                 subject="PH", testing=True))
         assert r.status_code == 200
-        assert r.data == ran_script
+        assert r.data == RAN_SCRIPT
 
 
 class TestCreateThingsTaskToUpdateHass():
@@ -34,7 +33,7 @@ class TestCreateThingsTaskToUpdateHass():
         r = client.post(
             url_for("create_things_task_to_update_hass", testing=True))
         assert r.status_code == 200
-        assert r.data == ran_script
+        assert r.data == RAN_SCRIPT
 
 
 def test_not_found(client):

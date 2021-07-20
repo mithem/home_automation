@@ -1,19 +1,16 @@
-from pyfakefs.fake_filesystem_unittest import TestCase
-import pytest
-import os
 import datetime
+import os
 
-from Home_Automation.ArchiveManager import (ArchiveManager,
-                                            InvalidFormattingException,
-                                            IsCompressedFileException,
-                                            abbr_to_subject,
-                                            month_to_dir,
-                                            blacklist_files,
-                                            blacklist_ext,
-                                            treshold_date)
+import pytest
+from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
+                                             BLACKLIST_FILES, MONTH_TO_DIR,
+                                             TRESHOLD_DATE, ArchiveManager,
+                                             InvalidFormattingException,
+                                             IsCompressedFileException)
+from pyfakefs.fake_filesystem_unittest import TestCase
 
-_now = datetime.datetime.now()
-current_year = str(_now.year)
+_NOW = datetime.datetime.now()
+CURRENT_YEAR = str(_NOW.year)
 
 
 class AnyTestCase(TestCase):
@@ -25,8 +22,8 @@ class AnyTestCase(TestCase):
         except FileNotFoundError:
             pass
         self.useful_data = {
-            "year": str(treshold_date.year),
-            "month": month_to_dir[treshold_date.month]
+            "year": str(TRESHOLD_DATE.year),
+            "month": MONTH_TO_DIR[TRESHOLD_DATE.month]
         }
 
 
@@ -34,13 +31,13 @@ class TestParseFilename(AnyTestCase):
 
     def evaluate(self, f, s, y, m):
         _s, _y, _m = self.manager.parse_filename(f)
-        assert _s == abbr_to_subject[s] and _y == str(
-            y) and _m == month_to_dir[m]
+        assert _s == ABBR_TO_SUBJECT[s] and _y == str(
+            y) and _m == MONTH_TO_DIR[m]
 
     def year_and_month_for_calendar_week(self, week):
         # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
         # using iso weeks
-        date_str = current_year + "-W" + str(week).zfill(2) + "-1"
+        date_str = CURRENT_YEAR + "-W" + str(week).zfill(2) + "-1"
         d = datetime.datetime.strptime(date_str, "%G-W%V-%u")
         return (d.year, d.month)
 
@@ -64,7 +61,7 @@ class TestParseFilename(AnyTestCase):
         s, y, m = self.manager.parse_filename(
             "/volume1/PH Klausurvorbereitung.pdf")
 
-        assert s == abbr_to_subject["PH"]
+        assert s == ABBR_TO_SUBJECT["PH"]
         assert y is None
         assert m is None
 
@@ -74,6 +71,10 @@ class TestParseFilename(AnyTestCase):
 
         with pytest.raises(InvalidFormattingException):
             _ = self.manager.parse_filename("/volume2/PH KW55.pdf")
+
+        with pytest.raises(InvalidFormattingException):
+            _ = self.manager.parse_filename("/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf")
+
 
 
 class TestGetDestinationForFile(AnyTestCase):
@@ -90,14 +91,13 @@ class TestGetDestinationForFile(AnyTestCase):
 
         dest = self.manager.get_destination_for_file(s)
 
-        assert dest == s.replace("/2021/", "/2021/" + month_to_dir[6] + "/")
+        assert dest == s.replace("/2021/", "/2021/" + MONTH_TO_DIR[6] + "/")
 
-    def test_get_destination_for_file_filename_not_containing_metadata(self):
+    def test_get_destination_for_file_raises_invalid_formatting_exception(self):
         s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf"
 
-        dest = self.manager.get_destination_for_file(s)
-
-        assert dest is None
+        with pytest.raises(InvalidFormattingException):
+            _ = self.manager.get_destination_for_file(s)
 
     def test_get_destination_for_file_file_in_correct_substructure_but_wrong_subject_directory(self):
         s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
@@ -123,8 +123,8 @@ class TestGetDestinationForFile(AnyTestCase):
         dest = self.manager.get_destination_for_file(s)
 
         assert dest == "/volume2/Hausaufgaben/Archive/"\
-            + abbr_to_subject["PH"] + "/2021/" + \
-            month_to_dir[6] + "/PH HA 22-06-2021.pdf"
+            + ABBR_TO_SUBJECT["PH"] + "/2021/" + \
+            MONTH_TO_DIR[6] + "/PH HA 22-06-2021.pdf"
 
     def test_get_destination_for_file_messed_up_archive_3(self):
         s = "/volume2/Hausaufgaben/Archive/Mathe/2021/Juni/PH KW25.pdf"
@@ -292,7 +292,7 @@ class TestTransferDirectory(AnyTestCase):
                 + name
 
         def f2(name: str) -> str:
-            return "/volume2/Hausaufgaben/Archive/" + abbr_to_subject['PH'] \
+            return "/volume2/Hausaufgaben/Archive/" + ABBR_TO_SUBJECT['PH'] \
                 + "/"\
                 + self.useful_data['year']\
                 + "/"\
@@ -321,7 +321,7 @@ class TestTransferDirectory(AnyTestCase):
 
         def f2(name: str) -> str:
             return "/volume2/Hausaufgaben/Archive/"\
-                + abbr_to_subject['PH'] \
+                + ABBR_TO_SUBJECT['PH'] \
                 + "/2021/Juni/" \
                 + name
 
@@ -363,14 +363,14 @@ class TestTransferDirectory(AnyTestCase):
         assert len(self.manager.not_transferred_files) == len(dir_files)
         assert self.manager.transferred_files == []
 
-    def test_transfer_directory_blacklist_files(self):
+    def test_transfer_directory_BLACKLIST_FILES(self):
         def f(name: str) -> str:
             return "/volume2/Hausaufgaben/HAs"\
                 + ("/" if len(name) > 0 else "")\
                 + name
         # not sure why i need to do that
         self.fs.create_dir("/volume2/Hausaufgaben/HAs")
-        for fname in blacklist_files:
+        for fname in BLACKLIST_FILES:
             if len(fname.split(".")) > 0:
                 self.fs.create_file(fname)
             else:
@@ -378,24 +378,24 @@ class TestTransferDirectory(AnyTestCase):
 
         self.manager.transfer_directory(f(""))
 
-        for fname in blacklist_files:
+        for fname in BLACKLIST_FILES:
             assert self.fs.exists(fname)
 
         assert self.manager.not_transferred_files == []
         assert self.manager.transferred_files == []
 
-    def test_transfer_directory_blacklist_ext(self):
+    def test_transfer_directory_BLACKLIST_EXT(self):
         def f(name: str) -> str:
             return "/volume2/Hausaufgaben/HAs"\
                 + ("/" if len(name) > 0 else "")\
                 + name
         self.fs.create_dir("/volume2/Hausaufgaben/HAs")
-        for ext in blacklist_ext:
+        for ext in BLACKLIST_EXT:
             self.fs.create_file("hello" + ext)
 
         self.manager.transfer_directory(f(""))
 
-        for ext in blacklist_ext:
+        for ext in BLACKLIST_EXT:
             assert self.fs.exists("hello" + ext)
 
         assert self.manager.transferred_files == []

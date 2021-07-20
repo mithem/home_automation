@@ -1,12 +1,15 @@
-import re
-import datetime
-import fileloghelper
-import os
-import yagmail
+"""HomeAutomation: a collection of scripts and small programs automating primarily homework on NAS and some small helpers for day-to-day life."""
 import argparse
-from Home_Automation import config
+import datetime
+import os
+import re
 
-month_to_dir = {
+import fileloghelper
+import yagmail
+
+from home_automation import config
+
+MONTH_TO_DIR = {
     1: "Januar",
     2: "Feburar",
     3: "März",
@@ -21,7 +24,7 @@ month_to_dir = {
     12: "Dezember"
 }
 
-abbr_to_subject = {
+ABBR_TO_SUBJECT = {
     "D": "Deutsch",
     "E": "Englisch",
     "EK": "Erdkunde",
@@ -38,29 +41,32 @@ abbr_to_subject = {
 
 config.load_dotenv()
 
-blacklist_files = [".DS_Store", "@eaDir"]
-blacklist_ext = ["sh", "@SynoRessource"]
+BLACKLIST_FILES = [".DS_Store", "@eaDir"]
+BLACKLIST_EXT = ["sh", "@SynoRessource"]
 
-today = datetime.date.today()
-treshold_date = today - datetime.timedelta(days=5)
-year = str(treshold_date.year)
-month = month_to_dir[treshold_date.month]
+TODAY = datetime.date.today()
+TRESHOLD_DATE = TODAY - datetime.timedelta(days=5)
+YEAR = str(TRESHOLD_DATE.year)
+MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 
-date_regex = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
+DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
+             + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
 
-transfer_from_root = "/volume2/Hausaufgaben/HAs"
-transfer_to_root = "/volume2/Hausaufgaben/Archive"
+TRANSFER_FROM_ROOT = "/volume2/Hausaufgaben/HAs"
+TRANSFER_TO_ROOT = "/volume2/Hausaufgaben/Archive"
 
 
 class InvalidFormattingException(Exception):
-    pass
+    """An exception thrown when a file is invalidly formatted."""
 
 
 class IsCompressedFileException(Exception):
-    pass
+    """An exception thrown when a file is already compressed."""
 
 
 class ArchiveManager:
+    """ArchiveManager managed the archive."""
+
     def __init__(self, debug=False):
         self.logger = fileloghelper.Logger(os.path.join(
             os.environ.get("LOG_DIR"), "ArchiveManager.log"), autosave=debug)
@@ -75,63 +81,63 @@ class ArchiveManager:
             self.email_address = ""
             self.smtp = None
 
-    def parse_filename(self, fname: str):
-        date = None
+    def parse_filename(self, path: str):  # pylint: disable=no-self-use
+        """parse filename and return (subject, year, month), each as the name of the directory the file is supposed to go in."""
+        date_str = None
         calendar_week = None
-        f = os.path.split(fname)[1]
-        try:
-            groups = re.match(date_regex, f).groupdict()
-            date = groups.get("date", None)
+        fname = os.path.split(path)[1]
+        match = re.match(DATE_REGEX, fname)
+        if match:
+            groups = match.groupdict()
+            date_str = groups.get("date", None)
             calendar_week = groups.get("calendar_week", None)
-        except AttributeError:
-            pass
         try:
-            abbr = f.split(" ")[0]
-            s = abbr_to_subject[abbr]
-        except KeyError:
-            raise InvalidFormattingException(fname)
+            abbr = fname.split(" ")[0]
+            subject = ABBR_TO_SUBJECT[abbr]
+        except (KeyError, IndexError) as error:
+            raise InvalidFormattingException(path) from error
         try:
-            if date is not None:
+            if date_str:
                 try:
-                    d = datetime.datetime.strptime(date, "%d-%m-%Y")
+                    date = datetime.datetime.strptime(date_str, "%d-%m-%Y")
                 except ValueError:
-                    d = datetime.datetime.strptime(date, "%Y-%m-%d")
-                return (s, str(d.year), month_to_dir[d.month])
+                    date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                return (subject, str(date.year), MONTH_TO_DIR[date.month])
             if calendar_week is not None:
                 # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
                 # using isoweeks
-                d = datetime.datetime.strptime(
-                    f"{today.year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
-                return (s, str(d.year), month_to_dir[d.month])
-        except ValueError:
-            raise InvalidFormattingException(fname)
-        return (s, None, None)
+                date = datetime.datetime.strptime(
+                    f"{TODAY.year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
+                return (subject, str(date.year), MONTH_TO_DIR[date.month])
+        except ValueError as error:
+            raise InvalidFormattingException(path) from error
+        return (subject, None, None)
 
     def get_destination_for_file(self, filename: str):
+        """Get appropriate destination for file (got that guess right?!?!).
+        Might throw InvalidFormattingException."""
         def return_timestamped_filepath():
-            dest = os.path.join(transfer_to_root, s, y, m)
+            dest = os.path.join(TRANSFER_TO_ROOT, subject, year, month)
             if not os.path.isdir(dest):
                 os.makedirs(dest)
             return os.path.join(dest, os.path.split(filename)[-1])
         try:
-            # subject, year, month
-            s, y, m = self.parse_filename(filename)
-            if y is None or m is None:
+            subject, year, month = self.parse_filename(filename)
+            if year is None or month is None:
                 dest = filename
                 if filename.startswith("/volume2/Hausaufgaben/HAs"):
-                    y = year
-                    m = month
+                    year = YEAR
+                    month = MONTH
                     return return_timestamped_filepath()
                 # Put files that were in the wrong subject folder in the same
                 # substructure (e.g. /Subject/2020) but for another subject
-                for subject in abbr_to_subject.values():
-                    dest = dest.replace(subject, s)
+                for sub in ABBR_TO_SUBJECT.values():
+                    dest = dest.replace(sub, subject)
                 return dest
-            else:
-                return return_timestamped_filepath()
-        except (InvalidFormattingException, TypeError):
+            return return_timestamped_filepath()
+        except (InvalidFormattingException, TypeError) as error:
             self.logger.warning(f"Error parsing {filename}", False)
-            return None
+            raise InvalidFormattingException(filename) from error
 
     def transfer_file(self, fname: str):
         """Transfer file in corresponding, correct (worked out in this method) spot.
@@ -142,11 +148,6 @@ class ArchiveManager:
         if fname.endswith(".small.pdf"):
             raise IsCompressedFileException()
         try:
-            s, y, m = self.parse_filename(fname)
-            if y is None:
-                y = year
-            if m is None:
-                m = month
             destination = self.get_destination_for_file(fname)
             if destination == fname:
                 return
@@ -158,53 +159,58 @@ class ArchiveManager:
             os.rename(fname, destination)
             self.logger.success(
                 f"Transferred file from {fname} to {destination}", True)
-            small_f = os.path.join(transfer_from_root,
+            small_f = os.path.join(TRANSFER_FROM_ROOT,
                                    fname.replace(".pdf", ".small.pdf"))
             if os.path.isfile(small_f):
                 os.remove(small_f)
                 self.logger.debug(f"Deleted {small_f}")
             self.transferred_files.append(fname)
-        except InvalidFormattingException as e:
+        except InvalidFormattingException as error:
             self.not_transferred_files.append(fname)
-            raise e
+            raise error
 
     def transfer_directory(self, path: str):
+        """Transfer all files and directories in given directory."""
+        def handle_file(filepath):
+            try:
+                if os.path.isdir(filepath):
+                    did_move_invalidly_formatted_directory = False
+                    # ...with validly formatted files
+                    subject = None
+                    try:
+                        subject, _, _ = self.parse_filename(filepath)
+                    except InvalidFormattingException:
+                        did_move_invalidly_formatted_directory = True
+                    if subject is not None:
+                        self.transfer_file(filepath)
+                    else:
+                        self.transfer_directory(filepath)
+                        if did_move_invalidly_formatted_directory:
+                            os.removedirs(filepath)
+                else:
+                    self.transfer_file(filepath)
+            except InvalidFormattingException:
+                self.logger.error(f"Invalid formatting on {filepath}")
+            except IsCompressedFileException:
+                self.logger.warning(f"Is compressed file: {filepath}", False)
+            except Exception as error:  # pylint: disable=broad-except
+                # better safe than sorry
+                self.logger.error(
+                    f"Error occured when transferring {filepath}.")
+                self.logger.handle_exception(error)
         self.logger.context = "archiving"
         self.logger.debug(f"Transferring/Archiving {path}", self.debug)
-        for f in os.listdir(path):
-            filepath = os.path.join(path, f)
-            ext = f.split(".")[-1]
-            if (ext not in blacklist_ext) and (not f.startswith("@"))\
-                    and (f not in blacklist_files):
-                try:
-                    if os.path.isdir(filepath):
-                        did_move_invalidly_formatted_directory = False
-                        s = None
-                        try:
-                            s, y, m = self.parse_filename(filepath)
-                        except InvalidFormattingException:
-                            did_move_invalidly_formatted_directory = True
-                            # ...with validly formatted files
-                        if s is not None:
-                            self.transfer_file(filepath)
-                        else:
-                            self.transfer_directory(filepath)
-                            if did_move_invalidly_formatted_directory:
-                                os.removedirs(filepath)
-                    else:
-                        self.transfer_file(filepath)
-                except InvalidFormattingException:
-                    self.logger.error(f"Invalid formatting on {f}")
-                except IsCompressedFileException:
-                    self.logger.warning(f"Is compressed file: {f}", False)
-                except Exception as e:
-                    self.logger.error(
-                        f"Error occured when transferring {f}.")
-                    self.logger.handle_exception(e)
+        for fname in os.listdir(path):
+            filepath = os.path.join(path, fname)
+            ext = fname.split(".")[-1]
+            if (ext not in BLACKLIST_EXT) and (not fname.startswith("@"))\
+                    and (fname not in BLACKLIST_FILES):
+                handle_file(filepath)
 
     def transfer_all_files(self):
+        """Transfer all files from the root directory (not necessarily '/') to their corresponding destination."""
         self.logger.context = "mail"
-        self.transfer_directory(transfer_from_root)
+        self.transfer_directory(TRANSFER_FROM_ROOT)
         mail_body = ["The following files were successfully archived: "]\
             + self.transferred_files
         if len(self.not_transferred_files) > 0:
@@ -220,13 +226,17 @@ class ArchiveManager:
         """For every file, use `transfer_file` to reorganize it."""
         self.logger.context = "reorganization"
         self.logger.debug("Reorganizing!")
-        self.transfer_directory(transfer_to_root)
+        self.transfer_directory(TRANSFER_TO_ROOT)
         self.logger.info(
             f"Transferred {len(self.transferred_files)} files:", True)
-        [self.logger.debug(f, self.debug) for f in self.transferred_files]
+        for fname in self.transferred_files:
+            self.logger.debug(
+                fname, self.debug)  # pylint: disable=multiple-statements
+        # I mean, common!
 
 
 def main():
+    """Guess what this does, pylint!"""
     manager = ArchiveManager()
     manager.logger.header(True, True)
     parser = argparse.ArgumentParser(

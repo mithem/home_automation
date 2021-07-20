@@ -1,12 +1,10 @@
-from Home_Automation.config import (
-    parse_config,
-    load_into_environment,
-    ConfigError
-)
-import pytest
 import os
 
-valid_config = [
+import pytest
+from home_automation.config import (ConfigError, load_into_environment,
+                                    parse_config)
+
+VALID_CONFIG = [
     "EMAIL_ADDRESS=hello@github.com",
     "EMAIL_PASSWD=passw0rd1",
     "LOG_DIR=/var/logs\n",
@@ -28,7 +26,7 @@ def test_parse_config_valid_config():
         "ANOTHER": "hello"
     }
 
-    result = parse_config(valid_config)
+    result = parse_config(VALID_CONFIG)
 
     assert result == expected
 
@@ -44,7 +42,7 @@ def test_parse_config_raises_exception_when_config_incomplete():
 
 def test_load_into_environment():
     # for that, it's fine to use a function tested somewhere else
-    config = parse_config(valid_config)
+    config = parse_config(VALID_CONFIG)
     load_into_environment(config)
 
     for key, value in config.items():

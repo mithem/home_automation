@@ -1,17 +1,13 @@
-from Home_Automation.CompressionManager import (
-    CompressionManager,
-    root,
-    home_assistant_url,
-    things_server_url
-)
-from Home_Automation.CompressionMiddleware import (
-    FlashLightsInHomeAssistantMiddleware,
-    ChangeStatusInThingsMiddleware
-)
-import pytest
 import os
 import re
 from typing import List
+
+import pytest
+from home_automation.compression_manager import (HOME_ASSISTANT_URL, ROOT_DIR,
+                                                 THINGS_SERVER_URL,
+                                                 CompressionManager)
+from home_automation.compression_middleware import (
+    ChangeStatusInThingsMiddleware, FlashLightsInHomeAssistantMiddleware)
 
 
 @pytest.mark.usefixtures("do_setup")
@@ -29,7 +25,7 @@ class AnyTestCase:
 
 
 def create_file(fs, name: str):
-    dest = os.path.join(root, name)
+    dest = os.path.join(ROOT_DIR, name)
     d, f = os.path.split(dest)
     if not fs.isdir(d):
         fs.create_dir(d)
@@ -37,7 +33,7 @@ def create_file(fs, name: str):
 
 
 def file_exists(fs, name: str):
-    exists = fs.exists(os.path.join(root, name))
+    exists = fs.exists(os.path.join(ROOT_DIR, name))
     return exists
 
 
@@ -45,8 +41,8 @@ def file_exists(fs, name: str):
 def configure_mock_responses(httpx_mock):
     httpx_mock.add_response(
         method="POST",
-        url=home_assistant_url + "/api/services/script/flash_miguels_room")
-    pattern = re.compile(things_server_url +
+        url=HOME_ASSISTANT_URL + "/api/services/script/flash_miguels_room")
+    pattern = re.compile(THINGS_SERVER_URL +
                          r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
     httpx_mock.add_response(method="POST", url=pattern)
 
@@ -82,7 +78,7 @@ class TestCompressDirectory(AnyTestCase):
                 self.did_evaluate = True
                 for line in manager.logger._lines:
                     for f in self.files:
-                        path = os.path.join(root, f)
+                        path = os.path.join(ROOT_DIR, f)
                         if f"Compressing '{path}'" in line:
                             self.did_try_to_compress_files[f] = True
 
@@ -108,12 +104,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(root)) == len(files)
+        assert len(fs.listdir(ROOT_DIR)) == len(files)
 
     async def test_compress_directory_is_nondestructive_2(self, fs):
         files = [
@@ -128,12 +124,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(root)) == len(files)
+        assert len(fs.listdir(ROOT_DIR)) == len(files)
 
     async def test_compress_directory_is_nondestructive_3(self, fs):
         files = [
@@ -152,12 +148,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(root)) == len(files)
+        assert len(fs.listdir(ROOT_DIR)) == len(files)
 
     async def test_compress_directory_blacklists(self, fs, httpx_mock):
         files = [
@@ -175,12 +171,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(root)) == len(files)
+        assert len(fs.listdir(ROOT_DIR)) == len(files)
         assert len(httpx_mock.get_requests()) == 0
 
     @pytest.mark.usefixtures("configure_mock_responses")
@@ -195,7 +191,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -210,7 +206,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -220,16 +216,16 @@ class TestCompressDirectory(AnyTestCase):
             "PH Material/text1.pdf",
             "PH Material/PH KW25.pdf"
         ]
-        hass_url = f"{home_assistant_url}/api/services/" + \
+        hass_url = f"{HOME_ASSISTANT_URL}/api/services/" + \
             "script/flash_miguels_room"
         expected = [
             hass_url,
             hass_url,
-            f"{things_server_url}/api/v1/markhomeworkasdone?subject=PH"
+            f"{THINGS_SERVER_URL}/api/v1/markhomeworkasdone?subject=PH"
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -256,13 +252,13 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         requests = httpx_mock.get_requests()
         # only ones which are valid (not on blacklist like (\.|_)*) and
         # where there isn't a compressed version already
         filtered = list(filter(lambda r: str(r.url).startswith(
-            home_assistant_url), requests))
+            HOME_ASSISTANT_URL), requests))
         assert len(filtered) == 2
 
     @pytest.mark.usefixtures("configure_mock_responses")
@@ -290,7 +286,7 @@ class TestCompressDirectory(AnyTestCase):
             "M": 1
         }
 
-        await self.manager.compress_directory(root)
+        await self.manager.compress_directory(ROOT_DIR)
 
         result = {}
         requests = httpx_mock.get_requests()
@@ -324,12 +320,12 @@ class TestCleanUpDirectory(AnyTestCase):
         # referring to `files`: files up to this idx are supposed to be deleted
         idx_up_to_files_to_be_kept = 3
 
-        self.manager.clean_up_directory(root)
+        self.manager.clean_up_directory(ROOT_DIR)
 
         for f in files[:idx_up_to_files_to_be_kept]:
             assert not file_exists(fs, f)
         for f in files[idx_up_to_files_to_be_kept:]:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(root)) == len(
+        assert len(fs.listdir(ROOT_DIR)) == len(
             files[idx_up_to_files_to_be_kept:])

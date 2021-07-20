@@ -10,3 +10,8 @@ pytest-asyncio
 pytest-httpx
 pytest-flask
 pyfakefs
+pylint
+pylint-exit
+aiohttp
+mypy
+mypy-extensions
