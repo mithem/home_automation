@@ -1,4 +1,4 @@
-[![CI](https://github.com/mithem/home_automation/actions/workflows/main.yml/badge.svg)](https://github.com/mithem/home_automation/actions/workflows/main.yml)
+[![CI status](https://github.com/mithem/home_automation/actions/workflows/main.yml/badge.svg)](https://github.com/mithem/home_automation/actions/workflows/main.yml)
 
 # home_automation
 

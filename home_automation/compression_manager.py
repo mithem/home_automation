@@ -32,7 +32,7 @@ class CompressionManager:
 
     def __init__(self, debug=False, testing=False):
         self.logger = fileloghelper.Logger(os.path.join(
-            os.environ.get("LOG_DIR"), "CompressionManager.log"),
+            os.environ.get("LOG_DIR"), "compression_manager.log"),
             autosave=debug)
         self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
         if not testing:

@@ -67,7 +67,7 @@ class ArchiveManager: # pylint: disable=too-many-instance-attributes
 
     def __init__(self, debug=False):
         self.logger = fileloghelper.Logger(os.path.join(
-            os.environ.get("LOG_DIR"), "ArchiveManager.log"), autosave=debug)
+            os.environ.get("LOG_DIR"), "archive_manager.log"), autosave=debug)
         self.transferred_files = []
         self.not_transferred_files = []
         self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
