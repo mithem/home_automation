@@ -15,3 +15,4 @@ pylint-exit
 aiohttp
 mypy
 mypy-extensions
+tox

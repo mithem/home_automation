@@ -1,5 +1,6 @@
 """A workaround for dotenv not being available on Synology DSM."""
 import os
+import re
 from typing import List, Dict
 
 _required_keys = [
@@ -8,7 +9,9 @@ _required_keys = [
     "HASS_TOKEN",
     "HASS_BASE_URL",
     "THINGS_SERVER_URL",
-    "LOG_DIR"
+    "LOG_DIR",
+    "HOMEWORK_DIR",
+    "ARCHIVE_DIR"
 ]
 
 
@@ -20,10 +23,13 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
     """Parse config and return parsed dict."""
     config = {}
     for line in lines:
-        key, value = line.split("=")
-        if value.endswith("\n"):
-            value = value.replace("\n", "")
-        config[key] = value
+        match = re.match(r"(?P<key>[\w_]+)\s?=\s?(?P<value>.*)\n?", line)
+        if match:
+            groupdict = match.groupdict()
+            key = groupdict.get("key")
+            value = groupdict.get("value")
+            if key and value:
+                config[str(key)] = str(value)
 
     keys_not_found = []
     keys = config.keys()
@@ -47,8 +53,8 @@ def load_into_environment(config: Dict[str, str]):
 def load_dotenv():
     """Find the appropriate file and load it's content into the environment."""
     def load(path: str):
-        with open(path, "r") as file:
-            load_into_environment(parse_config(file.readlines()))
+        with open(path, "r") as file_obj:
+            load_into_environment(parse_config(file_obj.readlines()))
     try:
         load(".env")
     except FileNotFoundError:

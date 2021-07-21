@@ -74,7 +74,8 @@ class CompressionManager:
                 self.logger.handle_exception(error)
 
     def file_should_be_skipped(self, path: str, fname: str, dirlist: List[str]):
-        """Decide, whether file should be skipped. Deal with logging and return True/False respectively."""
+        """Decide, whether file should be skipped.
+        Deal with logging and return True/False respectively."""
         def skip(path: str):
             self.logger.debug(
                 f"Skipping {path} as it doesn't qualify for \
@@ -137,7 +138,8 @@ class CompressionManager:
                     self.logger.handle_exception(error)
 
     def register_middleware(self, middleware: CompressionMiddleware):
-        """Register a new `CompressionMiddleware` to be called whenever a new file gets compressed. Required to be actually useful."""
+        """Register a new `CompressionMiddleware` to be called whenever a new file gets compressed.
+        Required to be actually useful."""
         self.middleware.append(middleware)
         self.logger.info("Registered middleware "
                          + f"'{middleware.__class__.__name__}'", self.debug)

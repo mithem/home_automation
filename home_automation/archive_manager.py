@@ -1,4 +1,5 @@
-"""HomeAutomation: a collection of scripts and small programs automating primarily homework on NAS and some small helpers for day-to-day life."""
+"""HomeAutomation: a collection of scripts and small programs automating
+primarily homework on NAS and some small helpers for day-to-day life."""
 import argparse
 import datetime
 import os
@@ -52,8 +53,8 @@ MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
              + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
 
-TRANSFER_FROM_ROOT = "/volume2/Hausaufgaben/HAs"
-TRANSFER_TO_ROOT = "/volume2/Hausaufgaben/Archive"
+HOMEWORK_DIR = str(os.environ.get("HOMEWORK_DIR"))
+ARCHIVE_DIR = str(os.environ.get("ARCHIVE_DIR"))
 
 
 class InvalidFormattingException(Exception):
@@ -82,7 +83,8 @@ class ArchiveManager:
             self.smtp = None
 
     def parse_filename(self, path: str):  # pylint: disable=no-self-use
-        """parse filename and return (subject, year, month), each as the name of the directory the file is supposed to go in."""
+        """parse filename and return (subject, year, month), each as
+        the name of the directory the file is supposed to go in."""
         date_str = None
         calendar_week = None
         fname = os.path.split(path)[1]
@@ -117,7 +119,7 @@ class ArchiveManager:
         """Get appropriate destination for file (got that guess right?!?!).
         Might throw InvalidFormattingException."""
         def return_timestamped_filepath():
-            dest = os.path.join(TRANSFER_TO_ROOT, subject, year, month)
+            dest = os.path.join(ARCHIVE_DIR, subject, year, month)
             if not os.path.isdir(dest):
                 os.makedirs(dest)
             return os.path.join(dest, os.path.split(filename)[-1])
@@ -159,7 +161,7 @@ class ArchiveManager:
             os.rename(fname, destination)
             self.logger.success(
                 f"Transferred file from {fname} to {destination}", True)
-            small_f = os.path.join(TRANSFER_FROM_ROOT,
+            small_f = os.path.join(HOMEWORK_DIR,
                                    fname.replace(".pdf", ".small.pdf"))
             if os.path.isfile(small_f):
                 os.remove(small_f)
@@ -208,9 +210,10 @@ class ArchiveManager:
                 handle_file(filepath)
 
     def transfer_all_files(self):
-        """Transfer all files from the root directory (not necessarily '/') to their corresponding destination."""
+        """Transfer all files from the root directory (not
+        necessarily '/') to their corresponding destination."""
         self.logger.context = "mail"
-        self.transfer_directory(TRANSFER_FROM_ROOT)
+        self.transfer_directory(HOMEWORK_DIR)
         mail_body = ["The following files were successfully archived: "]\
             + self.transferred_files
         if len(self.not_transferred_files) > 0:
@@ -226,7 +229,7 @@ class ArchiveManager:
         """For every file, use `transfer_file` to reorganize it."""
         self.logger.context = "reorganization"
         self.logger.debug("Reorganizing!")
-        self.transfer_directory(TRANSFER_TO_ROOT)
+        self.transfer_directory(ARCHIVE_DIR)
         self.logger.info(
             f"Transferred {len(self.transferred_files)} files:", True)
         for fname in self.transferred_files:

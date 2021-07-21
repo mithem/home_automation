@@ -11,6 +11,8 @@ VALID_CONFIG = [
     "HASS_TOKEN=abcABC123\n",
     "HASS_BASE_URL=http://homeassistant.local:8123",
     "THINGS_SERVER_URL=http://192.168.2.197:8001\n",
+    "HOMEWORK_DIR = /volume2/Hausaufgaben/HAs",
+    "ARCHIVE_DIR = /volume2/Hausaufgaben/Archive",
     "ANOTHER=hello"
 ]
 
@@ -23,6 +25,8 @@ def test_parse_config_valid_config():
         "HASS_TOKEN": "abcABC123",
         "HASS_BASE_URL": "http://homeassistant.local:8123",
         "THINGS_SERVER_URL": "http://192.168.2.197:8001",
+        "HOMEWORK_DIR": "/volume2/Hausaufgaben/HAs",
+        "ARCHIVE_DIR": "/volume2/Hausaufgaben/Archive",
         "ANOTHER": "hello"
     }
 
