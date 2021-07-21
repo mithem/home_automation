@@ -17,7 +17,7 @@ jobs:
       - name: Setup environment
         run: |
             echo "EMAIL_ADDRESS=test@example.com
-            EMAIL_PADDWD=pass0rd1!
+            EMAIL_PASSWD=pass0rd1!
             HASS_TOKEN=abcdefg
             HASS_BASE_URL=http://homeassistant.local:8123
             THINGS_SERVER_URL=http://192.168.10.2:8001
