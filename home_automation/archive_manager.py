@@ -62,7 +62,7 @@ class IsCompressedFileException(Exception):
     """An exception thrown when a file is already compressed."""
 
 
-class ArchiveManager: # pylint: disable=too-many-instance-attributes
+class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     """ArchiveManager managed the archive."""
 
     def __init__(self, debug=False):
@@ -186,7 +186,8 @@ class ArchiveManager: # pylint: disable=too-many-instance-attributes
                         self.transfer_file(filepath)
                     else:
                         self.transfer_directory(filepath)
-                        if did_move_invalidly_formatted_directory:
+                        if did_move_invalidly_formatted_directory and\
+                        os.path.split(filepath)[0] == self.homework_dir:
                             os.removedirs(filepath)
                 else:
                     self.transfer_file(filepath)

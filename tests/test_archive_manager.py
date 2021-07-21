@@ -226,13 +226,18 @@ class TestTransferFile(AnyTestCase):
         assert self.manager.not_transferred_files == []
 
     def test_transfer_file_same_origin_and_destination(self):
-        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-            + "PH HA 22-06-2021.pdf"
-        self.fs.create_file(s)
+        files = [
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA 22-06-2021.pdf",
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA.pdf",
+        ]
+        for path in files:
+            self.fs.create_file(path)
+            self.manager.transfer_file(path)
+            assert self.fs.exists(path)
+            for line in self.manager.logger._lines:
+                assert not f"Transferred file from {path} to {path}" in line
 
-        self.manager.transfer_file(s)
 
-        assert self.fs.exists(s)
         assert self.manager.transferred_files == []
         assert self.manager.not_transferred_files == []
 
