@@ -53,9 +53,6 @@ MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
              + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
 
-HOMEWORK_DIR = str(os.environ.get("HOMEWORK_DIR"))
-ARCHIVE_DIR = str(os.environ.get("ARCHIVE_DIR"))
-
 
 class InvalidFormattingException(Exception):
     """An exception thrown when a file is invalidly formatted."""
@@ -65,7 +62,7 @@ class IsCompressedFileException(Exception):
     """An exception thrown when a file is already compressed."""
 
 
-class ArchiveManager:
+class ArchiveManager: # pylint: disable=too-many-instance-attributes
     """ArchiveManager managed the archive."""
 
     def __init__(self, debug=False):
@@ -73,6 +70,8 @@ class ArchiveManager:
             os.environ.get("LOG_DIR"), "ArchiveManager.log"), autosave=debug)
         self.transferred_files = []
         self.not_transferred_files = []
+        self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
+        self.archive_dir = str(os.environ.get("ARCHIVE_DIR"))
         self.debug = debug
         try:
             self.email_address = os.environ.get("EMAIL_ADDRESS")
@@ -119,7 +118,7 @@ class ArchiveManager:
         """Get appropriate destination for file (got that guess right?!?!).
         Might throw InvalidFormattingException."""
         def return_timestamped_filepath():
-            dest = os.path.join(ARCHIVE_DIR, subject, year, month)
+            dest = os.path.join(self.archive_dir, subject, year, month)
             if not os.path.isdir(dest):
                 os.makedirs(dest)
             return os.path.join(dest, os.path.split(filename)[-1])
@@ -161,7 +160,7 @@ class ArchiveManager:
             os.rename(fname, destination)
             self.logger.success(
                 f"Transferred file from {fname} to {destination}", True)
-            small_f = os.path.join(HOMEWORK_DIR,
+            small_f = os.path.join(self.homework_dir,
                                    fname.replace(".pdf", ".small.pdf"))
             if os.path.isfile(small_f):
                 os.remove(small_f)
@@ -213,7 +212,7 @@ class ArchiveManager:
         """Transfer all files from the root directory (not
         necessarily '/') to their corresponding destination."""
         self.logger.context = "mail"
-        self.transfer_directory(HOMEWORK_DIR)
+        self.transfer_directory(self.homework_dir)
         mail_body = ["The following files were successfully archived: "]\
             + self.transferred_files
         if len(self.not_transferred_files) > 0:
@@ -229,7 +228,7 @@ class ArchiveManager:
         """For every file, use `transfer_file` to reorganize it."""
         self.logger.context = "reorganization"
         self.logger.debug("Reorganizing!")
-        self.transfer_directory(ARCHIVE_DIR)
+        self.transfer_directory(self.archive_dir)
         self.logger.info(
             f"Transferred {len(self.transferred_files)} files:", True)
         for fname in self.transferred_files:

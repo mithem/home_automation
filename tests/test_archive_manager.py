@@ -2,12 +2,14 @@ import datetime
 import os
 
 import pytest
+from pyfakefs.fake_filesystem_unittest import TestCase
 from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
                                              BLACKLIST_FILES, MONTH_TO_DIR,
                                              TRESHOLD_DATE, ArchiveManager,
                                              InvalidFormattingException,
                                              IsCompressedFileException)
-from pyfakefs.fake_filesystem_unittest import TestCase
+import home_automation.config as config
+from test_config import VALID_CONFIG
 
 _NOW = datetime.datetime.now()
 CURRENT_YEAR = str(_NOW.year)
@@ -16,11 +18,8 @@ CURRENT_YEAR = str(_NOW.year)
 class AnyTestCase(TestCase):
     def setUp(self):
         self.setUpPyfakefs()
+        config.load_into_environment(config.parse_config(VALID_CONFIG))
         self.manager = ArchiveManager(debug=True)
-        try:
-            self.fs.remove("/volume2")  # make sure dirs need to be created
-        except FileNotFoundError:
-            pass
         self.useful_data = {
             "year": str(TRESHOLD_DATE.year),
             "month": MONTH_TO_DIR[TRESHOLD_DATE.month]
@@ -73,8 +72,8 @@ class TestParseFilename(AnyTestCase):
             _ = self.manager.parse_filename("/volume2/PH KW55.pdf")
 
         with pytest.raises(InvalidFormattingException):
-            _ = self.manager.parse_filename("/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf")
-
+            _ = self.manager.parse_filename(
+                "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf")
 
 
 class TestGetDestinationForFile(AnyTestCase):
@@ -253,6 +252,36 @@ class TestTransferFile(AnyTestCase):
         assert self.fs.exists(new_root)
         for f in f_list:
             assert self.fs.exists(os.path.join(new_root, f))
+
+    def test_transfer_file_uses_correect_homework_and_archive_root(self):
+        override_env = {
+            "HOMEWORK_DIR": "/var/school/homework",
+            "ARCHIVE_DIR": "/var/school/archive"
+        }
+        for key, value in override_env.items():
+            os.environ[key] = value
+        subject = list(ABBR_TO_SUBJECT.keys())[0].upper()
+        fname = subject + " HA 22-06-2021.pdf"
+        path = os.path.join(override_env["HOMEWORK_DIR"], fname)
+        dest = os.path.join(
+            override_env["ARCHIVE_DIR"],
+            ABBR_TO_SUBJECT[subject],
+            "2021",
+            MONTH_TO_DIR[6],
+            fname
+        )
+
+        self.fs.create_file(path)
+        # needs to load environment variables and that good that way
+        # (anything else would make debugging in a changing environment a nightmare)
+        manager = ArchiveManager(True)
+
+        manager.transfer_file(path)
+
+        assert self.fs.exists(dest)
+        assert not self.fs.exists(path)
+        assert manager.transferred_files == [path]
+        assert manager.not_transferred_files == []
 
 
 class TestTransferDirectory(AnyTestCase):
