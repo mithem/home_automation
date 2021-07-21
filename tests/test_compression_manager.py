@@ -3,11 +3,17 @@ import re
 from typing import List
 
 import pytest
-from home_automation.compression_manager import (HOME_ASSISTANT_URL, ROOT_DIR,
-                                                 THINGS_SERVER_URL,
-                                                 CompressionManager)
+from home_automation.compression_manager import (
+    HOME_ASSISTANT_URL,
+    THINGS_SERVER_URL,
+    CompressionManager
+)
 from home_automation.compression_middleware import (
-    ChangeStatusInThingsMiddleware, FlashLightsInHomeAssistantMiddleware)
+    ChangeStatusInThingsMiddleware,
+    FlashLightsInHomeAssistantMiddleware
+)
+
+HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
 
 
 @pytest.mark.usefixtures("do_setup")
@@ -25,7 +31,7 @@ class AnyTestCase:
 
 
 def create_file(fs, name: str):
-    dest = os.path.join(ROOT_DIR, name)
+    dest = os.path.join(HOMEWORK_DIR, name)
     d, f = os.path.split(dest)
     if not fs.isdir(d):
         fs.create_dir(d)
@@ -33,7 +39,7 @@ def create_file(fs, name: str):
 
 
 def file_exists(fs, name: str):
-    exists = fs.exists(os.path.join(ROOT_DIR, name))
+    exists = fs.exists(os.path.join(HOMEWORK_DIR, name))
     return exists
 
 
@@ -78,7 +84,7 @@ class TestCompressDirectory(AnyTestCase):
                 self.did_evaluate = True
                 for line in manager.logger._lines:
                     for f in self.files:
-                        path = os.path.join(ROOT_DIR, f)
+                        path = os.path.join(HOMEWORK_DIR, f)
                         if f"Compressing '{path}'" in line:
                             self.did_try_to_compress_files[f] = True
 
@@ -104,12 +110,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(ROOT_DIR)) == len(files)
+        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
 
     async def test_compress_directory_is_nondestructive_2(self, fs):
         files = [
@@ -124,12 +130,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(ROOT_DIR)) == len(files)
+        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
 
     async def test_compress_directory_is_nondestructive_3(self, fs):
         files = [
@@ -148,12 +154,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(ROOT_DIR)) == len(files)
+        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
 
     async def test_compress_directory_blacklists(self, fs, httpx_mock):
         files = [
@@ -171,12 +177,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(ROOT_DIR)) == len(files)
+        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
         assert len(httpx_mock.get_requests()) == 0
 
     @pytest.mark.usefixtures("configure_mock_responses")
@@ -191,7 +197,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -206,7 +212,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -225,7 +231,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         manager_did_compress_files.evaluate()
 
@@ -252,7 +258,7 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         requests = httpx_mock.get_requests()
         # only ones which are valid (not on blacklist like (\.|_)*) and
@@ -286,7 +292,7 @@ class TestCompressDirectory(AnyTestCase):
             "M": 1
         }
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         result = {}
         requests = httpx_mock.get_requests()
@@ -320,12 +326,12 @@ class TestCleanUpDirectory(AnyTestCase):
         # referring to `files`: files up to this idx are supposed to be deleted
         idx_up_to_files_to_be_kept = 3
 
-        self.manager.clean_up_directory(ROOT_DIR)
+        self.manager.clean_up_directory(HOMEWORK_DIR)
 
         for f in files[:idx_up_to_files_to_be_kept]:
             assert not file_exists(fs, f)
         for f in files[idx_up_to_files_to_be_kept:]:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(ROOT_DIR)) == len(
+        assert len(fs.listdir(HOMEWORK_DIR)) == len(
             files[idx_up_to_files_to_be_kept:])

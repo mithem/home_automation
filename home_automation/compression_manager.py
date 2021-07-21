@@ -14,7 +14,6 @@ from home_automation.compression_middleware import (
 
 config.load_dotenv()
 
-ROOT_DIR = "/volume2/Hausaufgaben/HAs"
 BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_"]
 BLACKLIST_ENDINGS = [".small.pdf"]
@@ -35,22 +34,26 @@ class CompressionManager:
         self.logger = fileloghelper.Logger(os.path.join(
             os.environ.get("LOG_DIR"), "CompressionManager.log"),
             autosave=debug)
+        self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
         if not testing:
             # introduces weird fomatting in pytest
             self.logger.header(True, True)
         self.debug = debug
         self.middleware = []
 
-    async def compress_directory(self, directory: str):  # pylint: disable=no-self-use
+    async def compress_directory(self, directory: str = None):
         """For each file or directory in `directory`, compress it."""
-
+        if directory:
+            dir_to_compress = directory
+        else:
+            dir_to_compress = self.homework_dir
 
         self.logger.context = "compressing"
-        self.logger.debug(f"Compressing directory '{directory}'")
-        dirlist = os.listdir(directory)
+        self.logger.debug(f"Compressing directory '{dir_to_compress}'")
+        dirlist = os.listdir(dir_to_compress)
 
         for fname in dirlist:
-            path = os.path.join(directory, fname)
+            path = os.path.join(dir_to_compress, fname)
             try:
                 if os.path.isdir(path):
                     if fname not in BLACKLIST:
@@ -119,14 +122,19 @@ class CompressionManager:
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.handle_exception(error)
 
-    def clean_up_directory(self, directory: str):
+    def clean_up_directory(self, directory: str = None):
         """Clean files added by another service, like ".M HA" etc.\
                 (might come from Documents by Readdle or so)"""
+        if directory:
+            dir_to_compress = directory
+        else:
+            dir_to_compress = self.homework_dir
+
         self.logger.context = "clean_up"
         self.logger.debug(f"Cleaning up directory: {directory}")
-        for fname in os.listdir(directory):
+        for fname in os.listdir(dir_to_compress):
             if fname.startswith(".") or fname.startswith("_"):
-                path = os.path.join(directory, fname)
+                path = os.path.join(dir_to_compress, fname)
                 try:
                     length = len(fname.split(" ")[0])
                     if length in (2, 3):
@@ -161,9 +169,9 @@ async def main():
     for midware in middleware:
         manager.register_middleware(
             midware(manager.logger))  # pylint: disable=multiple-statements
-    await manager.compress_directory(ROOT_DIR)
+    await manager.compress_directory()
 
-    manager.clean_up_directory(ROOT_DIR)
+    manager.clean_up_directory()
 
 if __name__ == "__main__":
     asyncio.run(main())

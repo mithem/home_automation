@@ -3,20 +3,22 @@ import os
 import httpx
 import pytest
 from fileloghelper import Logger
-from home_automation.compression_manager import ROOT_DIR
+
+import test_compression_manager
+# pytest needs this to be imported in this module
+from test_compression_manager import configure_mock_responses # pylint: disable=unused-import
+
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware, CompressionMiddleware,
     FlashLightsInHomeAssistantMiddleware, InvalidResponseError,
     SubjectCompressionMiddleware)
 
-import test_compression_manager
-# pytest needs this to be imported in this module
-from test_compression_manager import configure_mock_responses
 
 _logger = Logger()
 HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
 HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
 THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
+HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
 
 
 @pytest.fixture
@@ -183,7 +185,7 @@ class TestMiddlewareIntegration(
         for f in files:
             test_compression_manager.create_file(fs, f)
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)
 
         assert self.middleware.files_invoked_for == [os.path.join("/volume2/Hausaufgaben/HAs", fname) for fname in files[:3]]
 
@@ -194,4 +196,4 @@ class TestMiddlewareIntegration(
         f = "PH HA 22-06-2021.pdf"
         test_compression_manager.create_file(fs, f)
 
-        await self.manager.compress_directory(ROOT_DIR)
+        await self.manager.compress_directory(HOMEWORK_DIR)

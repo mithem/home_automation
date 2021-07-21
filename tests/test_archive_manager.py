@@ -8,7 +8,7 @@ from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
                                              TRESHOLD_DATE, ArchiveManager,
                                              InvalidFormattingException,
                                              IsCompressedFileException)
-import home_automation.config as config
+from home_automation import config
 from test_config import VALID_CONFIG
 
 _NOW = datetime.datetime.now()
