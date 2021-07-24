@@ -168,7 +168,7 @@ async def main():
 
     for midware in middleware:
         manager.register_middleware(
-            midware(manager.logger))  # pylint: disable=multiple-statements
+            midware(manager.logger))
     await manager.compress_directory()
 
     manager.clean_up_directory()

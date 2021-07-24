@@ -1,15 +1,16 @@
 import datetime
 import os
+from typing import Dict, Optional
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import TestCase
+from test_config import VALID_CONFIG
 from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
                                              BLACKLIST_FILES, MONTH_TO_DIR,
                                              TRESHOLD_DATE, ArchiveManager,
                                              InvalidFormattingException,
                                              IsCompressedFileException)
 from home_automation import config
-from test_config import VALID_CONFIG
 
 _NOW = datetime.datetime.now()
 CURRENT_YEAR = str(_NOW.year)
@@ -144,13 +145,31 @@ class TestGetDestinationForFile(AnyTestCase):
     def test_get_destination_for_file_from_HAs_date_not_parsable(self):
         s = "/volume2/Hausaufgaben/HAs/PH Klausurvorbereitung.pdf"
         expected = "/volume2/Hausaufgaben/Archive/Physik/"\
-            + self.useful_data['year'] + "/" + \
-            self.useful_data['month'] + \
-            "/PH Klausurvorbereitung.pdf"
+            + self.useful_data['year'] + "/"\
+            + self.useful_data['month']\
+            + "/PH Klausurvorbereitung.pdf"
 
         dest = self.manager.get_destination_for_file(s)
 
         assert dest == expected
+
+    def test_get_destination_for_file_from_somewhere_in_archive_date_not_parsable(self):
+        s = "/volume2/Hausaufgaben/Archive/Physik/PH HA.pdf"
+        expected = "/volume2/Hausaufgaben/Archive/Physik/"\
+            + self.useful_data["year"] + "/"\
+            + self.useful_data["month"]\
+            + "/PH HA.pdf"
+
+        dest = self.manager.get_destination_for_file(s)
+
+        assert dest == expected
+
+    def test_get_destination_for_file_in_lowlevel_archive_date_not_parsable(self):
+        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA.pdf"
+
+        dest = self.manager.get_destination_for_file(s)
+
+        assert dest == s
 
 
 class TestTransferFile(AnyTestCase):
@@ -237,13 +256,12 @@ class TestTransferFile(AnyTestCase):
             for line in self.manager.logger._lines:
                 assert not f"Transferred file from {path} to {path}" in line
 
-
         assert self.manager.transferred_files == []
         assert self.manager.not_transferred_files == []
 
     def test_transfer_file_uhm_actually_its_a_dir(self):
         root = "/volume2/Hausaufgaben/HAs/PH KW25"
-        f_list = ["Text 1.md", "Text 2.txt", "Text 3.pdf"]
+        f_list = ["text1.md", "script.py", "PH HA.pdf", "PH HA 22-06-2021.pdf"]
         self.fs.create_dir(root)
         for f in f_list:
             self.fs.create_file(os.path.join(root, f))
@@ -258,7 +276,24 @@ class TestTransferFile(AnyTestCase):
         for f in f_list:
             assert self.fs.exists(os.path.join(new_root, f))
 
-    def test_transfer_file_uses_correect_homework_and_archive_root(self):
+    def test_transfer_file_uhm_actually_its_a_dir_2(self):
+        root = "/volume2/Hausaufgaben/HAs/PH Material"
+        f_list = ["text1.md", "script.py", "PH HA.pdf", "PH HA 22-06-2021.pdf"]
+        self.fs.create_dir(root)
+        for f in f_list:
+            self.fs.create_file(os.path.join(root, f))
+
+        self.manager.transfer_file(root)
+
+        new_root = "/volume2/Hausaufgaben/Archive/Physik/" + \
+            str(self.useful_data["year"]) + "/" + \
+            self.useful_data["month"] + "/PH Material/"
+        assert not self.fs.exists(root)
+        assert self.fs.exists(new_root)
+        for f in f_list:
+            assert self.fs.exists(os.path.join(new_root, f))
+
+    def test_transfer_file_uses_correct_homework_and_archive_root(self):
         override_env = {
             "HOMEWORK_DIR": "/var/school/homework",
             "ARCHIVE_DIR": "/var/school/archive"
@@ -290,6 +325,7 @@ class TestTransferFile(AnyTestCase):
 
 
 class TestTransferDirectory(AnyTestCase):
+
     def test_transfer_directory(self):
         def f(name: str) -> str:
             return "/volume2/Hausaufgaben/Archive/" + name
@@ -434,3 +470,181 @@ class TestTransferDirectory(AnyTestCase):
 
         assert self.manager.transferred_files == []
         assert self.manager.not_transferred_files == []
+
+
+class TestReorganizeAllFiles(AnyTestCase):
+    def setup_root_directory_with_files(self, structure):
+        """Use `structure` to create files in directory above HOMEWORK_DIR & ARCHIVE_DIR.
+        Example:
+        ```python
+        {"HAs": {
+            "PH Material": {
+                "text1.pdf": None,
+                "text2.pdf": None
+            },
+            "PH HA 22-06-2021.pdf": None,
+            "PH HA 23-06-2021.pdf": None
+        }
+        ```
+        """
+        def create_dir(directory: Dict[str, Optional[Dict]], path: str):
+            for relative_path, value in directory.items():
+                p = os.path.join(path, relative_path)
+                if value:
+                    self.fs.create_dir(p)
+                    create_dir(value, p)
+                else:
+                    self.fs.create_file(p)
+
+        create_dir(structure, "/volume2/Hausaufgaben")
+
+    def evaluate_root_directory_with_files(self, structure):
+        """The same as `setup_root_directory_with_files`, just the existance of the files is
+        asserted (and that there aren't any other files in that directory)"""
+        def check_dir(directory: Dict[str, Optional[Dict]], path: str):
+            for relative_path, value in directory.items():
+                p = os.path.join(path, relative_path)
+                if value:
+                    dirlist = os.listdir(p)
+                    assert os.path.isdir(p)
+                    assert sorted(dirlist) == sorted(value.keys())
+                    check_dir(value, p)
+                else:
+                    assert self.fs.exists(p)
+
+        check_dir(structure, "/volume2/Hausaufgaben")
+
+    def test_setup_root_directory_with_files(self):
+        """Yep, a test for a test!"""
+        def f(name: str) -> str:
+            return "/volume2/Hausaufgaben/" + name
+        s1 = "test.pdf"
+        s2 = "HAs/test2.pdf"
+        s3 = "HAs/PH Material/text1.pdf"
+        s4 = "Archive/test3.pdf"
+        s5 = "Archive/Physik/2021/Juni/PH HA 22-06-2021.pdf"
+        inp = {
+            "test.pdf": None,
+            "HAs": {
+                "test2.pdf": None,
+                "PH Material": {
+                    "text1.pdf": None,
+                }
+            },
+            "Archive": {
+                "test3.pdf": None,
+                "Physik": {
+                    "2021": {
+                        "Juni": {
+                            "PH HA 22-06-2021.pdf": None
+                        }
+                    }
+                }
+            }
+        }
+        self.setup_root_directory_with_files(inp)
+
+        assert self.fs.exists(f(s1))
+        assert self.fs.exists(f(s2))
+        assert self.fs.exists(f(s3))
+        assert self.fs.exists(f(s4))
+        assert self.fs.exists(f(s5))
+
+    def test_reorganize_all_files(self):
+        structure = {
+            "HAs": {
+                "test1.pdf": None,
+                "test2.pdf": None,
+                "PH Material": {
+                    "text1.pdf": None,
+                    "PH HA 22-06-2021.pdf": None,
+                    "text2.pdf": None
+                }
+            },
+            "Archive": {
+                "something_lost.pdf": None,
+                "Physik": {
+                    "something_lost_2.pdf": None,
+                    "PH HA 23-06-2021.pdf": None,
+                    "PH HA.pdf": None,
+                    "M HA.pdf": None,
+                    "M HA 22-06-2021.pdf": None,
+                    "2021": {
+                        "something_lost_3.pdf": None,
+                        "PH HA 24-06-2021.pdf": None,
+                        "PH 2 HA.pdf": None,
+                        "M 2 HA.pdf": None,
+                        "M HA 23-06-2021.pdf": None,
+                        "Juni": {
+                            "PH HA 25-06-2021.pdf": None,
+                            "text1.pdf": None,
+                            "PH Materialien": {  # just not a duplicate of 'PH Material'
+                                "text1.pdf": None,
+                                "PH 3 HA 22-06-2021.pdf": None
+                            }
+                        }
+                    }
+                },
+                "Mathe": {
+                    "2021": {
+                        "Juni": {
+                            "M HA 24-06-2021.pdf": None
+                        }
+                    }
+                }
+            }
+        }
+        expected = {
+            "HAs": {
+                "test1.pdf": None,
+                "test2.pdf": None,
+            },
+            "Archive": {
+                "something_lost.pdf": None,
+                "Physik": {
+                    "something_lost_2.pdf": None,
+                    "2021": {
+                        "something_lost_3.pdf": None,
+                        "Juni": {
+                            "PH HA 23-06-2021.pdf": None,
+                            "PH HA 24-06-2021.pdf": None,
+                            "PH HA 25-06-2021.pdf": None,
+                            "text1.pdf": None,
+                            "PH Materialien": {
+                                "text1.pdf": None,
+                                "PH 3 HA 22-06-2021.pdf": None
+                            }
+                        }
+                    }
+                },
+                "Mathe": {
+                    "2021": {
+                        "Juni": {
+                            "M HA 22-06-2021.pdf": None,
+                            "M HA 23-06-2021.pdf": None,
+                            "M HA 24-06-2021.pdf": None,
+                        }
+                    }
+                }
+            }
+        }
+        # no data collision as that'll be in the future (let's see what happens in 2037 🤔)
+        expected["Archive"]["Physik"][self.useful_data["year"]][self.useful_data["month"]] = {
+            "PH HA.pdf": None,
+            "PH 2 HA.pdf": None,
+            "PH Material": {
+                "text1.pdf": None,
+                "PH HA 22-06-2021.pdf": None,
+                "text2.pdf": None
+            }
+        }
+        expected["Archive"]["Mathe"][self.useful_data["year"]][self.useful_data["month"]] = {
+            "M HA.pdf": None,
+            "M 2 HA.pdf": None
+        }
+        self.setup_root_directory_with_files(structure)
+
+        self.manager.transfer_directory(self.manager.homework_dir)
+        self.manager.reorganize_all_files()
+
+        self.evaluate_root_directory_with_files(expected)

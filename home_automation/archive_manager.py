@@ -114,31 +114,43 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             raise InvalidFormattingException(path) from error
         return (subject, None, None)
 
-    def get_destination_for_file(self, filename: str):
+    def get_destination_for_file(self, path: str):
         """Get appropriate destination for file (got that guess right?!?!).
         Might throw InvalidFormattingException."""
         def return_timestamped_filepath():
             dest = os.path.join(self.archive_dir, subject, year, month)
             if not os.path.isdir(dest):
                 os.makedirs(dest)
-            return os.path.join(dest, os.path.split(filename)[-1])
+            return os.path.join(dest, os.path.split(path)[-1])
         try:
-            subject, year, month = self.parse_filename(filename)
+            subject, year, month = self.parse_filename(path)
             if year is None or month is None:
-                dest = filename
-                if filename.startswith("/volume2/Hausaufgaben/HAs"):
+                # e.g. is in Archive/Physik/2021/Juni or lower
+                a_dir = self.archive_dir if not self.archive_dir.endswith("/")\
+                        else self.archive_dir[:-1]
+                print(a_dir)
+                is_in_lowest_level_archive = os.path.split(
+                    os.path.split(
+                        os.path.split(
+                            os.path.split(
+                                path
+                            )[0]
+                        )[0]
+                    )[0]
+                )[0] == a_dir  # better way to do this?
+                if path.startswith(self.homework_dir) or not is_in_lowest_level_archive:
                     year = YEAR
                     month = MONTH
                     return return_timestamped_filepath()
                 # Put files that were in the wrong subject folder in the same
                 # substructure (e.g. /Subject/2020) but for another subject
                 for sub in ABBR_TO_SUBJECT.values():
-                    dest = dest.replace(sub, subject)
-                return dest
+                    path = path.replace(sub, subject)
+                return path
             return return_timestamped_filepath()
         except (InvalidFormattingException, TypeError) as error:
-            self.logger.warning(f"Error parsing {filename}", False)
-            raise InvalidFormattingException(filename) from error
+            self.logger.warning(f"Error parsing '{path}'", False)
+            raise InvalidFormattingException(path) from error
 
     def transfer_file(self, fname: str):
         """Transfer file in corresponding, correct (worked out in this method) spot.
@@ -187,7 +199,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                     else:
                         self.transfer_directory(filepath)
                         if did_move_invalidly_formatted_directory and\
-                        os.path.split(filepath)[0] == self.homework_dir:
+                                os.path.split(filepath)[0] == self.homework_dir:
                             os.removedirs(filepath)
                 else:
                     self.transfer_file(filepath)
