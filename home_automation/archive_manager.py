@@ -4,6 +4,7 @@ import argparse
 import datetime
 import os
 import re
+import shutil
 
 import fileloghelper
 import yagmail
@@ -169,7 +170,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 os.makedirs(dest_dir)
             self.logger.debug(
                 f"Trying to move '{fname}' to '{destination}'", self.debug)
-            os.rename(fname, destination)
+            shutil.move(fname, destination)
             self.logger.success(
                 f"Transferred file from '{fname}' to '{destination}'", True)
             small_f = os.path.join(self.homework_dir,
