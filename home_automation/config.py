@@ -61,4 +61,4 @@ def load_dotenv():
         try:
             load("../.env")
         except FileNotFoundError:
-            load("/volume2/repos/home-automation/.env")
+            load("/mnt/FastStorage/mithem-applications/home_automation/.env")
