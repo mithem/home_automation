@@ -168,10 +168,10 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
             self.logger.debug(
-                f"Trying to move {fname} to {destination}", self.debug)
+                f"Trying to move '{fname}' to '{destination}'", self.debug)
             os.rename(fname, destination)
             self.logger.success(
-                f"Transferred file from {fname} to {destination}", True)
+                f"Transferred file from '{fname}' to '{destination}'", True)
             small_f = os.path.join(self.homework_dir,
                                    fname.replace(".pdf", ".small.pdf"))
             if os.path.isfile(small_f):
