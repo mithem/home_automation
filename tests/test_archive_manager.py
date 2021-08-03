@@ -323,6 +323,19 @@ class TestTransferFile(AnyTestCase):
         assert manager.transferred_files == [path]
         assert manager.not_transferred_files == []
 
+    def test_transfer_file_creates_directories(self):
+        s = "/volume2/Hausaufgaben/Archive/PH HA 22-06-2021.pdf"
+        self.fs.create_file(s)
+        assert len(os.listdir("/volume2/Hausaufgaben/Archive")) == 1
+
+        self.manager.transfer_file(s)
+
+        assert not self.fs.exists(s)
+        assert self.fs.exists(
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA 22-06-2021.pdf")
+        assert self.manager.transferred_files == [s]
+        assert self.manager.not_transferred_files == []
+
 
 class TestTransferDirectory(AnyTestCase):
 

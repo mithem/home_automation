@@ -1,5 +1,7 @@
+import os
 from setuptools import setup
 
+VERSION = "1.0.0"
 
 packages = ["home_automation"]
 
@@ -21,7 +23,9 @@ requirements = [
     "aiohttp",
     "mypy",
     "mypy-extensions",
-    "tox"
+    "tox==3.*",
+    "python-crontab",
+    "croniter"
 ]
 
 with open("requirements_dev.txt", "w") as f:
@@ -29,7 +33,7 @@ with open("requirements_dev.txt", "w") as f:
 
 setup(
     name="home_automation",
-    version="1.0.0",
+    version=VERSION,
     packages=packages,
     install_requires=requirements
 )
