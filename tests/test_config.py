@@ -62,6 +62,7 @@ def test_load_into_environment():
 def test_load_dotenv_doesnt_override_env_values():
     mail = "test@example.com"
     os.environ["EMAIL_ADDRESS"] = mail
+    lines_to_restore = None
 
     try:
         with open(".env", "r") as f:
@@ -79,6 +80,9 @@ def test_load_dotenv_doesnt_override_env_values():
         else:
             assert os.environ["EMAIL_ADDRESS"] == mail
 
-    with open(".env", "w") as f:
-        f.flush()
-        f.writelines(lines_to_restore)
+    if lines_to_restore:
+        with open(".env", "w") as f:
+            f.flush()
+            f.writelines(lines_to_restore)
+    else:
+        os.remove(".env")
