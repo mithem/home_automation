@@ -62,8 +62,12 @@ def test_load_into_environment():
 def test_load_dotenv_doesnt_override_env_values():
     mail = "test@example.com"
     os.environ["EMAIL_ADDRESS"] = mail
-    with open(".env", "r") as f:
-        lines_to_restore = f.readlines()
+
+    try:
+        with open(".env", "r") as f:
+            lines_to_restore = f.readlines()
+    except FileNotFoundError:
+        pass
 
     with open(".env", "w") as f:
         f.flush()
