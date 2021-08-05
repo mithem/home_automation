@@ -50,7 +50,7 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
     return config
 
 
-def load_into_environment(config: Dict[str, str], config_to_parse_from_file: str = None):
+def load_into_environment(config: Dict[str, str], config_to_parse_from_file: List[str] = None):
     """Load the dict into the environment."""
     if config_to_parse_from_file:
         for key in config_to_parse_from_file:

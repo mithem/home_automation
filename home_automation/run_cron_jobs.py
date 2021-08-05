@@ -8,7 +8,7 @@ from home_automation.config import load_dotenv
 load_dotenv()
 
 CRONTAB_FILE_NAME = "home_automation.tab"
-LOG_DIR = os.environ.get("LOG_DIR")
+LOG_DIR = os.environ.get("LOG_DIR", os.curdir)
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
 ARCHIVE_DIR = os.environ.get("ARCHIVE_DIR")
 logger = Logger(os.path.join(LOG_DIR, "home_automation_cron.log"),
