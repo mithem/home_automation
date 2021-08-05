@@ -18,3 +18,4 @@ mypy-extensions
 tox==3.*
 python-crontab
 croniter
+watch_fs

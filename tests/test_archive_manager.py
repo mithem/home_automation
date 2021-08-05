@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import TestCase
-from test_config import VALID_CONFIG
+from test_config import VALID_CONFIG_LINES
 from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
                                              BLACKLIST_FILES, MONTH_TO_DIR,
                                              TRESHOLD_DATE, ArchiveManager,
@@ -19,7 +19,7 @@ CURRENT_YEAR = str(_NOW.year)
 class AnyTestCase(TestCase):
     def setUp(self):
         self.setUpPyfakefs()
-        config.load_into_environment(config.parse_config(VALID_CONFIG))
+        config.load_into_environment(config.parse_config(VALID_CONFIG_LINES))
         self.manager = ArchiveManager(debug=True)
         self.useful_data = {
             "year": str(TRESHOLD_DATE.year),

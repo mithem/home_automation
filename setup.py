@@ -25,7 +25,8 @@ requirements = [
     "mypy-extensions",
     "tox==3.*",
     "python-crontab",
-    "croniter"
+    "croniter",
+    "watch_fs"
 ]
 
 with open("requirements_dev.txt", "w") as f:

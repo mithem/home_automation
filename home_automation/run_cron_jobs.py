@@ -3,10 +3,15 @@ import os
 from crontab import CronTab
 from fileloghelper import Logger
 
+from home_automation.config import load_dotenv
+
+load_dotenv()
+
 CRONTAB_FILE_NAME = "home_automation.tab"
 LOG_DIR = os.environ.get("LOG_DIR")
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
-logger = Logger(LOG_DIR, "home_automation_cron", autosave=True)
+logger = Logger(os.path.join(LOG_DIR, "home_automation_cron.log"),
+                "home_automation_cron", autosave=True)
 
 
 def main(cron_user: str = None):
@@ -32,8 +37,8 @@ def main(cron_user: str = None):
     reorganization_job = cron.new(
         command="python3 -m home_automation.archive_manager reorganize")
     compression_watcher_job = cron.new(
-        command=f"python3 -m watch_fs -d '{HOMEWORK_DIR}'\
-python3 -m home_automation.compression_manager")
+        command=f"python3 -m watch_fs -d '{HOMEWORK_DIR}' \
+                'python3 -m home_automation.compression_manager'")
 
     archiving_job.minute.on(0)
     archiving_job.hour.on(0)
@@ -47,6 +52,7 @@ python3 -m home_automation.compression_manager")
 
     cron.write()  # not sure if I could run the scheduler without writing the file
 
+    logger.info("Running cron jobs until interrupted...", True)
     try:
         for result in cron.run_scheduler():
             logger.info(f"Ran cron job. Ouput: {result}")

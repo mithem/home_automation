@@ -1,11 +1,14 @@
 FROM python:3.9-slim
 
+
+COPY rootfs /
+
 WORKDIR /home_automation
 
 COPY . .
 RUN mv docker.env .env
 
-RUN pip3 install -U -r requirements_dev.txt
+RUN --mount=type=cache,target=/var/root/.cache/pip pip3 install -r requirements_dev.txt
 
 RUN python3 setup.py install
 
