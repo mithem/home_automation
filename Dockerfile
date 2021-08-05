@@ -1,8 +1,5 @@
 FROM python:3.9-slim
 
-
-COPY rootfs /
-
 WORKDIR /home_automation
 
 COPY . .

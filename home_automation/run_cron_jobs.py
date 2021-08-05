@@ -10,8 +10,15 @@ load_dotenv()
 CRONTAB_FILE_NAME = "home_automation.tab"
 LOG_DIR = os.environ.get("LOG_DIR")
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
+ARCHIVE_DIR = os.environ.get("ARCHIVE_DIR")
 logger = Logger(os.path.join(LOG_DIR, "home_automation_cron.log"),
                 "home_automation_cron", autosave=True)
+
+
+def setup():
+    """Set up local filesystem for home_automation (create necessary dirs)."""
+    os.makedirs(HOMEWORK_DIR)
+    os.makedirs(ARCHIVE_DIR)
 
 
 def main(cron_user: str = None):
@@ -62,4 +69,5 @@ def main(cron_user: str = None):
 
 
 if __name__ == "__main__":
+    setup()
     main()
