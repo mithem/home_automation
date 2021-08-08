@@ -11,4 +11,4 @@ RUN python3 setup.py install
 
 VOLUME ["/home_automation", "/homework/current", "/homework/archive"]
 
-ENTRYPOINT ["python3", "-m", "home_automation.run_cron_jobs"]
+ENTRYPOINT ["python3", "-m", "home_automation.runner"]
