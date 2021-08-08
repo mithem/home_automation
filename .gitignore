@@ -15,4 +15,3 @@ dist
 *.pdf
 tests/*.pdf
 home_automation.tab
-docker-compose.yml

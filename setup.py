@@ -26,7 +26,8 @@ requirements = [
     "tox==3.*",
     "python-crontab",
     "croniter",
-    "watch_fs"
+    "watchdog",
+    "pid"
 ]
 
 with open("requirements_dev.txt", "w") as f:

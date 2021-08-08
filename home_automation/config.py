@@ -3,6 +3,8 @@ import os
 import re
 from typing import List, Dict
 
+from fileloghelper import Logger
+
 _required_keys = [
     "EMAIL_ADDRESS",
     "EMAIL_PASSWD",
@@ -60,7 +62,7 @@ def load_into_environment(config: Dict[str, str], config_to_parse_from_file: Lis
             os.environ[key] = value
 
 
-def load_dotenv():
+def load_dotenv(logger: Logger = None):
     """Check if environment contains required values, otherwise
     find the appropriate file and load it's content into the environment."""
 
@@ -68,6 +70,9 @@ def load_dotenv():
         with open(path, "r") as file_obj:
             load_into_environment(parse_config(
                 file_obj.readlines()), config_to_parse_from_file)
+            if logger:
+                logger.context = "config"
+                logger.info(f"Loaded '{path}'.")
 
     def check() -> List[str]:
         config_to_parse_from_file = []

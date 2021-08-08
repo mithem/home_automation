@@ -41,7 +41,6 @@ ABBR_TO_SUBJECT = {
     "SP": "Sport"
 }
 
-config.load_dotenv()
 
 BLACKLIST_FILES = [".DS_Store", "@eaDir"]
 BLACKLIST_EXT = ["sh", "@SynoRessource"]
@@ -263,7 +262,9 @@ def main():
                         help="verbose mode (additional logging (to stdout))")
     args = parser.parse_args()
     manager.debug = args.verbose
+    manager.logger.debug = args.verbose
     manager.logger.autosave = manager.debug
+    config.load_dotenv(manager.logger)
     if args.action == "archive":
         manager.transfer_all_files()
     elif args.action == "reorganize":

@@ -1,19 +1,25 @@
+# just so autoformatters won't reorder
+if True:  # pylint: disable=using-constant-test
+    # so CompressionManager and middleware can use correct envvars
+    import test_config
+    from home_automation import config
+    config.load_into_environment(test_config.VALID_CONFIG_DICT)
+
+from home_automation.compression_middleware import (
+    ChangeStatusInThingsMiddleware,
+    FlashLightsInHomeAssistantMiddleware
+)
+from home_automation.compression_manager import CompressionManager
 import os
 import re
 from typing import List
 
 import pytest
-from home_automation.compression_manager import (
-    HOME_ASSISTANT_URL,
-    THINGS_SERVER_URL,
-    CompressionManager
-)
-from home_automation.compression_middleware import (
-    ChangeStatusInThingsMiddleware,
-    FlashLightsInHomeAssistantMiddleware
-)
+
 
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
+HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
+THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 
 
 @pytest.mark.usefixtures("do_setup")

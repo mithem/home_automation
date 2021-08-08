@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import os
+import sys
 from typing import List
 
 import fileloghelper
@@ -12,15 +13,21 @@ from home_automation.compression_middleware import (
     FlashLightsInHomeAssistantMiddleware
 )
 
-config.load_dotenv()
 
 BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_"]
 BLACKLIST_ENDINGS = [".small.pdf"]
-HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
-HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
-THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
+HOME_ASSISTANT_URL = ""
+HOME_ASSISTANT_TOKEN = ""
+THINGS_SERVER_URL = ""
+LOG_DIR = ""
+
+
+def load_envvars():
+    """Load constants from environment."""
+    for key in ["HOME_ASSISTANT_URL", "HOME_ASSISTANT_TOKEN", "THINGS_SERVER_URL"]:
+        setattr(sys.modules[__name__], key, os.environ[key])
 
 
 class LoopBreakingException(Exception):
@@ -32,8 +39,7 @@ class CompressionManager:
 
     def __init__(self, debug=False, testing=False):
         self.logger = fileloghelper.Logger(os.path.join(
-            os.environ.get("LOG_DIR"), "compression_manager.log"),
-            autosave=debug)
+            LOG_DIR, "compression_manager.log"), autosave=debug)
         self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
         if not testing:
             # introduces weird fomatting in pytest
@@ -164,6 +170,10 @@ async def main():
         FlashLightsInHomeAssistantMiddleware,
         ChangeStatusInThingsMiddleware
     ]
+
+    config.load_dotenv()
+    load_envvars()
+
     manager = CompressionManager(args.verbose)
 
     for midware in middleware:

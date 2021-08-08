@@ -2,18 +2,18 @@
 # pylint: disable=global-statement
 import os
 
-from fileloghelper import Logger
+import fileloghelper
 import httpx
 
 from home_automation.archive_manager import ABBR_TO_SUBJECT
+from home_automation import config
 
+config.load_dotenv()
 HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
 HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
 THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 TIMEOUT = 10
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
-logger: Logger = None # pylint: disable=invalid-name
-
 
 class InvalidResponseError(Exception):
     """Invalid response (who would have guessed??)"""
@@ -24,9 +24,8 @@ class CompressionMiddleware:
     For example, it can be used to communicate with other services.
     Each coroutine is executed separately."""
 
-    def __init__(self, logger_: Logger):
-        global logger # pylint: disable=invalid-name
-        logger = logger_
+    def __init__(self, logger: fileloghelper.Logger):
+        self.logger = logger
 
     async def act(self, path: str): #pylint: disable=no-self-use
         """Act on the file being compressed."""
@@ -42,13 +41,12 @@ class SubjectCompressionMiddleware(CompressionMiddleware):
     """A Middleware that ensures that the name of the file compressed
     starts with a valid subject abbreviation."""
     async def act(self, path: str):
-        global logger # pylint: disable=invalid-name
         _, filename = os.path.split(path)
         try:
             if filename.split(" ")[0].upper() in SUBJECT_ABBRS:
                 await self.act_subject_valid(filename)
         except Exception as error: # pylint: disable=broad-except
-            logger.handle_exception(error)
+            self.logger.handle_exception(error)
 
     async def act_subject_valid(self, filename: str):
         """Act on the file being compressed having a verified subject identifiable."""

@@ -1,4 +1,5 @@
 import os
+import sys
 
 import httpx
 import pytest
@@ -6,24 +7,36 @@ from fileloghelper import Logger
 
 import test_compression_manager
 # pytest needs this to be imported in this module
-from test_compression_manager import configure_mock_responses # pylint: disable=unused-import
+from test_compression_manager import configure_mock_responses  # pylint: disable=unused-import
 
+from test_config import VALID_CONFIG_DICT
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware, CompressionMiddleware,
     FlashLightsInHomeAssistantMiddleware, InvalidResponseError,
     SubjectCompressionMiddleware)
+from home_automation import config
 
 
 _logger = Logger()
-HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
-HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
-THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
-HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
+config.load_into_environment(VALID_CONFIG_DICT)
+keys_to_set_as__module_constants = [
+    "HASS_BASE_URL",
+    "HASS_TOKEN",
+    "THINGS_SERVER_URL",
+    "HOMEWORK_DIR"
+]
+
+for key in keys_to_set_as__module_constants:
+    # https://stackoverflow.com/questions/2933470/how-do-i-call-setattr-on-the-current-module
+    value = os.environ[key]
+    if value is None:
+        raise config.ConfigError(f"{key} not found in env.")
+    setattr(sys.modules[__name__], key, value)
 
 
 @pytest.fixture
 def logger():
-    return logger
+    return _logger
 
 
 @pytest.mark.usefixtures("setup_middleware")
@@ -112,13 +125,13 @@ class TestFlashLightsInHomeAssistantMiddleware:
     @pytest.mark.asyncio
     async def test_tries_to_flash_lights_in_home_assistant(self, httpx_mock):
         httpx_mock.add_response(
-            method="POST", url=HOME_ASSISTANT_URL
+            method="POST", url=HASS_BASE_URL
             + "/api/services/script/flash_miguels_room")
 
         await self.middleware.act("test.pdf")
 
         req = httpx_mock.get_request()
-        assert req.headers["authorization"] == "Bearer " + HOME_ASSISTANT_TOKEN
+        assert req.headers["authorization"] == "Bearer " + HASS_TOKEN
 
 
 @pytest.mark.usefixtures("setup_middleware")
@@ -187,7 +200,8 @@ class TestMiddlewareIntegration(
 
         await self.manager.compress_directory(HOMEWORK_DIR)
 
-        assert self.middleware.files_invoked_for == [os.path.join("/volume2/Hausaufgaben/HAs", fname) for fname in files[:3]]
+        assert self.middleware.files_invoked_for == [os.path.join(
+            HOMEWORK_DIR, fname) for fname in files[:3]]
 
     @pytest.mark.usefixtures("do_setup",
                              "configure_mock_responses",
@@ -196,4 +210,7 @@ class TestMiddlewareIntegration(
         f = "PH HA 22-06-2021.pdf"
         test_compression_manager.create_file(fs, f)
 
+        print(f"Homework_dir: '{HOMEWORK_DIR}'")
+        print(f"HASS_URL: '{HASS_BASE_URL}'")
+        print(f"Things URL: '{THINGS_SERVER_URL}'")
         await self.manager.compress_directory(HOMEWORK_DIR)
