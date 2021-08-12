@@ -23,7 +23,7 @@ LOG_DIR = ""
 
 def load_envvars():
     """Load constants from environment."""
-    for key in []:
+    for key in ["LOG_DIR"]:
         setattr(sys.modules[__name__], key, os.environ[key])
 
 
