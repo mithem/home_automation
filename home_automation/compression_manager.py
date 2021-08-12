@@ -18,15 +18,12 @@ BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_"]
 BLACKLIST_ENDINGS = [".small.pdf"]
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
-HOME_ASSISTANT_URL = ""
-HOME_ASSISTANT_TOKEN = ""
-THINGS_SERVER_URL = ""
 LOG_DIR = ""
 
 
 def load_envvars():
     """Load constants from environment."""
-    for key in ["HOME_ASSISTANT_URL", "HOME_ASSISTANT_TOKEN", "THINGS_SERVER_URL"]:
+    for key in []:
         setattr(sys.modules[__name__], key, os.environ[key])
 
 
