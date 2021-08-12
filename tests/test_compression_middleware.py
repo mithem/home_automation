@@ -11,10 +11,17 @@ from test_compression_manager import configure_mock_responses  # pylint: disable
 
 from test_config import VALID_CONFIG_DICT
 from home_automation.compression_middleware import (
-    ChangeStatusInThingsMiddleware, CompressionMiddleware,
-    FlashLightsInHomeAssistantMiddleware, InvalidResponseError,
-    SubjectCompressionMiddleware)
+    ChangeStatusInThingsMiddleware,
+    CompressionMiddleware,
+    FlashLightsInHomeAssistantMiddleware,
+    InvalidResponseError,
+    InvalidFilenameError,
+    SubjectCompressionMiddleware
+)
 from home_automation import config
+
+# because of dynamic constant creation
+# pylint: disable=undefined-variable
 
 
 _logger = Logger()
@@ -101,7 +108,9 @@ class TestSubjectCompressionMiddleware:
             "test.py",
             "ABC test.pdf",
             "AB test.pdf",
-            "PH.pdf"
+            "PH.pdf",
+            ".PH HA 22-06-2021.pdf",
+            "_PH HA 22-06-2021.pdf"
         ]
 
         for f in filenames:
@@ -159,7 +168,7 @@ class TestChangesStatusInThings:
 class TestMiddlewareIntegration(
         test_compression_manager.AnyTestCase):
 
-    @pytest.fixture
+    @ pytest.fixture
     def setup_middleware_checking_being_invoked(self, logger):
         class MiddlewareCheckingBeingInvoked(
                 CompressionMiddleware):
@@ -169,11 +178,10 @@ class TestMiddlewareIntegration(
 
             async def act(self, filename):
                 self.files_invoked_for.append(filename)
-        self.middleware = \
-            MiddlewareCheckingBeingInvoked(logger)
+        self.middleware = MiddlewareCheckingBeingInvoked(logger)
         self.manager.register_middleware(self.middleware)
 
-    @pytest.fixture
+    @ pytest.fixture
     def setup_faulty_middleware(self, logger):
         class FaultyMiddleware(CompressionMiddleware):
             async def act(self, filename):
@@ -181,9 +189,9 @@ class TestMiddlewareIntegration(
         self.middleware = FaultyMiddleware(logger)
         self.manager.register_middleware(self.middleware)
 
-    @pytest.mark.usefixtures("do_setup",
-                             "configure_mock_responses",
-                             "setup_middleware_checking_being_invoked")
+    @ pytest.mark.usefixtures("do_setup",
+                              "configure_mock_responses",
+                              "setup_middleware_checking_being_invoked")
     async def test_compression_middleware_being_called_by_compression_manager(
             self, fs):
         files = [
@@ -203,9 +211,9 @@ class TestMiddlewareIntegration(
         assert self.middleware.files_invoked_for == [os.path.join(
             HOMEWORK_DIR, fname) for fname in files[:3]]
 
-    @pytest.mark.usefixtures("do_setup",
-                             "configure_mock_responses",
-                             "setup_faulty_middleware")
+    @ pytest.mark.usefixtures("do_setup",
+                              "configure_mock_responses",
+                              "setup_faulty_middleware")
     async def test_exceptions_in_middleware_handled_appropriately(self, fs):
         f = "PH HA 22-06-2021.pdf"
         test_compression_manager.create_file(fs, f)

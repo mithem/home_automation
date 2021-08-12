@@ -73,13 +73,9 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
         self.archive_dir = str(os.environ.get("ARCHIVE_DIR"))
         self.debug = debug
-        try:
-            self.email_address = os.environ.get("EMAIL_ADDRESS")
-            self.smtp = yagmail.SMTP(self.email_address,
-                                     os.environ.get("EMAIL_PASSWD"))
-        except TypeError:  # running tests
-            self.email_address = ""
-            self.smtp = None
+        self.email_address = os.environ.get("EMAIL_ADDRESS")
+        self.smtp = yagmail.SMTP(self.email_address,
+                                os.environ.get("EMAIL_PASSWD"))
 
     def parse_filename(self, path: str):  # pylint: disable=no-self-use
         """parse filename and return (subject, year, month), each as

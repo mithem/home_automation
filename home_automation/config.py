@@ -54,7 +54,7 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
 
 def load_into_environment(config: Dict[str, str], config_to_parse_from_file: List[str] = None):
     """Load the dict into the environment."""
-    if config_to_parse_from_file:
+    if config_to_parse_from_file is not None:
         for key in config_to_parse_from_file:
             os.environ[key] = config[key]
     else:
@@ -65,14 +65,6 @@ def load_into_environment(config: Dict[str, str], config_to_parse_from_file: Lis
 def load_dotenv(logger: Logger = None):
     """Check if environment contains required values, otherwise
     find the appropriate file and load it's content into the environment."""
-
-    def load(path: str, config_to_parse_from_file: List[str]):
-        with open(path, "r") as file_obj:
-            load_into_environment(parse_config(
-                file_obj.readlines()), config_to_parse_from_file)
-            if logger:
-                logger.context = "config"
-                logger.info(f"Loaded '{path}'.")
 
     def check() -> List[str]:
         config_to_parse_from_file = []
@@ -95,7 +87,12 @@ def load_dotenv(logger: Logger = None):
     loaded = False
     for path in try_to_load:
         try:
-            load(path, config_to_parse_from_file)
+            with open(path, "r") as file_obj:
+                load_into_environment(parse_config(
+                    file_obj.readlines()), config_to_parse_from_file)
+                if logger:
+                    logger.context = "config"
+                    logger.info(f"Loaded '{path}'.")
             loaded = True
             break
         except FileNotFoundError:
