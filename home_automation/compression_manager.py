@@ -3,7 +3,7 @@ import argparse
 import asyncio
 import os
 import sys
-from typing import List
+from typing import List, Union
 
 import fileloghelper
 from home_automation import config
@@ -74,7 +74,7 @@ class CompressionManager:
                     self.logger.info(f"Compressing '{path}'")
                     cmd = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
                             -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH \
-                            -sOutputFile='{fname}.small.pdf' '{path}'"
+                            -sOutputFile='{path.replace('.pdf', '.small.pdf')}' '{path}'"
                     os.system(cmd)
             except KeyError as error:
                 self.logger.handle_exception(error)
@@ -84,8 +84,8 @@ class CompressionManager:
         Deal with logging and return True/False respectively."""
         def skip(path: str):
             self.logger.debug(
-                f"Skipping {path} as it doesn't qualify for \
-                                compression")
+                    f"Skipping {path} as it doesn't qualify for \
+                            compression")
 
         if fname in BLACKLIST or fname + ".small.pdf" in dirlist:
             skip(path)
@@ -112,14 +112,14 @@ class CompressionManager:
         """Let all middleware act on `path`."""
         for middleware in self.middleware:
             task = asyncio.create_task(
-                middleware.act(path))
+                    middleware.act(path))
             if self.debug:
                 self.logger.debug(
-                    "Invoking middleware: '"
-                    + middleware.__class__.__name__
-                    + "' for '"
-                    + path
-                    + "'")
+                        "Invoking middleware: '"
+                        + middleware.__class__.__name__
+                        + "' for '"
+                        + path
+                        + "'")
             try:
                 await task
             except Exception as error:  # pylint: disable=broad-except
@@ -153,32 +153,40 @@ class CompressionManager:
         Required to be actually useful."""
         self.middleware.append(middleware)
         self.logger.info("Registered middleware "
-                         + f"'{middleware.__class__.__name__}'", self.debug)
+                + f"'{middleware.__class__.__name__}'", self.debug)
 
 
-async def main():
+async def main(arguments: Union[str, List[str]] = None):
     """What could this do?"""
+    if isinstance(arguments, str):
+        arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v",
-                        action="store_true", help="verbose mode")
-    args = parser.parse_args()
-
-    middleware = [
-        FlashLightsInHomeAssistantMiddleware,
-        ChangeStatusInThingsMiddleware
-    ]
+            action="store_true", help="verbose mode")
+    args = parser.parse_args(arguments)
 
     config.load_dotenv()
     load_envvars()
 
+    insecure_https = os.environ.get("INSECURE_HTTPS", False)
+
     manager = CompressionManager(args.verbose)
 
+    middleware = [
+        FlashLightsInHomeAssistantMiddleware(manager.logger, insecure_https),
+        ChangeStatusInThingsMiddleware(manager.logger)
+    ]
+
     for midware in middleware:
-        manager.register_middleware(
-            midware(manager.logger))
+        manager.register_middleware(midware)
+
     await manager.compress_directory()
 
     manager.clean_up_directory()
 
-if __name__ == "__main__":
+def run_main():
+    """Run the main coroutine via asyncio.run."""
     asyncio.run(main())
+
+if __name__ == "__main__":
+    run_main()

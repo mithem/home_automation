@@ -55,8 +55,13 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
 def load_into_environment(config: Dict[str, str], config_to_parse_from_file: List[str] = None):
     """Load the dict into the environment."""
     if config_to_parse_from_file is not None:
-        for key in config_to_parse_from_file:
-            os.environ[key] = config[key]
+        for key, value in config.items():
+            if not key in config_to_parse_from_file:
+                existing_value = os.environ.get(key, None)
+                if existing_value is None:
+                    os.environ[key] = value
+            else:
+                os.environ[key] = value
     else:
         for key, value in config.items():
             os.environ[key] = value

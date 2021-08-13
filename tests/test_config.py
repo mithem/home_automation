@@ -13,7 +13,8 @@ VALID_CONFIG_LINES = [
     "THINGS_SERVER_URL=http://192.168.2.197:8001\n",
     "HOMEWORK_DIR = /volume2/Hausaufgaben/HAs",
     "ARCHIVE_DIR = /volume2/Hausaufgaben/Archive",
-    "ANOTHER=hello"
+    "ANOTHER=hello",
+    "INSECURE_HTTPS=0"
 ]
 
 VALID_CONFIG_DICT = {
@@ -25,7 +26,8 @@ VALID_CONFIG_DICT = {
     "THINGS_SERVER_URL": "http://192.168.2.197:8001",
     "HOMEWORK_DIR": "/volume2/Hausaufgaben/HAs",
     "ARCHIVE_DIR": "/volume2/Hausaufgaben/Archive",
-    "ANOTHER": "hello"
+    "ANOTHER": "hello",
+    "INSECURE_HTTPS": "0"
 }
 
 @pytest.mark.usefixtures("delete_environment_vars")

@@ -57,17 +57,23 @@ class SubjectCompressionMiddleware(CompressionMiddleware):
 
 class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
     """Responsible for trying to encourage HomeAssistant to flash lights."""
+    def __init__(self, logger: fileloghelper.Logger, insecure_https = False):
+        super().__init__(logger)
+        self.insecure_https = insecure_https
+
     async def act(self, path: str):
         await self.flash_lights_in_home_assistant()
 
     async def flash_lights_in_home_assistant(self):
         """What could be tried here?"""
         headers = {"Authorization": "Bearer " + HOME_ASSISTANT_TOKEN}
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=not self.insecure_https) as client:
             response = await client.post(
                 HOME_ASSISTANT_URL
                 + "/api/services/script/flash_miguels_room",
-                headers=headers, timeout=TIMEOUT)
+                headers=headers,
+                timeout=TIMEOUT
+            )
         self.handle_response(response)
 
 
