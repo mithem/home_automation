@@ -168,7 +168,7 @@ async def main(arguments: Union[str, List[str]] = None):
     config.load_dotenv()
     load_envvars()
 
-    insecure_https = os.environ.get("INSECURE_HTTPS", False)
+    insecure_https = bool(int(os.environ.get("INSECURE_HTTPS", 0)))
 
     manager = CompressionManager(args.verbose)
 

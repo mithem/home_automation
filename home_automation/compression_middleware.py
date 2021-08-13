@@ -29,8 +29,9 @@ class CompressionMiddleware:
     For example, it can be used to communicate with other services.
     Each coroutine is executed separately."""
 
-    def __init__(self, logger: fileloghelper.Logger):
+    def __init__(self, logger: fileloghelper.Logger, insecure_https = False):
         self.logger = logger
+        self.insecure_https = insecure_https
 
     async def act(self, path: str):  # pylint: disable=no-self-use
         """Act on the file being compressed."""
@@ -57,10 +58,6 @@ class SubjectCompressionMiddleware(CompressionMiddleware):
 
 class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
     """Responsible for trying to encourage HomeAssistant to flash lights."""
-    def __init__(self, logger: fileloghelper.Logger, insecure_https = False):
-        super().__init__(logger)
-        self.insecure_https = insecure_https
-
     async def act(self, path: str):
         await self.flash_lights_in_home_assistant()
 
@@ -85,7 +82,7 @@ class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     async def change_status_in_things(self, filename):
         """What could be tried here?"""
         subject = filename.split(" ")[0].upper()
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=not self.insecure_https) as client:
             response = await client.post(THINGS_SERVER_URL +
                                          "/api/v1/markhomeworkasdone?"
                                          + f"subject={subject}",
