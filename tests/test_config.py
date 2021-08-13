@@ -84,6 +84,26 @@ class LoadIntoEnvironmentTests(EnvironmentSensibleTestCase):
                     # don't need to assert, just can't thing of anything else to do with the value
                     assert not os.environ[key]
 
+    def test_load_into_environment_loads_optional_keys_despite_not_given_in_config_to_parse_from_file(self):
+        config_to_parse_from_file = ["LOG_DIR", "HOMEWORK_DIR"]
+        config = {
+            "LOG_DIR": "./logs",
+            "HOMEWORK_DIR": "./homework/current",
+            "ARCHIVE_DIR": "./homework/archive",
+            "INSECURE_HTTPS": "1"
+        }
+        expected = {
+            "LOG_DIR": "./logs",
+            "HOMEWORK_DIR": "./homework/current",
+            "INSECURE_HTTPS": "1"
+        }
+
+        load_into_environment(config, config_to_parse_from_file)
+
+        for key, value in expected.items():
+            assert os.environ[key] == value
+
+        assert os.environ.get("ARCHIVE_DIR", None) is None
 
     def test_load_dotenv_doesnt_override_env_values(self):
         mail = "test@example.com"
