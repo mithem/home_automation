@@ -11,7 +11,7 @@ requirements = [
     "yagmail",
     "argparse",
     "fileloghelper",
-    "httpx==0.18.*",
+    "httpx>=0.18,<0.20",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",

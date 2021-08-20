@@ -3,7 +3,7 @@ flask
 yagmail
 argparse
 fileloghelper
-httpx==0.18.*
+httpx==0.19.*
 pytest
 pytest-cov
 pytest-asyncio
