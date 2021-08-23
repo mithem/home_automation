@@ -5,6 +5,7 @@ import datetime
 import os
 import re
 import shutil
+from typing import List
 
 import fileloghelper
 import yagmail
@@ -64,6 +65,14 @@ class IsCompressedFileException(Exception):
 
 class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     """ArchiveManager managed the archive."""
+    logger: fileloghelper.Logger
+    transferred_files: List[str]
+    not_transferred_files: List[str]
+    homework_dir: str
+    archive_dir: str
+    debug: bool
+    email_address: str
+    smtp: yagmail.SMTP
 
     def __init__(self, debug=False):
         self.logger = fileloghelper.Logger(os.path.join(
@@ -248,6 +257,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
 
 def main():
     """Guess what this does, pylint!"""
+    config.load_dotenv()
     manager = ArchiveManager()
     manager.logger.header(True, True)
     parser = argparse.ArgumentParser(
@@ -258,9 +268,7 @@ def main():
                         help="verbose mode (additional logging (to stdout))")
     args = parser.parse_args()
     manager.debug = args.verbose
-    manager.logger.debug = args.verbose
     manager.logger.autosave = manager.debug
-    config.load_dotenv(manager.logger)
     if args.action == "archive":
         manager.transfer_all_files()
     elif args.action == "reorganize":
