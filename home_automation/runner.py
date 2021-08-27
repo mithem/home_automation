@@ -155,7 +155,8 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
 
 
 def run_watchdog(queue: mp.Queue):
-    """Stat watchdog observer."""
+    """Start watchdog observer. Even before the first event, simulate one in order
+    to compress uncompressed files."""
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_watchdog")
     event_handler = _WatchdogEventHandler()
@@ -163,6 +164,8 @@ def run_watchdog(queue: mp.Queue):
     observer.schedule(event_handler, HOMEWORK_DIR, True)
     observer.start()
     logger.info("Started watchdog observer.")
+    logger.info("Simulating first event on startup.") # yes, 'simulate' is a strong word
+    event_handler.act()
     try:
         while True:
             time.sleep(60)
