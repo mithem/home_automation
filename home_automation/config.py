@@ -52,16 +52,21 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
     return config
 
 
-def load_into_environment(config: Dict[str, str], config_to_parse_from_file: List[str] = None):
+def load_into_environment(
+        config: Dict[str, str],
+        config_to_parse_from_file: List[str] = None,
+        force = False
+        ):
     """Load the dict into the environment."""
     if config_to_parse_from_file is not None:
         for key, value in config.items():
-            if not key in config_to_parse_from_file:
-                existing_value = os.environ.get(key, None)
-                if existing_value is None:
+            if key in config_to_parse_from_file:
+                if force:
                     os.environ[key] = value
-            else:
-                os.environ[key] = value
+                else:
+                    existing_value = os.environ.get(key, None)
+                    if not existing_value:
+                        os.environ[key] = value
     else:
         for key, value in config.items():
             os.environ[key] = value
@@ -92,7 +97,7 @@ def load_dotenv(logger: Logger = None):
     loaded = False
     for path in try_to_load:
         try:
-            with open(path, "r") as file_obj:
+            with open(path, "r", encoding="utf-8") as file_obj:
                 load_into_environment(parse_config(
                     file_obj.readlines()), config_to_parse_from_file)
                 if logger:

@@ -124,7 +124,7 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     try:
         cron = load_crontab()
     except FileNotFoundError:
-        with open(CRONTAB_FILE_NAME, "w"):
+        with open(CRONTAB_FILE_NAME, "w", encoding="utf-8"):
             pass
         cron = load_crontab()
 

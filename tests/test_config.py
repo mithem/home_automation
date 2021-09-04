@@ -30,9 +30,12 @@ VALID_CONFIG_DICT = {
     "INSECURE_HTTPS": "0"
 }
 
-@pytest.mark.usefixtures("delete_environment_vars")
+@pytest.mark.usefixtures("fixture_delete_environment_vars")
 class EnvironmentSensibleTestCase():
     @pytest.fixture
+    def fixture_delete_environment_vars(self):
+        self.delete_environment_vars()
+
     def delete_environment_vars(self):
         for key in _required_keys:
             try:
@@ -40,36 +43,49 @@ class EnvironmentSensibleTestCase():
             except KeyError:
                 continue
 
-def test_parse_config_valid_config():
+class TestEnvironmentSensibleTestCase(EnvironmentSensibleTestCase):
+    def assert_no_env_vars(self):
+        for key in _required_keys:
+            assert not os.environ.get(key, None)
 
-    result = parse_config(VALID_CONFIG_LINES)
+    def test_environment_sensible_test_case_removes_env_vars(self):
+        for key in _required_keys:
+            os.environ[key] = "Hello, world!"
+        self.delete_environment_vars()
+        self.assert_no_env_vars()
 
-    assert result == VALID_CONFIG_DICT
+    def test_environment_sensible_test_case_uses_fixture(self):
+        self.assert_no_env_vars()
 
+class TestParseConfig(EnvironmentSensibleTestCase):
+    def test_parse_config_valid_config(self):
 
-def test_parse_config_raises_exception_when_config_incomplete():
-    config = [
-        "EMAIL_ADDRESS=hello@github.com",
-        "EMAIL_PASSWD=passw0rd1"
-    ]
-    try:
-        # make sure envvars don't allow incomplete config
-        del os.environ["ARCHIVE_DIR"]
-    except KeyError:
-        pass
-    with pytest.raises(ConfigError) as excinfo:
-        parse_config(config)
-    assert "ARCHIVE_DIR" in str(excinfo.value)
+        result = parse_config(VALID_CONFIG_LINES)
+
+        assert result == VALID_CONFIG_DICT
 
 
-class LoadIntoEnvironmentTests(EnvironmentSensibleTestCase):
+    def test_parse_config_raises_exception_when_config_incomplete(self):
+        config = [
+            "EMAIL_ADDRESS=hello@github.com",
+            "EMAIL_PASSWD=passw0rd1"
+        ]
+        try:
+            # make sure envvars don't allow incomplete config
+            del os.environ["ARCHIVE_DIR"]
+        except KeyError:
+            pass
+        with pytest.raises(ConfigError) as excinfo:
+            parse_config(config)
+        assert "ARCHIVE_DIR" in str(excinfo.value)
+
+class TestLoadIntoEnvironment(EnvironmentSensibleTestCase):
     def test_load_into_environment_entire_config(self):
         # for that, it's fine to use a function tested somewhere else
         load_into_environment(VALID_CONFIG_DICT)
 
         for key, value in VALID_CONFIG_DICT.items():
             assert os.environ[key] == value
-
 
     def test_load_into_environment_only_specified_keys(self):
         keys_to_load = ["LOG_DIR", "HOMEWORK_DIR"]
@@ -79,36 +95,41 @@ class LoadIntoEnvironmentTests(EnvironmentSensibleTestCase):
         for key, value in VALID_CONFIG_DICT.items():
             if key in keys_to_load:
                 assert os.environ[key] == value
-            else:
+            elif key in _required_keys: # only those are deleted by the fixture
                 with pytest.raises(KeyError):
-                    # don't need to assert, just can't thing of anything else to do with the value
+                    # don't need to assert, just can't think of anything else to do with the value
                     assert not os.environ[key]
 
-    def test_load_into_environment_loads_optional_keys_despite_not_given_in_config_to_parse_from_file(self):
-        config_to_parse_from_file = ["LOG_DIR", "HOMEWORK_DIR"]
-        config = {
-            "LOG_DIR": "./logs",
-            "HOMEWORK_DIR": "./homework/current",
-            "ARCHIVE_DIR": "./homework/archive",
-            "INSECURE_HTTPS": "1"
-        }
-        expected = {
-            "LOG_DIR": "./logs",
-            "HOMEWORK_DIR": "./homework/current",
-            "INSECURE_HTTPS": "1"
-        }
+    def test_load_into_environment_doesnt_override_existing_envvars(self):
+        """Of course, only when `force == False`."""
+        load_into_environment(VALID_CONFIG_DICT)
+        email_address = "test@example.com"
+        os.environ["EMAIL_ADDRESS"] = email_address
+        expected = VALID_CONFIG_DICT
+        expected["EMAIL_ADDRESS"] = email_address
 
-        load_into_environment(config, config_to_parse_from_file)
+        load_into_environment(VALID_CONFIG_DICT)
 
         for key, value in expected.items():
             assert os.environ[key] == value
 
-        assert os.environ.get("ARCHIVE_DIR", None) is None
+    def test_load_into_environment_overrides_existing_envvars(self):
+        """Of course, only when `force == True`."""
+        load_into_environment(VALID_CONFIG_DICT)
+        email_address = "test@example.com"
+        os.environ["EMAIL_ADDRESS"] = email_address
 
+        load_into_environment(VALID_CONFIG_DICT, force=True)
+
+        for key, value in VALID_CONFIG_DICT.items():
+            assert os.environ[key] == value
+
+class TestLoadDotenv(EnvironmentSensibleTestCase):
     def test_load_dotenv_doesnt_override_env_values(self):
         mail = "test@example.com"
         os.environ["EMAIL_ADDRESS"] = mail
-        lines_to_restore = None
+        lines_to_restore = None # just restore to how it was before the test was run, has nothing to do with actually asserting the right functionality
+        corrected_lines = [line + ("\n" if not line.endswith("\n") else "") for line in VALID_CONFIG_LINES]
 
         try:
             with open(".env", "r") as f:
@@ -118,7 +139,9 @@ class LoadIntoEnvironmentTests(EnvironmentSensibleTestCase):
 
         with open(".env", "w") as f:
             f.flush()
-            f.writelines(VALID_CONFIG_LINES)
+            f.writelines(corrected_lines)
+
+        load_dotenv()
 
         for key, value in VALID_CONFIG_DICT.items():
             if key != "EMAIL_ADDRESS":

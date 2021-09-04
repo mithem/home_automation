@@ -101,7 +101,7 @@ class CompressionManager:
             skip(path)
             return True
         try:
-            with open(path, "r+"):
+            with open(path, "r+", encoding="utf-8"):
                 pass
         except (FileNotFoundError, PermissionError) as error:
             self.logger.handle_exception(error)
