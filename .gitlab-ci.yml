@@ -27,4 +27,4 @@ prepare-env-job:
 tox-job:       # This job runs in the build stage, which runs first.
   stage: tox
   script:
-    - tox
+    - python3 -m tox
