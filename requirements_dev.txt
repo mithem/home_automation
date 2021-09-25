@@ -1,7 +1,6 @@
 argparse
 flask
 yagmail
-argparse
 fileloghelper
 httpx>=0.18,<0.20
 pytest
@@ -10,7 +9,6 @@ pytest-asyncio
 pytest-httpx
 pytest-flask
 pyfakefs
-pylint
 pylint-exit
 aiohttp
 mypy
@@ -21,3 +19,4 @@ croniter
 watchdog
 pid
 docker
+gunicorn

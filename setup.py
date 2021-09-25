@@ -9,7 +9,6 @@ requirements = [
     "argparse",
     "flask",
     "yagmail",
-    "argparse",
     "fileloghelper",
     "httpx>=0.18,<0.20",
     "pytest",
@@ -18,7 +17,6 @@ requirements = [
     "pytest-httpx",
     "pytest-flask",
     "pyfakefs",
-    "pylint",
     "pylint-exit",
     "aiohttp",
     "mypy",
@@ -28,7 +26,8 @@ requirements = [
     "croniter",
     "watchdog",
     "pid",
-    "docker"
+    "docker",
+    "gunicorn"
 ]
 
 with open("requirements_dev.txt", "w") as f:
