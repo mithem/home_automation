@@ -15,3 +15,7 @@ dist
 *.pdf
 tests/*.pdf
 home_automation.tab
+
+# frontend
+home_automation/server/frontend/node_modules
+home_automation/server/frontend/build

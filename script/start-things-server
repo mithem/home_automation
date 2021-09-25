@@ -1,0 +1,2 @@
+# don't need gunicorn or similar, better yet, this offers auto-reload etc.
+FLASK_APP=home_automation.things_server FLASK_ENV=development flask run -p 8001 -h 0.0.0.0

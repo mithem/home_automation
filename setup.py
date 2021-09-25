@@ -3,7 +3,7 @@ from setuptools import setup
 
 VERSION = "1.0.0"
 
-packages = ["home_automation"]
+packages = ["home_automation", "home_automation.server.backend"]
 
 requirements = [
     "argparse",
@@ -27,7 +27,8 @@ requirements = [
     "python-crontab",
     "croniter",
     "watchdog",
-    "pid"
+    "pid",
+    "docker"
 ]
 
 with open("requirements_dev.txt", "w") as f:

@@ -1,0 +1,8 @@
+.btn-toolbar {
+	align-items: center;
+}
+
+.compose-status-description {
+	color: gray;
+	margin-right: 10px;
+}

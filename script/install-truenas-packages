@@ -1,0 +1,4 @@
+#!/bin/bash
+sudo apt-get install python3-dev git nmap net-tools neovim cmatrix
+sudo python3 setup.py install
+echo "\n\nHome Automation is now installed. Run python3 -m home_automation.runner in a tmux session or configure the system to run that automatically on startup."

@@ -174,6 +174,35 @@ def run_watchdog(queue: mp.Queue):
     observer.join()
     logger.info("Stopped watchdog observer.")
 
+def run_backend_server(queue: mp.Queue):
+    """Run the WSGI gunicorn server (not the frontend)."""
+    _configure_log_worker(queue)
+    logger = logging.getLogger("home_automation_backend")
+    logger.info("Running backend...")
+    try:
+        # sometimes running gunicorn from shell is just equivalent to but way easier than
+        # reverse-engineering gunicorn to get an appropriate entrypoint
+
+        # only bind to localhost so the API isn't exposed outside (if
+        # I need that at any point, an https proxy is a way better idea)
+
+        # proxy for certificate management (don't want to re-configure 20 services
+        # once the certificate changes)
+        os.system("python3 -m gunicorn -w 2 --bind 127.0.0.1:10001 \
+'home_automation.server.backend:create_app()'")
+    except _ProcessExit:
+        logger.info("Stopped gunicorn (backend).")
+
+def build_frontend(queue: mp.Queue):
+    """Build the frontend React app (not the backend and don't serve it (that's nginx's job.))."""
+    _configure_log_worker(queue)
+    logger = logging.getLogger("home_automation_frontend")
+    logger.info("Building frontend.")
+    try:
+        os.system("cd home_automation/server/frontend && yarn build")
+        logger.info("Built frontend.")
+    except _ProcessExit:
+        logger.info("Aborted frontend build.")
 
 @pidfile("home_automation_runner")
 def main(cron_user: str = None):
@@ -185,7 +214,11 @@ def main(cron_user: str = None):
             mp.Process(target=run_cron_jobs, args=(queue, cron_user),
                 name="home_automation.runner.cron"),
             mp.Process(target=run_watchdog, args=(queue,),
-                name="home_automation.runner.watchdog")
+                name="home_automation.runner.watchdog"),
+            mp.Process(target=run_backend_server, args=(queue,),
+                name="home_automation.runner.backend"),
+            mp.Process(target=build_frontend, args=(queue,),
+                name="home_automation.runner.frontend")
             ]
     for process in processes:
         process.start()
