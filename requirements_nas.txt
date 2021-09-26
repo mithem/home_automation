@@ -1,4 +1,0 @@
-yagmail
-argparse
-fileloghelper
-httpx

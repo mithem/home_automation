@@ -2,11 +2,15 @@
 	border: none;
 	border-radius: 10px;
 	padding: 10px;
-	background-color: #ececec;
+	background-color: var(--bs-gray-300);
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	width: clamp(50%, 700px, 80%);
+}
+
+.docker-container > span {
+	margin: 5px;
 }
 
 .docker-container > span.name {
@@ -38,4 +42,10 @@
 .docker-container > div {
 	display: flex;
 	gap: 10px;
+}
+
+@media(prefers-color-scheme: dark) {
+	.docker-container {
+		background-color: var(--bs-gray-500);
+	}
 }

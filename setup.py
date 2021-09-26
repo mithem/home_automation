@@ -1,17 +1,17 @@
 import os
 from setuptools import setup
 import re
+import home_automation
 
-VERSION = "1.0.0"
+VERSION = "1.1.0-b1"
 
 with open("home_automation/__init__.py", "r") as f:
-    code = "\n".join(f.readlines())
+    code = f.read()
 
-code = re.sub(r"""VERSION ?= ?("|')\d+\.\d+\.\d+("|')""", "VERSION = \"" + VERSION + "\"", code)
+code = code.replace(home_automation.VERSION, VERSION, 1)
 
 with open("home_automation/__init__.py", "w") as f:
-    f.flush()
-    f.writelines(code.split("\n"))
+    f.write(code)
 
 packages = ["home_automation", "home_automation.server.backend"]
 
@@ -32,13 +32,17 @@ requirements = [
     "aiohttp",
     "mypy",
     "mypy-extensions",
+    "types-requests",
     "tox==3.*",
     "python-crontab",
     "croniter",
     "watchdog",
     "pid",
     "docker",
-    "gunicorn"
+    "gunicorn",
+    "requests",
+    "semver",
+    "GitPython"
 ]
 
 with open("requirements_dev.txt", "w") as f:

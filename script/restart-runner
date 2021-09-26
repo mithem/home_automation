@@ -1,0 +1,3 @@
+script/kill-runner
+sleep 10
+python3 -m home_automation.runner

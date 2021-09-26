@@ -2,6 +2,7 @@ import React from "react";
 import {Button, ButtonGroup, ButtonToolbar} from "react-bootstrap";
 import {composePull, composeUp, composeDown, dockerStatus, dockerPrune} from "../functions";
 import DockerComposeStatusDescription from "./DockerComposeStatusDescription";
+import { refreshInterval } from "../constants";
 
 export default class Toolbar extends React.Component<{}, {pulling: boolean, upping: boolean, downing: boolean, loading: boolean, pruning: boolean}> {
 	timerID: any
@@ -11,10 +12,19 @@ export default class Toolbar extends React.Component<{}, {pulling: boolean, uppi
 		this.timerID = -1
 	}
 	async getDockerStatus() {
-		this.setState({loading: true})
-		dockerStatus().then(state => {
-			this.setState(state)
-		})
+		if (!this.state.loading) {
+			this.setState({loading: true})
+			dockerStatus()
+				.then(state => {
+					this.setState(state)
+					this.setState({loading: false})
+				})
+				.catch((_) => {})
+		}
+	}
+	runCatchingExceptions(f: CallableFunction) {
+		f()
+			.catch((_: any) => {})
 	}
 	render() {
 		return (
@@ -22,10 +32,10 @@ export default class Toolbar extends React.Component<{}, {pulling: boolean, uppi
 				<ButtonToolbar>
 					<DockerComposeStatusDescription pulling={this.state.pulling} upping={this.state.upping} downing={this.state.downing} pruning={this.state.pruning} />
 					<ButtonGroup>
-						<Button variant="primary" disabled={this.buttonsDisabled()} onClick={() => composePull()}>Compose pull</Button>
-						<Button variant="primary" disabled={this.buttonsDisabled()} onClick={() => composeUp()}>Compose up</Button>
-						<Button variant="danger" disabled={this.buttonsDisabled()} onClick={() => composeDown()}>Compose down</Button>
-						<Button variant="danger" disabled={this.buttonsDisabled()} onClick={() => dockerPrune()}>Docker prune</Button>
+						<Button variant="primary" disabled={this.buttonsDisabled()} onClick={() => this.runCatchingExceptions(composePull)}>Compose pull</Button>
+						<Button variant="primary" disabled={this.buttonsDisabled()} onClick={() => this.runCatchingExceptions(composeUp)}>Compose up</Button>
+						<Button variant="danger" disabled={this.buttonsDisabled()} onClick={() => this.runCatchingExceptions(composeDown)}>Compose down</Button>
+						<Button variant="danger" disabled={this.buttonsDisabled()} onClick={() => this.runCatchingExceptions(dockerPrune)}>Docker prune</Button>
 					</ButtonGroup>
 				</ButtonToolbar>
 			</div>
@@ -35,12 +45,12 @@ export default class Toolbar extends React.Component<{}, {pulling: boolean, uppi
 		this.getDockerStatus()
 		this.timerID = setInterval(() => {
 			this.getDockerStatus()
-		}, 1000)
+		}, refreshInterval)
 	}
 	componentWillUnmount() {
 		clearInterval(this.timerID)
 	}
 	buttonsDisabled() {
-		return ( ( this.state.pulling || this.state.upping ) || this.state.downing ) || this.state.pruning
+		return ((this.state.pulling || this.state.upping) || this.state.downing) || this.state.pruning
 	}
 }

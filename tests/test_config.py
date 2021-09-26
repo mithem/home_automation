@@ -14,7 +14,9 @@ VALID_CONFIG_LINES = [
     "HOMEWORK_DIR = /volume2/Hausaufgaben/HAs",
     "ARCHIVE_DIR = /volume2/Hausaufgaben/Archive",
     "ANOTHER=hello",
-    "INSECURE_HTTPS=0"
+    "INSECURE_HTTPS=0",
+    "DB_PATH=home_automation.backend.db",
+    "COMPOSE_FILE=docker-compose.yml",
 ]
 
 VALID_CONFIG_DICT = {
@@ -27,7 +29,9 @@ VALID_CONFIG_DICT = {
     "HOMEWORK_DIR": "/volume2/Hausaufgaben/HAs",
     "ARCHIVE_DIR": "/volume2/Hausaufgaben/Archive",
     "ANOTHER": "hello",
-    "INSECURE_HTTPS": "0"
+    "INSECURE_HTTPS": "0",
+    "DB_PATH": "home_automation.backend.db",
+    "COMPOSE_FILE": "docker-compose.yml"
 }
 
 @pytest.mark.usefixtures("fixture_delete_environment_vars")

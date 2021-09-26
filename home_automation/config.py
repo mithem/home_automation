@@ -13,7 +13,9 @@ _required_keys = [
     "THINGS_SERVER_URL",
     "LOG_DIR",
     "HOMEWORK_DIR",
-    "ARCHIVE_DIR"
+    "ARCHIVE_DIR",
+    "DB_PATH",
+    "COMPOSE_FILE"
 ]
 
 

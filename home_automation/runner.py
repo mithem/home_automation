@@ -5,6 +5,7 @@ import multiprocessing as mp
 import logging
 import logging.handlers
 import signal
+import sys
 from pid.decorator import pidfile
 
 from crontab import CronTab
@@ -59,7 +60,10 @@ class _WatchdogEventHandler(FileSystemEventHandler):
 
 def _signal_handler(num, frame):  # pylint: disable=unused-argument
     """Respond to signal. Supports: SIGINT, SIGTERM."""
-    supported = [signal.SIGINT, signal.SIGTERM]
+    supported = [
+            signal.SIGINT,
+            signal.SIGTERM
+    ]
     if num in supported:
         raise _ProcessExit()
 
@@ -85,10 +89,16 @@ def _logging_listener(queue: mp.Queue):
             logger = logging.getLogger(record.name)
             logger.handle(record)
 
-    _configure_log_listener()
-    while True:
-        handle_logs()
-        time.sleep(1)
+    try:
+        signal.signal(signal.SIGINT, _signal_handler)
+        signal.signal(signal.SIGTERM, _signal_handler)
+        _configure_log_listener()
+        while True:
+            handle_logs()
+            time.sleep(1)
+    except (KeyboardInterrupt, _ProcessExit):
+        time.sleep(3) # for the "piped" processes to stop first
+        sys.exit(0)
 
 
 def _configure_log_worker(queue: mp.Queue):
@@ -112,6 +122,8 @@ def setup():
 
 def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     """Schedule cron jobs and run them."""
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_cron")
     if not cron_user:
@@ -149,14 +161,17 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     try:
         for result in cron.run_scheduler():
             logger.info("Ran cron job. Ouput: %s", result)
-    except _ProcessExit:
+    except (KeyboardInterrupt, _ProcessExit):
         logger.info(
                 "Stopped cron scheduler. home_automation will not run future jobs.")
+        sys.exit(0)
 
 
 def run_watchdog(queue: mp.Queue):
     """Start watchdog observer. Even before the first event, simulate one in order
     to compress uncompressed files."""
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_watchdog")
     event_handler = _WatchdogEventHandler()
@@ -169,13 +184,16 @@ def run_watchdog(queue: mp.Queue):
     try:
         while True:
             time.sleep(60)
-    except _ProcessExit:
+    except (KeyboardInterrupt, _ProcessExit):
         observer.stop()
-    observer.join()
-    logger.info("Stopped watchdog observer.")
+        observer.join()
+        logger.info("Stopped watchdog observer.")
+        sys.exit(0)
 
 def run_backend_server(queue: mp.Queue):
     """Run the WSGI gunicorn server (not the frontend)."""
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_backend")
     logger.info("Running backend...")
@@ -188,10 +206,11 @@ def run_backend_server(queue: mp.Queue):
 
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
-        os.system("python3 -m gunicorn -w 2 --bind 127.0.0.1:10001 \
-'home_automation.server.backend:create_app()'")
-    except _ProcessExit:
+        os.system("python3 -m gunicorn --pid /var/run/home_automation.gunicorn.pid -w 2 --bi\
+nd 127.0.0.1:10001 'home_automation.server.backend:create_app()'")
+    except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
+        sys.exit(0)
 
 def build_frontend(queue: mp.Queue):
     """Build the frontend React app (not the backend and don't serve it (that's nginx's job.))."""
@@ -201,8 +220,9 @@ def build_frontend(queue: mp.Queue):
     try:
         os.system("cd home_automation/server/frontend && yarn build")
         logger.info("Built frontend.")
-    except _ProcessExit:
+    except (KeyboardInterrupt, _ProcessExit):
         logger.info("Aborted frontend build.")
+        sys.exit(0)
 
 @pidfile("home_automation_runner")
 def main(cron_user: str = None):
@@ -227,6 +247,10 @@ def main(cron_user: str = None):
         while True:
             time.sleep(60)
     except (KeyboardInterrupt, _ProcessExit):  # pylint: disable=broad-except
+        try:
+            os.kill(os.getpid(), signal.SIGTERM)
+        except _ProcessExit:
+            pass
         for process in processes:
             process.terminate()
 
@@ -240,7 +264,8 @@ def main(cron_user: str = None):
             break
 
     for process in processes:
-        process.close()
+        process.terminate()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

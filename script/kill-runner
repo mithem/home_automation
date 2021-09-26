@@ -1,0 +1,1 @@
+kill -s TERM $(cat /var/run/home_automation_runner.pid) $(cat /var/run/home_automation.gunicorn.pid)

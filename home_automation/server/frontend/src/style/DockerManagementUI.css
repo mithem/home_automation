@@ -1,0 +1,11 @@
+.docker-management-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.container-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}

@@ -1,5 +1,5 @@
 argparse
-flask
+flask[async]
 yagmail
 fileloghelper
 httpx>=0.18,<0.20
@@ -9,10 +9,12 @@ pytest-asyncio
 pytest-httpx
 pytest-flask
 pyfakefs
+pylint
 pylint-exit
 aiohttp
 mypy
 mypy-extensions
+types-requests
 tox==3.*
 python-crontab
 croniter
@@ -20,3 +22,6 @@ watchdog
 pid
 docker
 gunicorn
+requests
+semver
+GitPython
