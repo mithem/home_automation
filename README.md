@@ -2,7 +2,7 @@
 
 # home_automation
 
-A project for home automation. That's organizing and compressing homework on miguelsnas and related scripts/programs or otherwise useful but maybe unrelated stuff.
+A project for home automation. That's organizing and compressing homework on truenas and related scripts/programs or otherwise useful but maybe unrelated stuff.
 
 ## Run via docker-compose.yml:
 
