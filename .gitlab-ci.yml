@@ -21,11 +21,11 @@ stages:          # List of stages for jobs, and their order of execution
 tox-job:       # This job runs in the build stage, which runs first.
   stage: tox
   script:
-    - apt-get update && apt-get install apt-transport-https ca-certificates curl gnupg lsb-release
+    - apt-get update && apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
     - curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     - echo \
       "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
       $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    - apt-get update && apt-get install docker-ce
+    - apt-get update && apt-get install -y docker-ce
     - pip3 install -r requirements_dev.txt | grep tox
     - python3 -m tox
