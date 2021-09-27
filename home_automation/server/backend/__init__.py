@@ -14,6 +14,7 @@ import semver
 import docker
 from flask import Flask, render_template, request, url_for, redirect
 from docker.models.containers import Container as DockerContainer, Image as DockerImage
+from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
 
 import home_automation
@@ -96,6 +97,9 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
     def create_dict_from_image(img: DockerImage):
         return {"tags": img.tags}
 
+    def create_dict_from_volume(volume: DockerVolume):
+        return {"name": volume.name, "id": volume.id}
+
     @app.route("/api/containers")
     def get_containers():
         try:
@@ -108,7 +112,8 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except APIError as exc:
             return str(exc), 500
 
-    @app.route("/api/stop", methods=["POST"])
+
+    @app.route("/api/containers/stop", methods=["POST"])
     def stop_container():
         try:
             data = json.loads(str(request.data, encoding="utf-8"))
@@ -125,7 +130,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except APIError as exc:
             return str(exc), 500
 
-    @app.route("/api/start", methods=["POST"])
+    @app.route("/api/containers/start", methods=["POST"])
     def start_container():
         try:
             data = json.loads(str(request.data, encoding="utf-8"))
@@ -140,7 +145,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except AttributeError:
             return str(error), 500
 
-    @app.route("/api/remove", methods=["POST"])
+    @app.route("/api/containers/remove", methods=["POST"])
     def remove_container():
         try:
             data = json.loads(str(request.data, encoding="utf-8"))
@@ -183,6 +188,29 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         process.start()
         state_manager.update_status("pruning", True)
         return "Pruning images.", 202
+
+    @app.route("/api/volumes")
+    def get_volumes():
+        try:
+            volumes = [create_dict_from_volume(v) for v in CLIENT.volumes.list()]
+            data = {"volumes": volumes}
+            return data
+        except AttributeError:
+            return str(error), 500
+        except APIError as exc:
+            return str(exc), 500
+
+    @app.route("/api/volumes/remove", methods=["POST"])
+    def remove_volume():
+        try:
+            data = json.loads(str(request.data, encoding="utf-8"))
+            name = data["volume"]
+            CLIENT.volumes.get(name).remove()
+            return "Removed volume."
+        except AttributeError:
+            return str(error), 500
+        except APIError as exc:
+            return str(exc), 500
 
     @app.route("/api/home_automation/versioninfo")
     def home_automation_state():

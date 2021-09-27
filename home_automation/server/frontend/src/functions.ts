@@ -2,19 +2,20 @@ import { BASE_URL } from "./constants"
 import axios from "axios"
 import HomeAutomationManagementData from "./models/HomeAutomationManagementData"
 import DockerContainerData from "./models/DockerContainerData"
+import DockerVolumeListData from "./models/DockerVolumeListData"
 
 export async function stopContainer(container: string) {
-	const res = await axios.post(BASE_URL + "/api/stop", {container: container})
+	const res = await axios.post(BASE_URL + "/api/containers/stop", {container: container})
 	return res.status === 200
 }
 
 export async function startContainer(container: string) {
-	const res = await axios.post(BASE_URL + "/api/start", {container: container})
+	const res = await axios.post(BASE_URL + "/api/containers/start", {container: container})
 	return res.status === 200
 }
 
 export async function removeContainer(container: string) {
-	const res = await axios.post(BASE_URL + "/api/remove", {container: container})
+	const res = await axios.post(BASE_URL + "/api/containers/remove", {container: container})
 	return res.status === 200
 }
 
@@ -64,5 +65,15 @@ export async function refreshVersionInfo() {
 
 export async function upgradeServer() {
 	const response = await axios.post(BASE_URL + "/api/home_automation/upgrade")
+	return response.status === 200
+}
+
+export async function getVolumes() {
+	const response = await axios.get(BASE_URL + "/api/volumes")
+	return response.data as DockerVolumeListData
+}
+
+export async function removeVolume(id: string) {
+	const response = await axios.post(BASE_URL + "/api/volumes/remove", {volume: id})
 	return response.status === 200
 }

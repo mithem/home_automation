@@ -1,7 +1,7 @@
 .env
 __pycache__
 .pytest_cache
-.coverage
+.coverage*
 cov.xml
 .DS_Store
 .vscode

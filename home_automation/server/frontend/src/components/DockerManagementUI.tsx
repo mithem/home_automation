@@ -1,19 +1,24 @@
 import React from "react"
 import DockerContainer from "./DockerContainer"
 import DockerContainerData from "../models/DockerContainerData"
+import DockerVolumeData from "../models/DockerVolumeData"
 import Toolbar from "./Toolbar"
+import DockerVolume from "./DockerVolume"
 import { refreshInterval } from "../constants"
 import {Alert, Spinner} from "react-bootstrap"
 
 import "../style/DockerManagementUI.css"
-import {getDockerContainers} from "../functions"
+import {getDockerContainers, getVolumes} from "../functions"
 
-export default class DockerManagmentUI extends React.Component<{}, {containers: DockerContainerData[], error?: Error, loading: boolean}> { timerID: any // either, I declare this as `number` and componentDidMount can't assign value of type `Timeout` to timerID or I declare this as `Timeout`, which then can't be found in current context!?
+export default class DockerManagmentUI extends React.Component<{}, {containers: DockerContainerData[], volumes: DockerVolumeData[], error?: Error, loading: boolean}> {
+	containerTimer: any // either, I declare this as `number` and componentDidMount can't assign value of type `Timeout` to timerID or I declare this as `Timeout`, which then can't be found in current context!?
 	// my justification: https://spin.atomicobject.com/2018/11/08/countdown-timer-react-typescript/
+	volumeTimer: any
 	constructor(props: any) {
 		super(props)
-		this.state = {containers: [], error: undefined, loading: false}
-		this.timerID = -1
+		this.state = {containers: [], volumes: [], error: undefined, loading: false}
+		this.containerTimer = -1
+		this.volumeTimer = -1
 	}
 	getDockerContainers() {
 		// don't set state.loading = true as the loading spinner shall only appear when first loading containers, not on every refresh
@@ -29,9 +34,26 @@ export default class DockerManagmentUI extends React.Component<{}, {containers: 
 		}
 	}
 
+	getVolumes() {
+		if (!this.state.loading) {
+			getVolumes()
+				.then(data => {
+					this.setState(data)
+					this.setState({error: undefined, loading: false})
+				})
+				.catch((error) => {
+					this.setState({error: error as Error, loading: false})
+				})
+		}
+	}
+
 	render() {
 		const containerList = this.state.containers.map((container) => {
 			return <DockerContainer container={container} key={container.name}/>
+		})
+
+		const volumeList = this.state.volumes.map((volume) => {
+			return <DockerVolume volume={volume} key={volume.id} />
 		})
 
 		const apiError = this.state.error !== undefined ? (
@@ -46,6 +68,12 @@ export default class DockerManagmentUI extends React.Component<{}, {containers: 
 			</Alert>
 		) : null
 
+		const noVolumesWarning = this.state.volumes.length === 0 ? (
+			<Alert variant="info">
+				You currently don't have any docker volumes. Create some (e.g. by creating a container) to view them here.
+			</Alert>
+		) : null
+
 		const loadingSpinner = this.state.loading ? (
 			<Spinner animation="border"/>
 		) : null
@@ -54,21 +82,33 @@ export default class DockerManagmentUI extends React.Component<{}, {containers: 
 			<div className="docker-management-ui">
 				<Toolbar />
 				{apiError}
-				{noContainersWarning}
 				{loadingSpinner}
-				<div className="container-list">
+				<h3>Containers</h3>
+				<div className="item-list container-list">
+					{noContainersWarning}
 					{containerList}
+				</div>
+				<hr />
+				<h3>Volumes</h3>
+				<div className="item-list volume-list">
+					{noVolumesWarning}
+					{volumeList}
 				</div>
 			</div>
 		)
 	}
 	componentDidMount() {
 		this.getDockerContainers()
-		this.timerID = setInterval(() => {
+		this.getVolumes()
+		this.containerTimer = setInterval(() => {
 			this.getDockerContainers()
+		}, refreshInterval)
+		this.volumeTimer = setInterval(() => {
+			this.getVolumes()
 		}, refreshInterval)
 	}
 	componentWillUnmount() {
-		clearInterval(this.timerID)
+		clearInterval(this.containerTimer)
+		clearInterval(this.volumeTimer)
 	}
 }

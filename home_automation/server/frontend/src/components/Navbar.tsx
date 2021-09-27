@@ -1,5 +1,24 @@
 import {Container, Nav, Navbar as RBNavbar} from "react-bootstrap"
 import { useMediaPredicate } from "react-media-hook"
+import "../style/Navbar.css"
+
+function isActive(path: string) {
+	if (document.location.pathname === path) {
+		return true
+	}
+	return false
+}
+
+function getClassForActivity(path: string) {
+	switch (isActive(path)) {
+		case true: {
+			return "active"
+		}
+		default: {
+			return ""
+		}
+	}
+}
 
  const Navbar = () => {
 	const colorScheme = useMediaPredicate("(prefers-color-scheme: dark)") ? "dark": "light"
@@ -10,7 +29,7 @@ import { useMediaPredicate } from "react-media-hook"
 				<RBNavbar.Toggle aria-controls="basic-navbar-nav" />
 				<RBNavbar.Collapse id="basic-navbar-nav">
 					<Nav className="me-auto">
-						<Nav.Link href="/docker">Docker</Nav.Link>
+						<Nav.Link className={getClassForActivity("/docker")} href="/docker">Docker</Nav.Link>
 					</Nav>
 				</RBNavbar.Collapse>
 			</Container>

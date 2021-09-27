@@ -3,7 +3,7 @@ import DockerContainerData from "../models/DockerContainerData"
 import { removeContainer, startContainer, stopContainer } from "../functions"
 import {Button} from "react-bootstrap"
 
-import "../style/DockerContainer.css"
+import "../style/ListItem.css"
 import "bootstrap/dist/css/bootstrap.min.css"
 
 export default class DockerContainer extends React.Component<{container: DockerContainerData, key: string}> {
@@ -38,12 +38,12 @@ export default class DockerContainer extends React.Component<{container: DockerC
 		  </div>
 		  ) : null
 		return (
-		<div className="docker-container">
-		<span className="name">{this.props.container.name}</span>
-		<span className={`status ${this.props.container.state}`}>{this.props.container.state}</span>
-		<span className="tags">{this.props.container.image.tags.join(", ")}</span>
-		{stopBtn}
-		{startAndDeleteBtns}
+		<div className="docker-container list-item">
+			<span className="name">{this.props.container.name}</span>
+			<span className={`status ${this.props.container.state}`}>{this.props.container.state}</span>
+			<span className="tags">{this.props.container.image.tags.join(", ")}</span>
+			{stopBtn}
+			{startAndDeleteBtns}
 		</div>
 		);
 	}

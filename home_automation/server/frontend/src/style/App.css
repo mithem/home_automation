@@ -8,3 +8,7 @@
 		--bs-body-bg: var(--bs-gray-900);
 	}
 }
+
+.alert { /* override bootstrap */
+	margin-bottom: 0;
+}
