@@ -70,7 +70,8 @@ ERE key=:key", {"key": key, "status": status})
                 ("pruning", False),
                 ("version", home_automation.VERSION),
                 ("versionAvailable", ""),
-                ("versionAvailableSince", "")
+                ("versionAvailableSince", ""),
+                ("testingInitfileVersion", "")
         ]
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()

@@ -1,7 +1,8 @@
 import React from "react";
 
 import DockerManagementUI from "./components/DockerManagementUI"
-import HomeAutomationManagementUI from "./components/HomeAutomationManagementUI";
+import HomeAutomationManagementUI from "./components/HomeAutomationManagementUI"
+import TestingManagementUI from "./components/TestingManagementUI"
 import Navbar from "./components/Navbar";
 import ErrorNotFound from "./components/ErrorNotFound"
 
@@ -17,6 +18,10 @@ export default class App extends React.Component {
 			}
 			case "/": {
 				content = <HomeAutomationManagementUI />
+				break
+			}
+			case "/testing": {
+				content = <TestingManagementUI />
 				break
 			}
 			default: {

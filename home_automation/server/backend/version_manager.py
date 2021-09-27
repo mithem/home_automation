@@ -14,6 +14,10 @@ from home_automation.server.backend.state_manager \
 
 INIT_FILE_URL = "https://raw.githubusercontent.com/mithem/home_\
 automation/master/home_automation/__init__.py"
+testing = os.environ.get("TESTING", False)
+if int(testing):
+    print("Testing mode active!")
+    INIT_FILE_URL = "http://localhost:10001/api/testing/version-initfile"
 SQL_TO_PYTHON_KEY_NAME = {
         "versionAvailable": "version_available",
         "versionAvailableSince": "version_available_since"
@@ -56,14 +60,22 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
 
     def update_version_info(self):
         """Refresh the version information. BLOCKING!"""
-        logging.info("Updating version info...")
-        response = requests.get(INIT_FILE_URL)
-        match = re.match(r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-\w+)?)(\"|')",
-                         response.text)
-        if not match:
+        def fallback():
             self.state_manager.update_status("version", home_automation.VERSION)
             self.state_manager.update_status("versionAvailable", "")
             self.state_manager.update_status("versionAvailableSince", "")
+
+        logging.info("Updating version info...")
+        try:
+            response = requests.get(INIT_FILE_URL)
+            match = re.match(r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-\w+)?)(\"|')",
+                             response.text)
+        except Exception as exc: # pylint: disable=broad-except
+            logging.error(exc)
+            fallback()
+            return
+        if not match:
+            fallback()
             return
         version_available = match.groupdict().get("version", None)
         available_since = datetime.datetime.now().isoformat()

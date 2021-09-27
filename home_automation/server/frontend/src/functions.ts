@@ -77,3 +77,9 @@ export async function removeVolume(id: string) {
 	const response = await axios.post(BASE_URL + "/api/volumes/remove", {volume: id})
 	return response.status === 200
 }
+
+export async function testingSetVersionAvailable() {
+	const version = prompt("New version:")
+	const response = await axios.post(BASE_URL + "/api/testing/version-initfile/set", {VERSION: version})
+	return response.status === 200
+}

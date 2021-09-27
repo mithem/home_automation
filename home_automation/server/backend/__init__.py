@@ -249,4 +249,19 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
     def compose_status():
         return state_manager.get_status()
 
+    @app.route("/api/testing/version-initfile/set", methods=["POST"])
+    def set_testing_version_initfile():
+        encoded = str(request.data, encoding="utf-8") # JSON-encoded, not utf-8
+        data = json.loads(encoded)
+        version = data.get("VERSION", data.get("version", None))
+        if not version:
+            return """Need to send '{"VERSION": '#semver#'}}'}"""
+        state_manager.update_status("testingInitfileVersion", str(version))
+        return "Updated initfile version FOR TESTING."
+
+    @app.route("/api/testing/version-initfile")
+    def testing_version_initfile():
+        version = state_manager.get_value("testingInitfileVersion")
+        return f"VERSION='{version}'"
+
     return app

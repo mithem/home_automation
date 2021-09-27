@@ -30,6 +30,7 @@ function getClassForActivity(path: string) {
 				<RBNavbar.Collapse id="basic-navbar-nav">
 					<Nav className="me-auto">
 						<Nav.Link className={getClassForActivity("/docker")} href="/docker">Docker</Nav.Link>
+						<Nav.Link className={getClassForActivity("/testing")} href="/testing">Testing</Nav.Link>
 					</Nav>
 				</RBNavbar.Collapse>
 			</Container>
