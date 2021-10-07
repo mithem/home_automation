@@ -29,11 +29,20 @@ export default class HomeAutomationManagementUI extends React.Component<{}, Home
 			})
 	}
 
+	upgradeServer() {
+		upgradeServer()
+			.then(result => {
+				if (!result.success) {
+					this.setState({error: result.error})
+				}
+			})
+	}
+
 	render() {
 		const newVersionAvailableAlert = this.state.available !== undefined ? (
 			<Alert variant="success" className="version available">
 				<span>A new version is available: {this.state.available.version} (checked {this.state.available.availableSince})!</span>
-				<Button variant="primary" onClick={upgradeServer}>
+				<Button variant="primary" onClick={() => {this.upgradeServer()}}>
 					Upgrade
 				</Button>
 			</Alert>
@@ -44,7 +53,7 @@ export default class HomeAutomationManagementUI extends React.Component<{}, Home
 			</Alert>
 		) : null
 		return(
-			<div className="home-automation-management-gui">
+			<div className="home-automation-management-gui item-list">
 				{errorAlert}
 				<Alert variant="secondary" className="version current">
 					<span>Current version: {this.state.version ?? "N/A"}</span>

@@ -1,5 +1,5 @@
-.App {
-	margin: 10px
+.content {
+	margin: 10px;
 }
 
 @media(prefers-color-scheme: dark) {
@@ -11,4 +11,18 @@
 
 .alert { /* override bootstrap */
 	margin-bottom: 0;
+}
+
+a.link {
+	text-decoration: none;
+	color: var(--bs-gray-700);
+}
+
+a.link:hover {
+	color: none;
+}
+
+.inherit, .inherit:hover {
+	color: inherit;
+	text-decoration: inherit
 }

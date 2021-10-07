@@ -1,38 +1,43 @@
-import React from "react";
+import React from "react"
+import {BrowserRouter as Router, Switch, Route} from "react-router-dom"
 
-import DockerManagementUI from "./components/DockerManagementUI"
+import DockerContainerManagementUI from "./components/DockerContainerManagementUI"
+import DockerVolumeManagementUI from "./components/DockerVolumeManagementUI"
 import HomeAutomationManagementUI from "./components/HomeAutomationManagementUI"
 import TestingManagementUI from "./components/TestingManagementUI"
-import Navbar from "./components/Navbar";
+import Navbar from "./components/Navbar"
 import ErrorNotFound from "./components/ErrorNotFound"
 
 import "./style/App.css"
 
 export default class App extends React.Component {
 	render() {
-		let content: any
-		switch(document.location.pathname) {
-			case "/docker": {
-				content = <DockerManagementUI />
-				break
-			}
-			case "/": {
-				content = <HomeAutomationManagementUI />
-				break
-			}
-			case "/testing": {
-				content = <TestingManagementUI />
-				break
-			}
-			default: {
-				content = <ErrorNotFound path={document.location.href}/>
-			}
-		}
+		const swi = (
+				<Switch>
+					<Route exact path="/">
+						<HomeAutomationManagementUI />
+					</Route>
+					<Route exact path="/docker/containers">
+						<DockerContainerManagementUI />
+					</Route>
+					<Route exact path="/docker/volumes">
+						<DockerVolumeManagementUI />
+					</Route>
+					<Route exact path="/testing">
+						<TestingManagementUI />
+					</Route>
+					<Route path="/">
+						<ErrorNotFound />
+					</Route>
+				</Switch>
+		)
 		return (
-			<div className="App">
+			<Router>
 				<Navbar />
-				{content}
-			</div>
+				<div className="content">
+					{swi}
+				</div>
+			</Router>
 		)
 	}
 }

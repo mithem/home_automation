@@ -1,3 +1,8 @@
 .navbar .nav-link.active {
 	text-decoration: underline;
 }
+
+.navbar {
+	color: blue;
+	gap: 0.5rem;
+}

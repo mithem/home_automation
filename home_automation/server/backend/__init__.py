@@ -32,11 +32,17 @@ COMPOSE_FILE = os.environ.get("COMPOSE_FILE", None)
 if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
     COMPOSE_FILE = os.path.join(COMPOSE_FILE, "docker-compose.yml")
 
-CLIENT = None
-try:
-    CLIENT = docker.from_env()
-except DockerException as docker_exception:
-    error = docker_exception
+CLIENT, ERROR = None, None
+
+def try_reloading_client():
+    """Try reloading/reconnecting the docker client and save error if appropriate."""
+    global CLIENT, ERROR # pylint: disable=global-statement
+    try:
+        CLIENT = docker.from_env()
+    except DockerException as docker_exception:
+        ERROR = docker_exception
+
+try_reloading_client()
 
 def compose_pull_exec():
     """Compose pull, blocking."""
@@ -108,8 +114,11 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
                 ]}
             return data
         except AttributeError:
-            return str(error), 500
-        except APIError as exc:
+            return str(ERROR), 500
+        except (APIError, Exception) as exc: # pylint: disable=broad-except
+            # originally a docker error, but
+            # docker might also raise other exceptions like some from requests
+            try_reloading_client()
             return str(exc), 500
 
 
@@ -126,8 +135,9 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except ContainerNotFound:
             return "Container not fnund.", 404
         except AttributeError:
-            return str(error), 500
+            return str(ERROR), 500
         except APIError as exc:
+            try_reloading_client()
             return str(exc), 500
 
     @app.route("/api/containers/start", methods=["POST"])
@@ -143,7 +153,8 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except ContainerNotFound:
             return "Container not fnund.", 404
         except AttributeError:
-            return str(error), 500
+            try_reloading_client()
+            return str(ERROR), 500
 
     @app.route("/api/containers/remove", methods=["POST"])
     def remove_container():
@@ -158,7 +169,8 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except ContainerNotFound:
             return "Container not fnund.", 404
         except AttributeError:
-            return str(error), 500
+            try_reloading_client()
+            return str(ERROR), 500
 
 
     @app.route("/api/compose/pull", methods=["POST"])
@@ -196,8 +208,9 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             data = {"volumes": volumes}
             return data
         except AttributeError:
-            return str(error), 500
+            return str(ERROR), 500
         except APIError as exc:
+            try_reloading_client()
             return str(exc), 500
 
     @app.route("/api/volumes/remove", methods=["POST"])
@@ -208,8 +221,9 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             CLIENT.volumes.get(name).remove()
             return "Removed volume."
         except AttributeError:
-            return str(error), 500
+            return str(ERROR), 500
         except APIError as exc:
+            try_reloading_client()
             return str(exc), 500
 
     @app.route("/api/home_automation/versioninfo")
@@ -231,8 +245,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         except ValueError as err:
             logging.info(err)
             return {"version": info["version"]}
-        except Exception as err: # pylint: disable=broad-except
-            print(err)
+        except Exception: # pylint: disable=broad-except
             return {}, 500
 
     @app.route("/api/home_automation/versioninfo/refresh", methods=["POST"])
