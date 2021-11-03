@@ -2,7 +2,7 @@ argparse
 flask[async]
 yagmail
 fileloghelper
-httpx>=0.18,<0.20
+httpx>=0.18,<0.21
 pytest
 pytest-cov
 pytest-asyncio
