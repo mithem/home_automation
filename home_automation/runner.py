@@ -224,7 +224,7 @@ def build_frontend(queue: mp.Queue):
         logger.info("Aborted frontend build.")
         sys.exit(0)
 
-@pidfile("home_automation_runner")
+@pidfile("/var/run/home_automation/runner.pid")
 def main(cron_user: str = None):
     """Run cron jobs and observe `HOMEWORK_DIR` for changes (blocks permanently)"""
     queue: mp.Queue = mp.Queue(-1)
