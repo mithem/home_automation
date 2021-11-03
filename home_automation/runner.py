@@ -206,7 +206,7 @@ def run_backend_server(queue: mp.Queue):
 
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
-        os.system("python3 -m gunicorn --pid /var/run/home_automation.gunicorn.pid -w 2 --bi\
+        os.system("python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w 2 --bi\
 nd 127.0.0.1:10001 'home_automation.server.backend:create_app()'")
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")

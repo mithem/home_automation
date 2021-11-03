@@ -3,7 +3,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.1.0-b2"
+VERSION = "1.1.0-b3"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -20,7 +20,7 @@ requirements = [
     "flask[async]",
     "yagmail",
     "fileloghelper",
-    "httpx>=0.18,<0.20",
+    "httpx>=0.18,<0.21",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
