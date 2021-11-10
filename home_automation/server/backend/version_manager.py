@@ -12,12 +12,15 @@ import home_automation
 from home_automation.server.backend.state_manager \
         import StateManager
 
-INIT_FILE_URL = "https://raw.githubusercontent.com/mithem/home_\
-automation/master/home_automation/__init__.py"
+REPO_INIT_FILE_URL = "https://raw.githubusercontent.com/mithem/home_automation/master/home_automation/__init__.py"
+TESTING_INIT_FILE_URL = "http://localhost:10001/api/testing/version-initfile"
+INIT_FILE_URL = REPO_INIT_FILE_URL
+
 testing = os.environ.get("TESTING", False)
 if int(testing):
     print("Testing mode active!")
-    INIT_FILE_URL = "http://localhost:10001/api/testing/version-initfile"
+    INIT_FILE_URL = TESTING_INIT_FILE_URL
+
 SQL_TO_PYTHON_KEY_NAME = {
         "versionAvailable": "version_available",
         "versionAvailableSince": "version_available_since"
@@ -27,7 +30,12 @@ class VersionManager: # pylint: disable=no-self-use
     """VersionManager is responsible for comparing the current
     to the available version and upgrading if wanted."""
     def __init__(self, db_path: str):
+        global INIT_FILE_URL
         self.state_manager = StateManager(db_path)
+        if testing:
+            INIT_FILE_URL = REPO_INIT_FILE_URL
+            self.update_version_info()
+            INIT_FILE_URL = TESTING_INIT_FILE_URL
 
     def _make_value(self, key, value: str):
         if value == "":
@@ -67,9 +75,9 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
 
         logging.info("Updating version info...")
         try:
-            response = requests.get(INIT_FILE_URL)
-            match = re.match(r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-\w+)?)(\"|')",
-                             response.text)
+            response = requests.get(INIT_FILE_URL, None)
+            text = "\n".join(filter(lambda x: x.startswith("VERSION"), response.text.split("\n")))
+            match = re.match(r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-?(?P<prerelease>\w+))?)(\"|')", text)
         except Exception as exc: # pylint: disable=broad-except
             logging.error(exc)
             fallback()
@@ -77,11 +85,16 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         if not match:
             fallback()
             return
-        version_available = match.groupdict().get("version", None)
+        groupd = match.groupdict()
+        if groupd.get("version", None) is None:
+            fallback()
+            return
+        version_available = groupd.get("version")
         available_since = datetime.datetime.now().isoformat()
         self.state_manager.update_status("version", home_automation.VERSION)
         self.state_manager.update_status("versionAvailable", version_available)
         self.state_manager.update_status("versionAvailableSince", available_since)
+        logging.info("Version available:", version_available)
 
     def upgrade_server(self):
         """Upgrade the server. Restarts it. BLOCKING!"""
@@ -89,7 +102,7 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         repo = git.Repo(os.curdir)
         # please (don't) fail spectaculary
         branch = list(filter(lambda b: b.name == "master", repo.branches))[0]
-        # seriously, though, that should not happen and isn't this projects responsibility
+        # seriously, though, that should not happen and isn't this project's responsibility
         for remote in repo.remotes:
             repo.git.pull(remote.name, branch)
         os.system("script/restart-runner &")
