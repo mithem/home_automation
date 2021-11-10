@@ -39,6 +39,9 @@ def create_app() -> Flask:
         if testing:
             return RAN_SCRIPT
 
+        if not subject.upper() in ABBR_TO_SUBJECT.keys():
+            return "Invalid subject", 404
+
         os.system(f"osascript '{SCRIPT_LOC_MARK_HOMEWORK_AS_DONE}' {subject}")
         return RAN_SCRIPT
 

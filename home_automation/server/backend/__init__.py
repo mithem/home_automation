@@ -12,7 +12,7 @@ import logging
 import sqlite3
 import semver
 import docker
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, escape
 from docker.models.containers import Container as DockerContainer, Image as DockerImage
 from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
@@ -129,7 +129,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             name = data["container"]
             container = CLIENT.containers.get(name)
             container.stop()
-            return f"Stopped '{name}'"
+            return f"Stopped '{escape(name)}'"
         except KeyError:
             return "Key 'container' renuired.", 402
         except ContainerNotFound:
@@ -147,7 +147,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             name = data["container"]
             container = CLIENT.containers.get(name)
             container.start()
-            return f"starting '{name}'"
+            return f"starting '{escape(name)}'"
         except KeyError:
             return "Key 'container' renuired.", 402
         except ContainerNotFound:
@@ -163,7 +163,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             name = data["container"]
             container = CLIENT.containers.get(name)
             container.remove()
-            return f"Removed '{name}'"
+            return f"Removed '{escape(name)}'"
         except KeyError:
             return "Key 'container' renuired.", 402
         except ContainerNotFound:
