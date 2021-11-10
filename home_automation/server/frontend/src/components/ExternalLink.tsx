@@ -25,6 +25,7 @@ function getExternalURL(link: ExternalLinkType) {
 interface ExternalLinkData {
   target: ExternalLinkType;
   title: String;
+  openInCurrentTab?: boolean;
 }
 
 export default class ExternalLink extends React.Component<
@@ -36,7 +37,7 @@ export default class ExternalLink extends React.Component<
       <a
         href={getExternalURL(this.props.target)}
         className="nav-link"
-        target="_blank"
+        target={this.props.openInCurrentTab ? "_self" : "_blank"}
         rel="noopener noreferrer"
       >
         {this.props.title}
