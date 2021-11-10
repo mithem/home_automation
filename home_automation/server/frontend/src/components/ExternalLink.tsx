@@ -12,7 +12,8 @@ function getExternalURL(link: ExternalLinkType) {
   const hostname = window.location.hostname;
   let scheme: String;
   switch (link) {
-    case (ExternalLinkType.truenasGUI, ExternalLinkType.plex):
+    case ExternalLinkType.truenasGUI:
+    case ExternalLinkType.plex:
       scheme = "http";
       break;
     default:
