@@ -3,7 +3,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.1.0-b8"
+VERSION = "1.1.0-b9"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -42,7 +42,8 @@ requirements = [
     "gunicorn",
     "requests",
     "semver",
-    "GitPython"
+    "GitPython",
+    "moodle-dl"
 ]
 
 with open("requirements_dev.txt", "w") as f:

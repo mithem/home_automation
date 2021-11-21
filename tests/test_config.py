@@ -17,6 +17,7 @@ VALID_CONFIG_LINES = [
     "INSECURE_HTTPS=0",
     "DB_PATH=home_automation.backend.db",
     "COMPOSE_FILE=docker-compose.yml",
+    "MOODLE_DL_DIR=~/moodle"
 ]
 
 VALID_CONFIG_DICT = {
@@ -31,7 +32,8 @@ VALID_CONFIG_DICT = {
     "ANOTHER": "hello",
     "INSECURE_HTTPS": "0",
     "DB_PATH": "home_automation.backend.db",
-    "COMPOSE_FILE": "docker-compose.yml"
+    "COMPOSE_FILE": "docker-compose.yml",
+    "MOODLE_DL_DIR": "~/moodle"
 }
 
 @pytest.mark.usefixtures("fixture_delete_environment_vars")

@@ -30,6 +30,7 @@ CRONTAB_FILE_NAME = "home_automation.tab"
 LOG_DIR = os.environ.get("LOG_DIR", os.curdir)
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
 ARCHIVE_DIR = os.environ.get("ARCHIVE_DIR")
+MOODLE_DL_DIR = os.environ.get("MOODLE_DL_DIR")
 PID_FILE_NAME = "home_automation.runner"
 TERM_SWITCH = False
 
@@ -146,6 +147,9 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
             command="python3 -m home_automation.archive_manager archive")
     reorganization_job = cron.new(
             command="python3 -m home_automation.archive_manager reorganize")
+    if MOODLE_DL_DIR is not None and not os.path.isdir(MOODLE_DL_DIR):
+        raise Exception(f"Directory not found: {MOODLE_DL_DIR}")
+    moodle_dl_job = cron.new(command=f"python3 -m moodle-dl --path '{MOODLE_DL_DIR}'")
 
     archiving_job.minute.on(0)
     archiving_job.hour.on(0)
@@ -154,6 +158,9 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     reorganization_job.minute.on(0)
     reorganization_job.hour.on(0)
     reorganization_job.day.on(1)
+
+    moodle_dl_job.minute.on(0)
+    moodle_dl_job.hour.every(1)
 
     cron.write()  # not sure if I could run the scheduler without writing the file
 
