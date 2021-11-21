@@ -20,7 +20,7 @@ requirements = [
     "flask[async]",
     "yagmail",
     "fileloghelper",
-    "httpx>=0.18,<0.21",
+    "httpx>=0.18,<0.22",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
