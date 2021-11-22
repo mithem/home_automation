@@ -40,17 +40,17 @@ export async function getDockerContainers() {
 
 export async function composePull() {
 	const res = await axios.post(BASE_URL + "/api/compose/pull", axiosDefaultConfig)
-	return res.status === 200
+	return res.status === 202
 }
 
 export async function composeUp() {
 	const res = await axios.post(BASE_URL + "/api/compose/up", axiosDefaultConfig)
-	return res.status === 200
+	return res.status === 202
 }
 
 export async function composeDown() {
 	const res = await axios.post(BASE_URL + "/api/compose/down", axiosDefaultConfig)
-	return res.status === 200
+	return res.status === 202
 }
 
 export async function dockerStatus() {
@@ -60,7 +60,7 @@ export async function dockerStatus() {
 
 export async function dockerPrune() {
 	const response = await axios.delete(BASE_URL + "/api/prune")
-	return response.status === 200
+	return response.status === 202
 }
 
 export async function getHomeAutomationManagementData() {
@@ -70,7 +70,7 @@ export async function getHomeAutomationManagementData() {
 
 export async function refreshVersionInfo() {
 	const response = await axios.post(BASE_URL + "/api/home_automation/versioninfo/refresh")
-	return response.status === 200
+	return response.status === 202
 }
 
 export async function upgradeServer() {
@@ -78,7 +78,8 @@ export async function upgradeServer() {
 	if (response.status >= 400) {
 		return {success: false, error: new Error(response.data as string)}
 	}
-	return {success: response.statusText === "OK", error: undefined}
+	const success = response.status >= 200 && response.status <= 299 // that's what I call future-proofing (I know, I know..)
+	return {success: success, error: undefined}
 }
 
 export async function getVolumes() {
@@ -102,4 +103,9 @@ export async function testingSetVersionAvailable() {
 	const version = prompt("New version:")
 	const response = await axios.post(BASE_URL + "/api/testing/version-initfile/set", {VERSION: version})
 	return response.status === 200
+}
+
+export async function testingInitiateAutoUpgrade() {
+	const response = await axios.post(BASE_URL + "/api/home_automation/autoupgrade")
+	return response.status === 202
 }

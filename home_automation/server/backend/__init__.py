@@ -74,6 +74,14 @@ def start_update_version_info_process(version_manager: VersionManager):
                    name="home_automation.runner.update_version_info")
     process.start()
 
+def start_upgrade_process(version_manager: VersionManager):
+    process = mp.Process(target=version_manager.upgrade_server, name="home_automation.runner.upgrader")
+    process.start()
+
+def start_auto_upgrade_process(version_manager: VersionManager):
+    process = mp.Process(target=version_manager.auto_upgrade, name="home_automation.runner.autoupgrader")
+    process.start()
+
 def create_app(options = None): # pylint: disable=too-many-locals, too-many-statements
     """App factory."""
     app = Flask(__name__)
@@ -255,8 +263,13 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
 
     @app.route("/api/home_automation/upgrade", methods=["POST"])
     def upgrade_server():
-        version_manager.upgrade_server()
-        return "Upgraded server."
+        start_upgrade_process(version_manager)
+        return "Upgrading server. Stand by for restart.", 202
+
+    @app.route("/api/home_automation/autoupgrade", methods=["POST"])
+    def auto_upgrade():
+        start_auto_upgrade_process(version_manager)
+        return "Upgrading if upgrade is available. Expect restart.", 202
 
     @app.route("/api/status")
     def compose_status():

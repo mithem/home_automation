@@ -4,9 +4,11 @@ import datetime
 import re
 import os
 import logging
+from typing import Optional
 
 import git
 import requests
+import semver
 
 import home_automation
 from home_automation.server.backend.state_manager \
@@ -66,6 +68,16 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
             data[key] = value
         return data
 
+    def new_version_available(self) -> Optional[str]:
+        info = self.get_version_info()
+        if not info["version_available"] or not info["version"]:
+            raise ValueError("No version_available or version data.")
+        ver_comp = semver.compare(info["version_available"], info["version"])
+        if ver_comp > 0:
+            return info["version_available"]
+        return None
+
+
     def update_version_info(self):
         """Refresh the version information. BLOCKING!"""
         def fallback():
@@ -94,7 +106,7 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         self.state_manager.update_status("version", home_automation.VERSION)
         self.state_manager.update_status("versionAvailable", version_available)
         self.state_manager.update_status("versionAvailableSince", available_since)
-        logging.info("Version available:", version_available)
+        logging.info(f"Version available: {version_available}")
 
     def upgrade_server(self):
         """Upgrade the server. Restarts it. BLOCKING!"""
@@ -106,3 +118,16 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         for remote in repo.remotes:
             repo.git.pull(remote.name, branch)
         os.system("script/restart-runner &")
+
+    def auto_upgrade(self):
+        """Check for updated version. If upgrade is available, upgrade. Inform user via mail."""
+        self.update_version_info()
+        available = self.new_version_available()
+        if not available:
+            return
+        self.upgrade_server()
+        self.inform_user_of_upgrade()
+
+    def inform_user_of_upgrade(self):
+        current_version = self.get_version_info()["version"]
+        home_automation.send_mail("Home Automation - VersionManager", f"Home Automation was just updated to {current_version}")

@@ -150,6 +150,7 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     if MOODLE_DL_DIR is not None and not os.path.isdir(MOODLE_DL_DIR):
         raise Exception(f"Directory not found: {MOODLE_DL_DIR}")
     moodle_dl_job = cron.new(command=f"python3 -m moodle-dl --path '{MOODLE_DL_DIR}'")
+    auto_upgrade_job = cron.new(command="curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade")
 
     archiving_job.minute.on(0)
     archiving_job.hour.on(0)
@@ -161,6 +162,8 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
 
     moodle_dl_job.minute.on(0)
     moodle_dl_job.hour.every(1)
+
+    auto_upgrade_job.minute.every(30)
 
     cron.write()  # not sure if I could run the scheduler without writing the file
 

@@ -1,6 +1,6 @@
 import React from "react";
 import {Alert, Button} from "react-bootstrap";
-import {slowRefreshInterval} from "../constants";
+import {refreshInterval} from "../constants";
 import {getHomeAutomationManagementData, upgradeServer, refreshVersionInfo} from "../functions";
 import HomeAutomationManagementData from "../models/HomeAutomationManagementData";
 
@@ -70,7 +70,7 @@ export default class HomeAutomationManagementUI extends React.Component<{}, Home
 		this.getData()
 		this.timerID = setInterval(() => {
 			this.getData()
-		}, slowRefreshInterval)
+		}, refreshInterval)
 	}
 
 	componentWillUnmount() {
