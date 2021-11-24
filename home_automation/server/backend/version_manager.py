@@ -125,9 +125,9 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         available = self.new_version_available()
         if not available:
             return
-        self.upgrade_server()
         self.inform_user_of_upgrade()
+        self.upgrade_server()
 
     def inform_user_of_upgrade(self):
-        current_version = self.get_version_info()["version"]
-        home_automation.send_mail("Home Automation - VersionManager", f"Home Automation was just updated to {current_version}")
+        version_available = self.get_version_info()["version_available"]
+        home_automation.send_mail("Home Automation - VersionManager", f"Home Automation will now update to {version_available}")
