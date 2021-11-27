@@ -21,4 +21,4 @@ home_automation/server/frontend/node_modules
 home_automation/server/frontend/build
 
 #backend
-*home_automation.backend.db
+*.db
