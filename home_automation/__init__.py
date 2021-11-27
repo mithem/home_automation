@@ -6,7 +6,7 @@ import yagmail
 
 import home_automation.config
 
-VERSION="1.1.0-b13"
+VERSION="1.1.0-b14"
 
 home_automation.config.load_dotenv()
 

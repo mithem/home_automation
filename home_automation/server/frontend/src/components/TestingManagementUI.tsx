@@ -18,6 +18,7 @@ export default class TestingManagementUI extends React.Component {
 				<Button variant="primary" onClick={() => this.setVersionAvailable()}>
 					Set version available
 				</Button>
+				<br />
 				<Button variant="primary" onClick={() => this.initiateAutoUpgrade()}>
 					Initiate auto upgrade
 				</Button>
