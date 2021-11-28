@@ -1,9 +1,9 @@
 # just so autoformatters won't reorder
 if True:  # pylint: disable=using-constant-test
     # so CompressionManager and middleware can use correct envvars
-    import test_config
+    import tests.test_config
     from home_automation import config
-    config.load_into_environment(test_config.VALID_CONFIG_DICT)
+    config.load_into_environment(tests.test_config.VALID_CONFIG_DICT)
 
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware,
@@ -175,7 +175,8 @@ class TestCompressDirectory(AnyTestCase):
             "test.small.png",
             ".PH HA 22-06-2021.pdf",
             "_PH HA 22-06-2021.pdf",
-            "Scan 22-06-2021.pdf"
+            "Scan 22-06-2021.pdf",
+            "Scanned Document"
         ]
         for f in files:
             try:

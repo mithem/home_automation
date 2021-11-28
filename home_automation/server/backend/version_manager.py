@@ -10,7 +10,7 @@ import git
 import requests
 import semver
 
-import home_automation
+import home_automation.utilities
 from home_automation.server.backend.state_manager \
         import StateManager
 
@@ -130,4 +130,4 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
 
     def inform_user_of_upgrade(self):
         version_available = self.get_version_info()["version_available"]
-        home_automation.send_mail("Home Automation - VersionManager", f"Home Automation will now update to {version_available}")
+        home_automation.utilities.send_mail("Home Automation - VersionManager", f"Home Automation will now update to {version_available}")

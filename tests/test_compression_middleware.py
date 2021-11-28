@@ -5,11 +5,11 @@ import httpx
 import pytest
 from fileloghelper import Logger
 
-import test_compression_manager
+import tests.test_compression_manager
 # pytest needs this to be imported in this module
-from test_compression_manager import configure_mock_responses  # pylint: disable=unused-import
+from tests.test_compression_manager import configure_mock_responses  # pylint: disable=unused-import
 
-from test_config import VALID_CONFIG_DICT
+from tests.test_config import VALID_CONFIG_DICT
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware,
     CompressionMiddleware,
@@ -166,7 +166,7 @@ class TestChangesStatusInThings:
 
 @pytest.mark.asyncio
 class TestMiddlewareIntegration(
-        test_compression_manager.AnyTestCase):
+        tests.test_compression_manager.AnyTestCase):
 
     @ pytest.fixture
     def setup_middleware_checking_being_invoked(self, logger):
@@ -204,7 +204,7 @@ class TestMiddlewareIntegration(
             "something.txt"
         ]
         for f in files:
-            test_compression_manager.create_file(fs, f)
+            tests.test_compression_manager.create_file(fs, f)
 
         await self.manager.compress_directory(HOMEWORK_DIR)
 
@@ -216,7 +216,7 @@ class TestMiddlewareIntegration(
                               "setup_faulty_middleware")
     async def test_exceptions_in_middleware_handled_appropriately(self, fs):
         f = "PH HA 22-06-2021.pdf"
-        test_compression_manager.create_file(fs, f)
+        tests.test_compression_manager.create_file(fs, f)
 
         print(f"Homework_dir: '{HOMEWORK_DIR}'")
         print(f"HASS_URL: '{HASS_BASE_URL}'")

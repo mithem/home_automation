@@ -9,6 +9,8 @@ RUN --mount=type=cache,target=/var/root/.cache/pip pip3 install -r requirements_
 
 RUN python3 setup.py install
 
-VOLUME ["/home_automation", "/homework/current", "/homework/archive"]
+VOLUME ["/home_automation", "/homework/current", "/homework/archive", "/moodle"]
+
+HEALTHCHECK --interval=10s --timeout=3s CMD curl -f http://localhost:10000/api/healthcheck || exit 1
 
 ENTRYPOINT ["python3", "-m", "home_automation.runner"]

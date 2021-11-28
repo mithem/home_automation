@@ -15,7 +15,7 @@ from home_automation.compression_middleware import (
 
 
 BLACKLIST = ["@eaDir"]
-BLACKLIST_BEGINNINGS = ["Scan ", ".", "_"]
+BLACKLIST_BEGINNINGS = ["Scan ", ".", "_", "Scanned Document"]
 BLACKLIST_ENDINGS = [".small.pdf"]
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 LOG_DIR = ""

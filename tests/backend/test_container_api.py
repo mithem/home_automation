@@ -4,12 +4,9 @@ import docker
 import json
 from flask import Response
 
-import home_automation
-import home_automation.server
-import home_automation.server.backend
 from home_automation.server.backend import create_app
 from home_automation.config import load_into_environment
-from test_config import VALID_CONFIG_DICT
+from tests.test_config import VALID_CONFIG_DICT
 
 load_into_environment(VALID_CONFIG_DICT)
 docker_client = docker.from_env()
