@@ -1,2 +1,2 @@
 #!/bin/bash
-apt-get update && apt-get install -y python3-dev pylint git ghostscript nodejs npm
+apt-get update && apt-get install -y python3-dev python3-pip pylint git ghostscript nodejs npm
