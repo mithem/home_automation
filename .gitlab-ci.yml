@@ -41,7 +41,8 @@ docker-build:
     - |
     - tag="$(cat VERSION)"
     - echo "Tagging version '$tag'."
-    - DOCKER_BUILDKIT=1 docker build --pull -t "$CI_REGISTRY_IMAGElatest" -t "$CI_REGISTRY_IMAGE${tag}" .
+    - echo "Building image '$CI_REGISTRY_IMAGE'."
+    - DOCKER_BUILDKIT=1 docker build --pull -t "$CI_REGISTRY_IMAGE:latest" -t "$CI_REGISTRY_IMAGE:${tag}" .
     - docker push "$CI_REGISTRY_IMAGE${tag}"
   # Run this job in a branch where a Dockerfile exists
   rules:
