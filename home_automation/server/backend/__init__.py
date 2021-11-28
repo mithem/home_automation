@@ -271,6 +271,10 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         start_auto_upgrade_process(version_manager)
         return "Upgrading if upgrade is available. Expect restart.", 202
 
+    @app.route("/api/home_automation/healthcheck")
+    def healthcheck():
+        return "healthy" # looks just fine for now
+
     @app.route("/api/status")
     def compose_status():
         return state_manager.get_status()

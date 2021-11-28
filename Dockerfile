@@ -1,11 +1,16 @@
-FROM python:3.9-slim
+FROM python:3.9
+FROM node:17
 
 WORKDIR /home_automation
 
 COPY . .
 RUN mv docker.env .env
 
-RUN --mount=type=cache,target=/var/root/.cache/pip pip3 install -r requirements_dev.txt
+RUN mkdir /var/run/home_automation
+
+RUN script/install-system-dependencies
+
+RUN --mount=type=cache,target=/var/root/.cache/pip python3 -m pip install -r requirements_dev.txt
 
 RUN python3 setup.py install
 
