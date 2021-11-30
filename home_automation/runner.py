@@ -229,6 +229,7 @@ def build_frontend(queue: mp.Queue):
     logger.info("Building frontend.")
     try:
         os.system("cd home_automation/server/frontend && yarn build")
+        os.system("script/apply-frontend-build-permissions.py")
         logger.info("Built frontend.")
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Aborted frontend build.")
