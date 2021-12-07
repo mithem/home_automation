@@ -13,12 +13,14 @@ from home_automation.compression_middleware import (
     FlashLightsInHomeAssistantMiddleware
 )
 
+config.load_dotenv()
 
 BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_", "Scanned Document"]
 BLACKLIST_ENDINGS = [".small.pdf"]
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 LOG_DIR = ""
+EXTRA_COMPRESS_DIRS = os.environ.get("EXTRA_COMPRESS_DIRS", "").split(";")
 
 
 def load_envvars():
@@ -158,6 +160,8 @@ class CompressionManager:
 
 async def main(arguments: Union[str, List[str]] = None):
     """What could this do?"""
+    global EXTRA_COMPRESS_DIRS
+
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
@@ -181,6 +185,9 @@ async def main(arguments: Union[str, List[str]] = None):
         manager.register_middleware(midware)
 
     await manager.compress_directory()
+
+    for directory in EXTRA_COMPRESS_DIRS:
+        await manager.compress_directory(directory)
 
     manager.clean_up_directory()
 

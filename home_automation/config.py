@@ -16,7 +16,7 @@ _required_keys = [
     "ARCHIVE_DIR",
     "DB_PATH",
     "COMPOSE_FILE",
-    "MOODLE_DL_DIR"
+    "MOODLE_DL_DIR",
 ]
 
 
