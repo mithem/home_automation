@@ -17,6 +17,10 @@ root = f"./{path_progression}"
 
 try:
     apply_permissions(root)
-except:
+except Exception as e:
+    print(e)
     root = f"../{path_progression}"
-    apply_permissions(root)
+    try:
+        apply_permissions(root)
+    except Exception as e:
+        print(e)
