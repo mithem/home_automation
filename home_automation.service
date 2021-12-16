@@ -1,0 +1,12 @@
+[Unit]
+Description=Home Automation Project
+
+[Service]
+WorkingDirectory=/mnt/FastStorage/mithem-applications/home_automation
+User=miguel
+Group=miguel
+ExecStartPre=/mnt/FastStorage/mithem-applications/home_automation/script/prepare-for-startup
+ExecStart=/bin/python3 -m home_automation.runner
+
+[Install]
+WantedBy=multi-user.target

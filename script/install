@@ -1,0 +1,6 @@
+#!/bin/bash
+script/prepare-for-startup
+sudo cp home_automation.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable home_automation
+sudo systemctl start home_automation

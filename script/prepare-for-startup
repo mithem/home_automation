@@ -1,0 +1,4 @@
+#!/bin/bash
+chmod 777 script/*
+script/install-truenas-packages
+script/apply-frontend-build-permissions.py
