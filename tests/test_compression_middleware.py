@@ -3,6 +3,7 @@ import sys
 
 import httpx
 import pytest
+import pytest_asyncio
 from fileloghelper import Logger
 
 import tests.test_compression_manager
@@ -41,14 +42,14 @@ for key in keys_to_set_as__module_constants:
     setattr(sys.modules[__name__], key, value)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def logger():
     return _logger
 
 
 @pytest.mark.usefixtures("setup_middleware")
 class TestCompressionMiddleware:
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def setup_middleware(self, logger):
         self.middleware = CompressionMiddleware(logger)
 
@@ -70,7 +71,7 @@ class TestCompressionMiddleware:
 @pytest.mark.asyncio
 class TestSubjectCompressionMiddleware:
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def setup_middleware_checking_being_invoked(self, logger):
 
         class MiddlewareCheckingBeingInvoked(SubjectCompressionMiddleware):
@@ -83,7 +84,7 @@ class TestSubjectCompressionMiddleware:
 
         self.middleware = MiddlewareCheckingBeingInvoked(logger)
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def setup_subject_compression_middleware(self, logger):
         self.middleware = SubjectCompressionMiddleware(logger)
 
@@ -127,7 +128,7 @@ class TestSubjectCompressionMiddleware:
 @pytest.mark.usefixtures("setup_middleware")
 class TestFlashLightsInHomeAssistantMiddleware:
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def setup_middleware(self, logger):
         self.middleware = FlashLightsInHomeAssistantMiddleware(logger)
 
@@ -146,7 +147,7 @@ class TestFlashLightsInHomeAssistantMiddleware:
 @pytest.mark.usefixtures("setup_middleware")
 class TestChangesStatusInThings:
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def setup_middleware(self, logger):
         self.middleware = ChangeStatusInThingsMiddleware(logger)
 
@@ -168,7 +169,7 @@ class TestChangesStatusInThings:
 class TestMiddlewareIntegration(
         tests.test_compression_manager.AnyTestCase):
 
-    @ pytest.fixture
+    @ pytest_asyncio.fixture
     def setup_middleware_checking_being_invoked(self, logger):
         class MiddlewareCheckingBeingInvoked(
                 CompressionMiddleware):
@@ -181,7 +182,7 @@ class TestMiddlewareIntegration(
         self.middleware = MiddlewareCheckingBeingInvoked(logger)
         self.manager.register_middleware(self.middleware)
 
-    @ pytest.fixture
+    @ pytest_asyncio.fixture
     def setup_faulty_middleware(self, logger):
         class FaultyMiddleware(CompressionMiddleware):
             async def act(self, filename):

@@ -15,6 +15,7 @@ import re
 from typing import List
 
 import pytest
+import pytest_asyncio
 
 
 HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
@@ -24,7 +25,7 @@ THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 
 @pytest.mark.usefixtures("do_setup")
 class AnyTestCase:
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def do_setup(self, fs):
         self.manager = CompressionManager(debug=True, testing=True)
         [self.manager.register_middleware(m(self.manager.logger)) for m in [
@@ -49,7 +50,7 @@ def file_exists(fs, name: str):
     return exists
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def configure_mock_responses(httpx_mock):
     httpx_mock.add_response(
         method="POST",
@@ -63,7 +64,7 @@ def configure_mock_responses(httpx_mock):
 class TestCompressDirectory(AnyTestCase):
 
     # TODO: see docstring
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def manager_did_compress_files(self, fs):
         """Only checks logs, not if files are actually being compressed."""
         manager = self.manager

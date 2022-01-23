@@ -1,9 +1,10 @@
 import pytest
+import pytest_asyncio
 from flask.helpers import url_for
 from home_automation.things_server import RAN_SCRIPT, create_app
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def app():
     return create_app()
 

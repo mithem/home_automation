@@ -641,8 +641,15 @@ class TestReorganizeAllFiles(AnyTestCase):
                 }
             }
         }
+
+        year = self.useful_data["year"]
+        for subject in ["Physik", "Mathe"]:
+            subjectDir = expected["Archive"][subject]
+            if not subjectDir.get(year, None):
+                expected["Archive"][subject][year] = {}
+
         # no data collision as that'll be in the future (let's see what happens in 2037 🤔)
-        expected["Archive"]["Physik"][self.useful_data["year"]][self.useful_data["month"]] = {
+        expected["Archive"]["Physik"][year][self.useful_data["month"]] = {
             "PH HA.pdf": None,
             "PH 2 HA.pdf": None,
             "PH Material": {
@@ -651,7 +658,7 @@ class TestReorganizeAllFiles(AnyTestCase):
                 "text2.pdf": None
             }
         }
-        expected["Archive"]["Mathe"][self.useful_data["year"]][self.useful_data["month"]] = {
+        expected["Archive"]["Mathe"][year][self.useful_data["month"]] = {
             "M HA.pdf": None,
             "M 2 HA.pdf": None
         }

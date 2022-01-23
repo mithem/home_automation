@@ -53,6 +53,7 @@ MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 
 DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
              + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
+YEAR_REGEX = r"^.+(?P<year>\d\d\d\d).+$"
 
 
 class InvalidFormattingException(Exception):
@@ -91,12 +92,17 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         the name of the directory the file is supposed to go in."""
         date_str = None
         calendar_week = None
+        year_str = None
         fname = os.path.split(path)[1]
-        match = re.match(DATE_REGEX, fname)
-        if match:
-            groups = match.groupdict()
+        date_match = re.match(DATE_REGEX, fname)
+        year_match = re.match(YEAR_REGEX, path)
+        if date_match:
+            groups = date_match.groupdict()
             date_str = groups.get("date", None)
             calendar_week = groups.get("calendar_week", None)
+        if year_match:
+            groups = year_match.groupdict()
+            year_str = groups.get("year", "")
         try:
             abbr = fname.split(" ")[0]
             subject = ABBR_TO_SUBJECT[abbr]
@@ -112,8 +118,9 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             if calendar_week is not None:
                 # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
                 # using isoweeks
+                year = year_str if year_str else TODAY.year
                 date = datetime.datetime.strptime(
-                    f"{TODAY.year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
+                    f"{year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
                 return (subject, str(date.year), MONTH_TO_DIR[date.month])
         except ValueError as error:
             raise InvalidFormattingException(path) from error
@@ -133,7 +140,6 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 # e.g. is in Archive/Physik/2021/Juni or lower
                 a_dir = self.archive_dir if not self.archive_dir.endswith("/")\
                         else self.archive_dir[:-1]
-                print(a_dir)
                 is_in_lowest_level_archive = os.path.split(
                     os.path.split(
                         os.path.split(

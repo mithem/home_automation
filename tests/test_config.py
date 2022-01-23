@@ -1,6 +1,7 @@
 import os
 
 import pytest
+import pytest_asyncio
 from home_automation.config import (ConfigError, load_into_environment,
                                     parse_config, load_dotenv, _required_keys)
 
@@ -40,7 +41,7 @@ VALID_CONFIG_DICT = {
 
 @pytest.mark.usefixtures("fixture_delete_environment_vars")
 class EnvironmentSensibleTestCase():
-    @pytest.fixture
+    @pytest_asyncio.fixture
     def fixture_delete_environment_vars(self):
         self.delete_environment_vars()
 
