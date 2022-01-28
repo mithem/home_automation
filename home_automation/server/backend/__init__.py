@@ -34,15 +34,18 @@ if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
 
 CLIENT, ERROR = None, None
 
+
 def try_reloading_client():
     """Try reloading/reconnecting the docker client and save error if appropriate."""
-    global CLIENT, ERROR # pylint: disable=global-statement
+    global CLIENT, ERROR  # pylint: disable=global-statement
     try:
         CLIENT = docker.from_env()
     except DockerException as docker_exception:
         ERROR = docker_exception
 
+
 try_reloading_client()
+
 
 def compose_pull_exec():
     """Compose pull, blocking."""
@@ -50,11 +53,13 @@ def compose_pull_exec():
     state_manager = StateManager(DB_PATH)
     state_manager.update_status("pulling", False)
 
+
 def compose_up_exec():
     """"Compose up, blocking."""
     os.system(f"docker-compose -f '{COMPOSE_FILE}' up -d")
     state_manager = StateManager(DB_PATH)
     state_manager.update_status("upping", False)
+
 
 def compose_down_exec():
     """Compose down, blocking."""
@@ -62,27 +67,36 @@ def compose_down_exec():
     state_manager = StateManager(DB_PATH)
     state_manager.update_status("downing", False)
 
+
 def docker_prune_exec():
     """Docker prune, blocking."""
     os.system("docker system prune -af")
     state_manager = StateManager(DB_PATH)
     state_manager.update_status("pruning", False)
 
+
 def start_update_version_info_process(version_manager: VersionManager):
     """Start version update process, nonblocking."""
     process = mp.Process(target=version_manager.update_version_info,
-                   name="home_automation.runner.update_version_info")
+                         name="home_automation.runner.update_version_info")
     process.start()
+
 
 def start_upgrade_process(version_manager: VersionManager):
-    process = mp.Process(target=version_manager.upgrade_server, name="home_automation.runner.upgrader")
+    """Start upgrade process, nonblocking."""
+    process = mp.Process(target=version_manager.upgrade_server,
+                         name="home_automation.runner.upgrader")
     process.start()
+
 
 def start_auto_upgrade_process(version_manager: VersionManager):
-    process = mp.Process(target=version_manager.auto_upgrade, name="home_automation.runner.autoupgrader")
+    """Start auto-upgrade process, nonblocking."""
+    process = mp.Process(target=version_manager.auto_upgrade,
+                         name="home_automation.runner.autoupgrader")
     process.start()
 
-def create_app(options = None): # pylint: disable=too-many-locals, too-many-statements
+
+def create_app(options=None):  # pylint: disable=too-many-locals, too-many-statements
     """App factory."""
     app = Flask(__name__)
     state_manager = StateManager(DB_PATH)
@@ -119,16 +133,15 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
         try:
             data = {"containers": [
                     create_dict_from_container(c) for c in CLIENT.containers.list(all=True)
-                ]}
+                    ]}
             return data
         except AttributeError:
             return str(ERROR), 500
-        except (APIError, Exception) as exc: # pylint: disable=broad-except
+        except (APIError, Exception) as exc:  # pylint: disable=broad-except
             # originally a docker error, but
             # docker might also raise other exceptions like some from requests
             try_reloading_client()
             return str(exc), 500
-
 
     @app.route("/api/containers/stop", methods=["POST"])
     def stop_container():
@@ -180,7 +193,6 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             try_reloading_client()
             return str(ERROR), 500
 
-
     @app.route("/api/compose/pull", methods=["POST"])
     def compose_pull():
         process = mp.Process(target=compose_pull_exec)
@@ -212,7 +224,8 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
     @app.route("/api/volumes")
     def get_volumes():
         try:
-            volumes = [create_dict_from_volume(v) for v in CLIENT.volumes.list()]
+            volumes = [create_dict_from_volume(v)
+                       for v in CLIENT.volumes.list()]
             data = {"volumes": volumes}
             return data
         except AttributeError:
@@ -240,20 +253,21 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
             info = version_manager.get_version_info()
             if not info["version_available"] or not info["version"]:
                 raise ValueError("No version_available or version data.")
-            ver_comp = semver.compare(info["version_available"], info["version"])
+            ver_comp = semver.compare(
+                info["version_available"], info["version"])
             if ver_comp > 0:
                 return {
-                        "version": info["version"],
-                        "available": {
-                            "version": info["version_available"],
-                            "availableSince": info["version_available_since"]
-                        }
+                    "version": info["version"],
+                    "available": {
+                        "version": info["version_available"],
+                        "availableSince": info["version_available_since"]
+                    }
                 }
             return {"version": info["version"]}
         except ValueError as err:
             logging.info(err)
             return {"version": info["version"]}
-        except Exception: # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             return {}, 500
 
     @app.route("/api/home_automation/versioninfo/refresh", methods=["POST"])
@@ -273,7 +287,7 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
 
     @app.route("/api/home_automation/healthcheck")
     def healthcheck():
-        return "healthy" # looks just fine for now
+        return "healthy"  # looks just fine for now
 
     @app.route("/api/status")
     def compose_status():
@@ -281,7 +295,8 @@ def create_app(options = None): # pylint: disable=too-many-locals, too-many-stat
 
     @app.route("/api/testing/version-initfile/set", methods=["POST"])
     def set_testing_version_initfile():
-        encoded = str(request.data, encoding="utf-8") # JSON-encoded, not utf-8
+        # JSON-encoded, not utf-8
+        encoded = str(request.data, encoding="utf-8")
         data = json.loads(encoded)
         version = data.get("VERSION", data.get("version", None))
         if not version:

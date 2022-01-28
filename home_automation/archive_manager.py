@@ -54,6 +54,7 @@ MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
              + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
 YEAR_REGEX = r"^.+(?P<year>\d\d\d\d).+$"
+NO_TRANSFER_REGEX = r"^.*(?P<notransferflag>NO(_|-)?TRANSFER).*$"
 
 
 class InvalidFormattingException(Exception):
@@ -135,6 +136,9 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 os.makedirs(dest)
             return os.path.join(dest, os.path.split(path)[-1])
         try:
+            no_transfer_match = re.match(NO_TRANSFER_REGEX, path, re.IGNORECASE)
+            if no_transfer_match:
+                return path
             subject, year, month = self.parse_filename(path)
             if year is None or month is None:
                 # e.g. is in Archive/Physik/2021/Juni or lower

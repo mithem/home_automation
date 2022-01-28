@@ -160,8 +160,6 @@ class CompressionManager:
 
 async def main(arguments: Union[str, List[str]] = None):
     """What could this do?"""
-    global EXTRA_COMPRESS_DIRS
-
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()

@@ -88,7 +88,7 @@ def load_dotenv(logger: Logger = None):
         return config_to_parse_from_file
 
     config_to_parse_from_file = check()
-    if config_to_parse_from_file == []:
+    if not config_to_parse_from_file:
         return  # no need to search for .env
 
     try_to_load = [

@@ -171,6 +171,31 @@ class TestGetDestinationForFile(AnyTestCase):
 
         assert dest == s
 
+    def test_get_destination_for_file_no_transfer_flag(self):
+        start = "/volume2/Hausaufgaben/HAs/"
+        end = ".pdf"
+        data_arr = ["D", "HA", "27-01-2022"]
+        flags = ["NO_TRANSFER", "NO-TRANSFER", "NOTRANSFER", "no_transfer", "no-transfer", "notransfer"]
+        combinations = [] # for debugging this test's logic only
+        for flag in flags:
+            for flag_pos in range(len(data_arr) + 1):
+                path = start
+                for i in range(flag_pos):
+                    path += data_arr[i] + " "
+                path += flag
+                if flag_pos < len(data_arr):
+                    path += " "
+                for i in range(flag_pos, len(data_arr)):
+                    path += data_arr[i]
+                    if i < len(data_arr) - 1:
+                        path += " "
+                path += end
+                combinations.append(path)
+
+                result = self.manager.get_destination_for_file(path)
+
+                assert result == path
+        print(combinations)
 
 class TestTransferFile(AnyTestCase):
     def test_transfer_file_throws_is_compressed_file_exception(self):

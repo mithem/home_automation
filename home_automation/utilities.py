@@ -1,3 +1,4 @@
+"""Just some utilities, especially regarding mailing."""
 import os
 
 import yagmail
@@ -12,4 +13,5 @@ if not _EMAIL_ADDRESS:
 _SMTP = yagmail.SMTP(_EMAIL_ADDRESS, os.environ.get("EMAIL_PASSWD"))
 
 def send_mail(subject: str, body: str = ""):
+    """Send mail now."""
     _SMTP.send(_EMAIL_ADDRESS, subject, body)

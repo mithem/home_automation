@@ -149,8 +149,9 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
             command="python3 -m home_automation.archive_manager reorganize")
     if MOODLE_DL_DIR is not None and not os.path.isdir(MOODLE_DL_DIR):
         raise Exception(f"Directory not found: {MOODLE_DL_DIR}")
-    moodle_dl_job = cron.new(command=f"script/run-moodle-dl.py")
-    auto_upgrade_job = cron.new(command="curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade")
+    moodle_dl_job = cron.new(command="script/run-moodle-dl.py")
+    auto_upgrade_job = cron.new(command=\
+        "curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade")
 
     archiving_job.minute.on(0)
     archiving_job.hour.on(0)

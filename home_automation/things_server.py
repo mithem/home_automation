@@ -39,7 +39,7 @@ def create_app() -> Flask:
         if testing:
             return RAN_SCRIPT
 
-        if not subject.upper() in ABBR_TO_SUBJECT.keys():
+        if not subject.upper() in ABBR_TO_SUBJECT.keys(): # pylint: disable=consider-iterating-dictionary
             return "Invalid subject", 404
 
         os.system(f"osascript '{SCRIPT_LOC_MARK_HOMEWORK_AS_DONE}' {subject}")
