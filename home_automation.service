@@ -5,7 +5,7 @@ Description=Home Automation Project
 WorkingDirectory=/mnt/FastStorage/mithem-applications/home_automation
 User=miguel
 Group=miguel
-ExecStartPre=/mnt/FastStorage/mithem-applications/home_automation/script/prepare-for-startup
+ExecStartPre=bash /mnt/FastStorage/mithem-applications/home_automation/script/prepare-for-startup
 ExecStart=/bin/python3 -m home_automation.runner
 
 [Install]
