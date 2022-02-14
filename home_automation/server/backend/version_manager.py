@@ -124,7 +124,7 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         # seriously, though, that should not happen and isn't this project's responsibility
         for remote in repo.remotes:
             repo.git.pull(remote.name, branch)
-        os.system("script/restart-runner &")
+        os.system("bash script/restart-runner &")
 
     def auto_upgrade(self):
         """Check for updated version. If upgrade is available, upgrade. Inform user via mail."""
