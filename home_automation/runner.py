@@ -217,7 +217,7 @@ def run_backend_server(queue: mp.Queue):
 
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
-        os.system("python3 -m gunicorn --pid /var/run/home_automation-gunicorn.pid -w 2 --bi\
+        os.system("python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w 2 --bi\
 nd 127.0.0.1:10001 'home_automation.server.backend:create_app()'")
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
@@ -236,7 +236,7 @@ def build_frontend(queue: mp.Queue):
         logger.info("Aborted frontend build.")
         sys.exit(0)
 
-@pidfile("/var/run/home_automation-runner.pid")
+@pidfile("/var/run/home_automation/runner.pid")
 def main(cron_user: str = None):
     """Run cron jobs and observe `HOMEWORK_DIR` for changes (blocks permanently)"""
     queue: mp.Queue = mp.Queue(-1)

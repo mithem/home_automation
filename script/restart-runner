@@ -1,3 +1,1 @@
-script/kill-runner
-sleep 20
-python3 -m home_automation.runner
+sudo systemctl restart home_automation

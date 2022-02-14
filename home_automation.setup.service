@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Automation Setup
+Before=home_automation.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/mnt/FastStorage/mithem-applications/home_automation/
+ExecStart=bash script/prepare-for-startup
+
+[Install]
+WantedBy=multi-user.target

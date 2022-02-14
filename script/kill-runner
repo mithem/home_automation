@@ -1,1 +1,1 @@
-kill -s TERM $(cat /var/run/home_automation/runner.pid) $(cat /var/run/home_automation/gunicorn.pid)
+systemctl stop home_automation

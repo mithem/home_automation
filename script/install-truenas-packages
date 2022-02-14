@@ -3,6 +3,7 @@ echo "Please enter your password in order for it to be cached for the later comm
 sudo echo "Thanks!"
 sudo apt-get update && sudo apt-get install -y gh-cli nmap net-tools neovim cmatrix
 sudo script/install-system-dependencies
+pip3 install -r requirements_dev.txt
 sudo python3 setup.py install &
 bash -c "sudo npm install -g yarn && cd home_automation/server/frontend/ && yarn install" &
 wait
