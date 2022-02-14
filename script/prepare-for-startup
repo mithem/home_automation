@@ -1,6 +1,9 @@
 #!/bin/bash
-chmod 777 script/*
+echo Preparing for startup...
+sudo chmod 777 script/*
 sudo mkdir /var/run/home_automation
 sudo chown miguel:miguel /var/run/home_automation
-script/install-truenas-packages
 script/apply-frontend-build-permissions.py
+echo File-system preps done, installing packages...
+bash script/install-truenas-packages
+echo Startup preparations done.
