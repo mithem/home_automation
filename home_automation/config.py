@@ -41,8 +41,9 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
             groupdict = match.groupdict()
             key = groupdict.get("key")
             value = groupdict.get("value")
-            if key and value:
-                config[str(key)] = str(value)
+            if key:
+                if value and value:
+                    config[str(key)] = str(value)
 
     keys_not_found = []
     keys = config.keys()

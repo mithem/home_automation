@@ -109,3 +109,20 @@ export async function testingInitiateAutoUpgrade() {
 	const response = await axios.post(BASE_URL + "/api/home_automation/autoupgrade")
 	return response.status === 202
 }
+
+export async function upgradeHomeAssistant() {
+	const response = await axios.post(BASE_URL + "/api/update-home-assistant")
+	if (response.status >= 400) {
+		return {success: false, error: new Error(response.data as string)}
+	}
+	return {success: true, error: undefined}
+}
+
+export async function forceHomeAssistantUpdate(forcedVersion: string) {
+	try {
+		await axios.post(BASE_URL + "/api/update-home-assistant", {"update_to_version": forcedVersion})
+		return {success: true, error: undefined}
+	} catch (error) {
+		return {success: false, error: error as Error}
+	}
+}

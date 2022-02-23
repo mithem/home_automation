@@ -7,11 +7,13 @@ import json
 import os
 import asyncio
 import multiprocessing as mp
+import re
 
 import logging
 import sqlite3
 import semver
 import docker
+import httpx
 from flask import Flask, render_template, request, url_for, redirect, escape
 from docker.models.containers import Container as DockerContainer, Image as DockerImage
 from docker.models.volumes import Volume as DockerVolume
@@ -34,6 +36,16 @@ if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
 
 CLIENT, ERROR = None, None
 
+INSECURE_HTTPS = os.environ.get("INSECURE_HTTPS", False)
+
+PORTAINER_URL = os.environ.get("PORTAINER_URL", None)
+PORTAINER_USER = os.environ.get("PORTAINER_USER", "admin")
+PORTAINER_PASSWD = os.environ.get("PORTAINER_PASSWD", "")
+PORTAINER_HOME_ASSISTANT_ENV = os.environ.get("PORTAINER_HOME_ASSISTANT_ENV", "local")
+PORTAINER_HOME_ASSISTANT_STACK = os.environ.get("PORTAINER_HOME_ASSISTANT_STACK", None)
+
+HASS_URL = os.environ.get("HASS_BASE_URL", None)
+HASS_TOKEN = os.environ.get("HASS_TOKEN", None)
 
 def try_reloading_client():
     """Try reloading/reconnecting the docker client and save error if appropriate."""
@@ -309,4 +321,68 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         version = state_manager.get_value("testingInitfileVersion")
         return f"VERSION='{version}'"
 
+    @app.route("/api/update-home-assistant", methods=["POST", "PUT"])
+    async def update_home_assistant():
+        timeout = 5
+        if not PORTAINER_URL:
+            return {"error": "No portainer URL configured."}, 500
+        if not PORTAINER_HOME_ASSISTANT_STACK:
+            return {"error": "No portainer stack defining home assistant configured in env."}, 500
+        if not HASS_URL:
+            return {"error": "No home assistant URL defined."}, 500
+        if not HASS_TOKEN:
+            return {"error": "No home assistant token defined."}, 401
+        payload = {"username": PORTAINER_USER, "password": PORTAINER_PASSWD}
+        async with httpx.AsyncClient(verify=not INSECURE_HTTPS) as client:
+            response = await client.post(PORTAINER_URL + "/api/auth", json=payload, timeout=timeout)
+            auth_data = response.json()
+            jwt = auth_data.get("jwt", None)
+            if not jwt:
+                return {"error": "Forbidden (portainer credentials)."}, 403
+            portainer_headers = {"authorization": f"Bearer {jwt}"}
+            response = await client.get(PORTAINER_URL + "/api/stacks", headers=portainer_headers, timeout=timeout)
+            stacks = response.json()
+            try:
+                pot_stacks = filter(lambda s: s.get("Name", "").lower() == PORTAINER_HOME_ASSISTANT_STACK.lower(), stacks)
+                stack = list(pot_stacks)[0]
+                stack_id = stack.get("Id", 0)
+            except IndexError:
+                return {"error": f"Stack '{PORTAINER_HOME_ASSISTANT_STACK}' not found."}, 404
+            response = await client.get(PORTAINER_URL + f"/api/stacks/{stack_id}/file", headers=portainer_headers, timeout=timeout)
+            stack_data = response.json()
+            file_content = stack_data.get("StackFileContent", None)
+            if not file_content:
+                return {"error": "No StackFileContent provided from portainer."}, 500
+
+            current_version_regex = r"image: homeassistant/home-assistant:(?P<version>\d\d\d\d\.\d\d?\.\d+)"
+            result = re.search(current_version_regex, file_content)
+            if not result:
+                return {"error": "Could not extract version information from stack info."}
+            current_version = result.groupdict().get("version", None)
+            data = request.get_json()
+            version_to_update_to = None
+            if data:
+                if type(data) == dict:
+                    version_to_update_to= data.get("update_to_version", None)
+            if not version_to_update_to:
+                hass_headers = {"authorization": f"Bearer {HASS_TOKEN}"}
+                response = await client.get(HASS_URL + "/api/states/binary_sensor.updater", headers=hass_headers, timeout=timeout)
+                data = response.json()
+                version_to_update_to = data.get("attributes", {}).get("newest_version", None)
+            if version_to_update_to:
+                if current_version != version_to_update_to: # don't check whether version_to_update_to is greater than current one with semver to allow forced downgrades
+                    new_stack_content = re.sub(current_version_regex, f"image: homeassistant/home-assistant:{version_to_update_to}", file_content)
+                    response = await client.get(PORTAINER_URL + "/api/endpoints", headers=portainer_headers)
+                    endpoints = response.json()
+                    try:
+                        pot_endpoints = filter(lambda e: e.get("Name", "").lower() == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)
+                        endpoint = list(pot_endpoints)[0]
+                        endpoint_id = endpoint.get("Id", 0)
+                    except IndexError:
+                        return {"error": f"Environment '{PORTAINER_HOME_ASSISTANT_ENV}' not found"}, 404
+                    response = await client.put(PORTAINER_URL + f"/api/stacks/{stack_id}?endpointId={endpoint_id}", json={"stackFileContent": new_stack_content}, headers=portainer_headers, timeout=timeout)
+                    return response.json(), response.status_code
+                return {"previous_version": current_version, "new_version": version_to_update_to}
+            return {"error": "Could not retreive newest available version from home assistant."}, 500
+            
     return app

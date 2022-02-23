@@ -19,7 +19,9 @@ VALID_CONFIG_LINES = [
     "DB_PATH=home_automation.backend.db",
     "COMPOSE_FILE=docker-compose.yml",
     "MOODLE_DL_DIR=~/moodle",
-    "EXTRA_COMPRESS_DIRS=/mnt/extra1;/mnt/extra2"
+    "EXTRA_COMPRESS_DIRS=/mnt/extra1;/mnt/extra2",
+    "HOME_AUTOMATION_USER=",
+    "HOME_AUTOMATION_GROUP=wheel"
 ]
 
 VALID_CONFIG_DICT = {
@@ -36,7 +38,8 @@ VALID_CONFIG_DICT = {
     "DB_PATH": "home_automation.backend.db",
     "COMPOSE_FILE": "docker-compose.yml",
     "MOODLE_DL_DIR": "~/moodle",
-    "EXTRA_COMPRESS_DIRS": "/mnt/extra1;/mnt/extra2"
+    "EXTRA_COMPRESS_DIRS": "/mnt/extra1;/mnt/extra2",
+    "HOME_AUTOMATION_GROUP": "wheel"
 }
 
 @pytest.mark.usefixtures("fixture_delete_environment_vars")

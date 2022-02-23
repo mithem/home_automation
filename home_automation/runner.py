@@ -20,6 +20,7 @@ from watchdog.events import (
 
 from home_automation.config import load_dotenv
 from home_automation import compression_manager
+from home_automation import utilities as util
 
 # logging system copied from
 # https://fanchenbao.medium.com/python3-logging-with-multiprocessing-f51f460b8778
@@ -91,9 +92,12 @@ def _logging_listener(queue: mp.Queue):
             logger.handle(record)
 
     try:
+        util.drop_privileges()
         signal.signal(signal.SIGINT, _signal_handler)
         signal.signal(signal.SIGTERM, _signal_handler)
         _configure_log_listener()
+        user, group = util.check_current_user()
+        logging.info("Running log listener as %s / %s", user, group)
         while True:
             handle_logs()
             time.sleep(1)
@@ -127,6 +131,9 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_cron")
+    util.drop_privileges(logger)
+    user, group = util.check_current_user()
+    logger.info("Running cron jobs as %s / %s", user, group)
     if not cron_user:
         cron_user = os.environ.get("CRON_USER")
 
@@ -185,6 +192,9 @@ def run_watchdog(queue: mp.Queue):
     signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_watchdog")
+    util.drop_privileges(logger)
+    user, group = util.check_current_user()
+    logger.info("Running watchdog as %s / %s", user, group)
     event_handler = _WatchdogEventHandler()
     observer = WatchdogObserver()
     observer.schedule(event_handler, HOMEWORK_DIR, True)
@@ -207,6 +217,8 @@ def run_backend_server(queue: mp.Queue):
     signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_backend")
+    user, group = util.check_current_user()
+    logger.info("Running backend as %s / %s", user, group)
     logger.info("Running backend...")
     try:
         # sometimes running gunicorn from shell is just equivalent to but way easier than
@@ -227,6 +239,8 @@ def build_frontend(queue: mp.Queue):
     """Build the frontend React app (not the backend and don't serve it (that's nginx's job.))."""
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_frontend")
+    user, group = util.check_current_user()
+    logger.info("Running frontend build as %s / %s", user, group)
     logger.info("Building frontend.")
     try:
         os.system("cd home_automation/server/frontend && yarn build")

@@ -1,7 +1,7 @@
 import React from "react";
 import {Alert, Button} from "react-bootstrap";
 import {refreshInterval} from "../constants";
-import {getHomeAutomationManagementData, upgradeServer, refreshVersionInfo} from "../functions";
+import {getHomeAutomationManagementData, upgradeServer, refreshVersionInfo, upgradeHomeAssistant} from "../functions";
 import HomeAutomationManagementData from "../models/HomeAutomationManagementData";
 
 import "../style/HomeAutomationManagementUI.css"
@@ -38,6 +38,15 @@ export default class HomeAutomationManagementUI extends React.Component<{}, Home
 			})
 	}
 
+	upgradeHomeAssistant() {
+		upgradeHomeAssistant()
+			.then(result => {
+				if (!result.success) {
+						this.setState({error: result.error})
+					}
+				})
+		}
+
 	render() {
 		const newVersionAvailableAlert = this.state.available !== undefined ? (
 			<Alert variant="success" className="version available">
@@ -62,6 +71,11 @@ export default class HomeAutomationManagementUI extends React.Component<{}, Home
 					</Button>
 				</Alert>
 				{newVersionAvailableAlert}
+				<div>
+					<Button variant="primary" onClick={() => {this.upgradeHomeAssistant()}}>
+						Upgrade home assistant
+					</Button>
+				</div>
 			</div>
 		)
 	}
