@@ -2,7 +2,7 @@
 
 Yes, I absolutely couldn't use Portainer!
 (Well, I use it but this has more requirements.)"""
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple, Union
 import json
 import os
 import asyncio
@@ -425,7 +425,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         version_to_update_to: str,
         stack: Dict[str, str],
         portainer_headers: Dict[str, str]
-    ) -> Tuple[Dict[str, str], int]:
+    ) -> Union[Tuple[Dict[str, Any], int], Dict[str, Any]]:
         if not PORTAINER_URL:
             raise ServerAPIError("No portainer URL configured.")
         if not PORTAINER_HOME_ASSISTANT_ENV:
