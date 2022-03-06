@@ -408,12 +408,15 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         if not version_to_update_to:
             hass_headers = {"authorization": f"Bearer {HASS_TOKEN}"}
             response = await client.get(
-                HASS_URL + "/api/states/binary_sensor.updater",
+                HASS_URL + "/api/states/sensor.docker_hub",
                 headers=hass_headers,
                 timeout=PORTAINER_CALLS_TIMEOUT)
             data = response.json()
             version_to_update_to = data.get(
-                "attributes", {}).get("newest_version", None)
+                "state", None)
+        if not version_to_update_to:
+            raise ServerAPIError(
+                "Could not retreive newest available version from home assistant.")
         return current_version, version_to_update_to
 
     async def _update_home_assistant(
@@ -423,40 +426,44 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         stack: Dict[str, str],
         portainer_headers: Dict[str, str]
     ) -> Tuple[Dict[str, str], int]:
-        if version_to_update_to:
-            if not PORTAINER_URL:
-                raise ServerAPIError("No portainer URL configured.")
-            if not PORTAINER_HOME_ASSISTANT_ENV:
-                raise ServerAPIError(
-                    "No home assistant environment for portainer specified in .env.")
-            # don't check whether version_to_update_to is greater than current one
-            # with semver to allow forced downgrades
-            if current_version != version_to_update_to:
-                new_stack_content = re.sub(
-                    CURRENT_HASS_VERSION_REGEX,
-                    f"image: homeassistant/home-assistant:{version_to_update_to}",
-                    stack["stackFileContent"]
-                )
-                response = await client.get(
-                    PORTAINER_URL + "/api/endpoints",
-                    headers=portainer_headers)
-                endpoints = response.json()
-                try:
-                    pot_endpoints = filter(lambda e: e.get("Name", "").lower(
-                    ) == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)
-                    endpoint = list(pot_endpoints)[0]
-                    endpoint_id = endpoint.get("Id", 0)
-                except IndexError:
-                    return {"error": f"Environment '{PORTAINER_HOME_ASSISTANT_ENV}' not found"}, 404
+        if not PORTAINER_URL:
+            raise ServerAPIError("No portainer URL configured.")
+        if not PORTAINER_HOME_ASSISTANT_ENV:
+            raise ServerAPIError(
+                "No home assistant environment for portainer specified in .env.")
+        # don't check whether version_to_update_to is greater than current one
+        # with semver to allow forced downgrades
+        if current_version != version_to_update_to:
+            new_stack_content = re.sub(
+                CURRENT_HASS_VERSION_REGEX,
+                f"image: homeassistant/home-assistant:{version_to_update_to}",
+                stack["stackFileContent"]
+            )
+            response = await client.get(
+                PORTAINER_URL + "/api/endpoints",
+                headers=portainer_headers)
+            endpoints = response.json()
+            try:
+                pot_endpoints = filter(lambda e: e.get("Name", "").lower(
+                ) == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)
+                endpoint = list(pot_endpoints)[0]
+                endpoint_id = endpoint.get("Id", 0)
+            except IndexError:
+                return {"error": f"Environment '{PORTAINER_HOME_ASSISTANT_ENV}' not found"}, 404
+            try:
                 response = await client.put(
                     PORTAINER_URL +
                     f"/api/stacks/{stack['Id']}?endpointId={endpoint_id}",
                     json={"stackFileContent": new_stack_content},
-                    headers=portainer_headers,
-                    timeout=PORTAINER_CALLS_TIMEOUT)
-                return response.json(), response.status_code
-            return {"previous_version": current_version, "new_version": version_to_update_to}, 200
-        return {"error": "Could not retreive newest available version from home assistant."}, 500
+                    headers=portainer_headers
+                )
+                return {"success": True, "new_version": version_to_update_to}
+            except Exception as error:
+                if str(error) == "":
+                    return {"success": True, "new_version": version_to_update_to}
+                raise Exception(
+                    f"Error applying new stack definition: {error}") from error
+        return {"previous_version": current_version, "new_version": version_to_update_to}
 
     @app.route("/api/update-home-assistant", methods=["POST", "PUT"])
     async def update_home_assistant():  # pylint: disable=too-many-return-statements
@@ -480,5 +487,5 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                     portainer_headers
                 )
             except Exception as exc:  # pylint: disable=broad-except
-                return {"error": str(exc)}
+                return {"error": str(exc)}, 500
     return app

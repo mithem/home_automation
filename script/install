@@ -1,7 +1,7 @@
 #!/bin/bash
 echo Installing the home_automation project...
-sudo cp home_automation.setup.service /etc/systemd/system/
-sudo cp home_automation.service /etc/systemd/system/
+sudo cp systemd/home_automation.setup.service /etc/systemd/system/
+sudo cp systemd/home_automation.service /etc/systemd/system/
 sudo systemctl daemon-reload
 echo Systemd services are copied and loaded. Enabling...
 sudo systemctl enable home_automation
