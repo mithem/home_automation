@@ -41,6 +41,9 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
             groupdict = match.groupdict()
             key = groupdict.get("key")
             value = groupdict.get("value")
+            if value:
+                for char in [" ", "\"", "'"]:
+                    value = value.strip(char)
             if key:
                 if value and value:
                     config[str(key)] = str(value)
@@ -59,8 +62,8 @@ def parse_config(lines: List[str]) -> Dict[str, str]:
 def load_into_environment(
         config: Dict[str, str],
         config_to_parse_from_file: List[str] = None,
-        force = False
-        ):
+        force=False
+):
     """Load the dict into the environment."""
     if config_to_parse_from_file is not None:
         for key, value in config.items():

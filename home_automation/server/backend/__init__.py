@@ -2,7 +2,7 @@
 
 Yes, I absolutely couldn't use Portainer!
 (Well, I use it but this has more requirements.)"""
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 import json
 import os
 import asyncio
@@ -28,35 +28,14 @@ class ServerAPIError(Exception):
     """Any API error (that might be returned to the user)."""
 
 
-DB_PATH = os.environ.get("DB_PATH", None)
-if not DB_PATH:
-    raise home_automation.config.ConfigError("DB_PATH envvar not found.")
-if not os.path.isfile(DB_PATH):
-    with open(DB_PATH, "w", encoding="utf-8"):
-        pass
-
-COMPOSE_FILE = os.environ.get("COMPOSE_FILE", None)
-if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
-    COMPOSE_FILE = os.path.join(COMPOSE_FILE, "docker-compose.yml")
-
-CLIENT, ERROR = None, None
-
-INSECURE_HTTPS = os.environ.get("INSECURE_HTTPS", False)
-
-PORTAINER_URL = os.environ.get("PORTAINER_URL", None)
-PORTAINER_USER = os.environ.get("PORTAINER_USER", "admin")
-PORTAINER_PASSWD = os.environ.get("PORTAINER_PASSWD", "")
-PORTAINER_HOME_ASSISTANT_ENV = os.environ.get(
-    "PORTAINER_HOME_ASSISTANT_ENV", "local")
-PORTAINER_HOME_ASSISTANT_STACK = os.environ.get(
-    "PORTAINER_HOME_ASSISTANT_STACK", None)
-
-HASS_URL = os.environ.get("HASS_BASE_URL", None)
-HASS_TOKEN = os.environ.get("HASS_TOKEN", None)
-
 CURRENT_HASS_VERSION_REGEX = \
     r"image: homeassistant/home-assistant:(?P<version>\d\d\d\d\.\d\d?\.\d+)"
 PORTAINER_CALLS_TIMEOUT = 5
+
+PORTAINER_HOME_ASSISTANT_ENV: Optional[str]
+
+DB_PATH, COMPOSE_FILE, CLIENT, ERROR, INSECURE_HTTPS, PORTAINER_URL, PORTAINER_USER, PORTAINER_PASSWD, PORTAINER_HOME_ASSISTANT_ENV, PORTAINER_HOME_ASSISTANT_STACK, HASS_URL, HASS_TOKEN = [  # pylint: disable=line-too-long
+    None for _ in range(12)]
 
 
 def try_reloading_client():
@@ -68,7 +47,37 @@ def try_reloading_client():
         ERROR = docker_exception
 
 
+def reload_env_values():
+    """Reload all .env-defined variables."""
+    global DB_PATH, COMPOSE_FILE, INSECURE_HTTPS, PORTAINER_URL, PORTAINER_USER, PORTAINER_PASSWD  # pylint: disable=global-statement
+    global PORTAINER_HOME_ASSISTANT_ENV, PORTAINER_HOME_ASSISTANT_STACK, HASS_URL, HASS_TOKEN  # pylint: disable=global-statement
+    DB_PATH = os.environ.get("DB_PATH", None)
+    if not DB_PATH:
+        raise home_automation.config.ConfigError("DB_PATH envvar not found.")
+    if not os.path.isfile(DB_PATH):
+        with open(DB_PATH, "w", encoding="utf-8"):
+            pass
+
+    COMPOSE_FILE = os.environ.get("COMPOSE_FILE", None)
+    if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
+        COMPOSE_FILE = os.path.join(COMPOSE_FILE, "docker-compose.yml")
+
+    INSECURE_HTTPS = os.environ.get("INSECURE_HTTPS", False)
+
+    PORTAINER_URL = os.environ.get("PORTAINER_URL", None)
+    PORTAINER_USER = os.environ.get("PORTAINER_USER", "admin")
+    PORTAINER_PASSWD = os.environ.get("PORTAINER_PASSWD", "")
+    PORTAINER_HOME_ASSISTANT_ENV = os.environ.get(
+        "PORTAINER_HOME_ASSISTANT_ENV", "local")
+    PORTAINER_HOME_ASSISTANT_STACK = os.environ.get(
+        "PORTAINER_HOME_ASSISTANT_STACK", None)
+
+    HASS_URL = os.environ.get("HASS_BASE_URL", None)
+    HASS_TOKEN = os.environ.get("HASS_TOKEN", None)
+
+
 try_reloading_client()
+reload_env_values()
 
 
 def compose_pull_exec():
@@ -160,12 +169,12 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                     ]}
             return data
         except AttributeError:
-            return str(ERROR), 500
+            return {"error": str(ERROR)}, 500
         except (APIError, Exception) as exc:  # pylint: disable=broad-except
             # originally a docker error, but
             # docker might also raise other exceptions like some from requests
             try_reloading_client()
-            return str(exc), 500
+            return {"error": str(exc)}, 500
 
     @app.route("/api/containers/stop", methods=["POST"])
     def stop_container():
@@ -445,7 +454,8 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             endpoints = response.json()
             try:
                 pot_endpoints = filter(lambda e: e.get("Name", "").lower(
-                ) == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)
+                    # as it's actually checked for just a few lines above
+                ) == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)  # type: ignore
                 endpoint = list(pot_endpoints)[0]
                 endpoint_id = endpoint.get("Id", 0)
             except IndexError:
@@ -488,4 +498,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 return {"error": str(exc)}, 500
+
+    @app.route("/api/debug/env")
+    def debug_env():
+        return dict(os.environ)
+
+    @app.route("/api/debug/env/reload", methods=["POST"])
+    def debug_env_reload():
+        reload_env_values()
+        return {"success": True}
+
     return app

@@ -10,14 +10,14 @@ VALID_CONFIG_LINES = [
     "EMAIL_PASSWD=passw0rd1",
     "LOG_DIR=/var/logs\n",
     "HASS_TOKEN=abcABC123\n",
-    "HASS_BASE_URL=http://homeassistant.local:8123",
+    "HASS_BASE_URL=\"http://homeassistant.local:8123\"",
     "THINGS_SERVER_URL=http://192.168.2.197:8001\n",
     "HOMEWORK_DIR = /volume2/Hausaufgaben/HAs",
-    "ARCHIVE_DIR = /volume2/Hausaufgaben/Archive",
-    "ANOTHER=hello",
+    "ARCHIVE_DIR = '/volume2/Hausaufgaben/Archive'",
+    "ANOTHER=\" hello\"",
     "INSECURE_HTTPS=0",
-    "DB_PATH=home_automation.backend.db",
-    "COMPOSE_FILE=docker-compose.yml",
+    "DB_PATH= home_automation.backend.db",
+    "COMPOSE_FILE= docker-compose.yml ",
     "MOODLE_DL_DIR=~/moodle",
     "EXTRA_COMPRESS_DIRS=/mnt/extra1;/mnt/extra2",
     "HOME_AUTOMATION_USER=",
@@ -33,7 +33,7 @@ VALID_CONFIG_DICT = {
     "THINGS_SERVER_URL": "http://192.168.2.197:8001",
     "HOMEWORK_DIR": "/volume2/Hausaufgaben/HAs",
     "ARCHIVE_DIR": "/volume2/Hausaufgaben/Archive",
-    "ANOTHER": "hello",
+    "ANOTHER": " hello",
     "INSECURE_HTTPS": "0",
     "DB_PATH": "home_automation.backend.db",
     "COMPOSE_FILE": "docker-compose.yml",
@@ -41,6 +41,7 @@ VALID_CONFIG_DICT = {
     "EXTRA_COMPRESS_DIRS": "/mnt/extra1;/mnt/extra2",
     "HOME_AUTOMATION_GROUP": "wheel"
 }
+
 
 @pytest.mark.usefixtures("fixture_delete_environment_vars")
 class EnvironmentSensibleTestCase():
@@ -54,6 +55,7 @@ class EnvironmentSensibleTestCase():
                 del os.environ[key]
             except KeyError:
                 continue
+
 
 class TestEnvironmentSensibleTestCase(EnvironmentSensibleTestCase):
     def assert_no_env_vars(self):
@@ -69,13 +71,13 @@ class TestEnvironmentSensibleTestCase(EnvironmentSensibleTestCase):
     def test_environment_sensible_test_case_uses_fixture(self):
         self.assert_no_env_vars()
 
+
 class TestParseConfig(EnvironmentSensibleTestCase):
     def test_parse_config_valid_config(self):
 
         result = parse_config(VALID_CONFIG_LINES)
 
         assert result == VALID_CONFIG_DICT
-
 
     def test_parse_config_raises_exception_when_config_incomplete(self):
         config = [
@@ -90,6 +92,7 @@ class TestParseConfig(EnvironmentSensibleTestCase):
         with pytest.raises(ConfigError) as excinfo:
             parse_config(config)
         assert "ARCHIVE_DIR" in str(excinfo.value)
+
 
 class TestLoadIntoEnvironment(EnvironmentSensibleTestCase):
     def test_load_into_environment_entire_config(self):
@@ -107,7 +110,7 @@ class TestLoadIntoEnvironment(EnvironmentSensibleTestCase):
         for key, value in VALID_CONFIG_DICT.items():
             if key in keys_to_load:
                 assert os.environ[key] == value
-            elif key in _required_keys: # only those are deleted by the fixture
+            elif key in _required_keys:  # only those are deleted by the fixture
                 with pytest.raises(KeyError):
                     # don't need to assert, just can't think of anything else to do with the value
                     assert not os.environ[key]
@@ -136,12 +139,15 @@ class TestLoadIntoEnvironment(EnvironmentSensibleTestCase):
         for key, value in VALID_CONFIG_DICT.items():
             assert os.environ[key] == value
 
+
 class TestLoadDotenv(EnvironmentSensibleTestCase):
     def test_load_dotenv_doesnt_override_env_values(self):
         mail = "test@example.com"
         os.environ["EMAIL_ADDRESS"] = mail
-        lines_to_restore = None # just restore to how it was before the test was run, has nothing to do with actually asserting the right functionality
-        corrected_lines = [line + ("\n" if not line.endswith("\n") else "") for line in VALID_CONFIG_LINES]
+        # just restore to how it was before the test was run, has nothing to do with actually asserting the right functionality
+        lines_to_restore = None
+        corrected_lines = [
+            line + ("\n" if not line.endswith("\n") else "") for line in VALID_CONFIG_LINES]
 
         try:
             with open(".env", "r") as f:
