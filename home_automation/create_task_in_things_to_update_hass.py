@@ -5,7 +5,7 @@ hence so many symbols not found to be defined by syntax highlighters etc."""
 
 import aiohttp
 
-URL = "http://192.168.2.197:8001/api/v1/create-things-task-to-update-hass"
+URL = "http://192.168.0.197:8001/api/v1/create-things-task-to-update-hass"
 
 @service
 def create_task_in_things_to_update_hass():

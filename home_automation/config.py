@@ -157,6 +157,17 @@ class ConfigProcess:
         )
 
 
+class ConfigRunner:
+    cron_user: Optional[str]
+
+    def __new__(self, data: Dict[str, str]):
+        cron_user = data.get("cron_user")
+        if not cron_user:
+            return None
+        self.cron_user = cron_user
+
+
+
 class Config:
     """Configuration data."""
     log_dir: str
@@ -171,6 +182,7 @@ class Config:
     portainer: Optional[ConfigPortainer]
     things_server: Optional[ConfigThingsServer]
     process: Optional[ConfigProcess]
+    runner: Optional[ConfigRunner]
 
     def __init__(self, log_dir: str,
                  homework_dir: str,
@@ -182,6 +194,7 @@ class Config:
                  portainer: Dict[str, Any] = dict(),
                  things_server: Dict[str, Any] = dict(),
                  process: Dict[str, str] = dict(),
+                 runner: Dict[str, str] = dict(),
                  extra_compress_dirs: List[str] = [],
                  moodle_dl_dir: Optional[str] = None
                  ):
@@ -197,6 +210,7 @@ class Config:
         self.portainer = ConfigPortainer(portainer)
         self.things_server = ConfigThingsServer(things_server)
         self.process = ConfigProcess(process)
+        self.runner = ConfigRunner(config_runner)
 
     def __str__(self) -> str:
         return str(vars(self))

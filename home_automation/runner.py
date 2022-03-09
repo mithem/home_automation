@@ -28,13 +28,7 @@ from home_automation import utilities as util
 load_dotenv()
 
 CRONTAB_FILE_NAME = "home_automation.tab"
-LOG_DIR = os.environ.get("LOG_DIR", os.curdir)
-HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
-ARCHIVE_DIR = os.environ.get("ARCHIVE_DIR")
-MOODLE_DL_DIR = os.environ.get("MOODLE_DL_DIR")
 PID_FILE_NAME = "home_automation.runner"
-TERM_SWITCH = False
-
 
 class LockError(Exception):
     """An error representing an anomaly handling the lock."""
@@ -70,10 +64,10 @@ def _signal_handler(num, frame):  # pylint: disable=unused-argument
         raise _ProcessExit()
 
 
-def _configure_log_listener():
+def _configure_log_listener(config: config.Config):
     root = logging.getLogger()
     file_handler = logging.handlers.RotatingFileHandler(
-            os.path.join(LOG_DIR, "home_automation_runner.log"))
+            os.path.join(config.log_dir, "home_automation_runner.log"))
     console_handler = logging.StreamHandler()
     formatter = logging.Formatter(
             "%(asctime)s %(processName)-10s %(levelname)-8s %(message)s")
@@ -116,7 +110,7 @@ def _configure_log_worker(queue: mp.Queue):
 def setup():
     """Set up local filesystem for home_automation (create necessary dirs)
     and register signal handler."""
-    for path in [HOMEWORK_DIR, ARCHIVE_DIR, LOG_DIR]:
+    for path in [config.homework_dir, config.archive_dir, config.log_dir]:
         try:
             os.makedirs(path)
         except FileExistsError:
@@ -125,7 +119,7 @@ def setup():
     signal.signal(signal.SIGTERM, _signal_handler)
 
 
-def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
+def run_cron_jobs(config: config.Config, queue: mp.Queue):
     """Schedule cron jobs and run them."""
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
@@ -135,10 +129,10 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
     user, group = util.check_current_user()
     logger.info("Running cron jobs as %s / %s", user, group)
     if not cron_user:
-        cron_user = os.environ.get("CRON_USER")
+        cron_user = CONFIG.runner.cron_user
 
     def load_crontab():
-        cron = CronTab(user=cron_user, tabfile=CRONTAB_FILE_NAME)
+        cron = CronTab(user=config.runner.cron_user, tabfile=CRONTAB_FILE_NAME)
         return cron
 
     try:
@@ -154,8 +148,8 @@ def run_cron_jobs(queue: mp.Queue, cron_user: str = None):
             command="python3 -m home_automation.archive_manager archive")
     reorganization_job = cron.new(
             command="python3 -m home_automation.archive_manager reorganize")
-    if MOODLE_DL_DIR is not None and not os.path.isdir(MOODLE_DL_DIR):
-        raise Exception(f"Directory not found: {MOODLE_DL_DIR}")
+    if config.moodle_dl_dir is not None and not os.path.isdir(config.moodle_dl_dir):
+        raise Exception(f"Directory not found: {config.moodle_dl_dir}")
     moodle_dl_job = cron.new(command="script/run-moodle-dl.py")
     auto_upgrade_job = cron.new(command=\
         "curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade")
@@ -253,6 +247,7 @@ def build_frontend(queue: mp.Queue):
 @pidfile("/var/run/home_automation/runner.pid")
 def main(cron_user: str = None):
     """Run cron jobs and observe `HOMEWORK_DIR` for changes (blocks permanently)"""
+    config = config.load_config()
     queue: mp.Queue = mp.Queue(-1)
     processes = [
             mp.Process(target=_logging_listener, args=(queue,),

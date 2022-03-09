@@ -56,6 +56,7 @@ DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
 YEAR_REGEX = r"^.+(?P<year>\d\d\d\d).+$"
 NO_TRANSFER_REGEX = r"^.*(?P<notransferflag>NO(_|-)?TRANSFER).*$"
 
+CONFIG = config.load_config()
 
 class InvalidFormattingException(Exception):
     """An exception thrown when a file is invalidly formatted."""
@@ -78,15 +79,17 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, debug=False):
         self.logger = fileloghelper.Logger(os.path.join(
-            os.environ.get("LOG_DIR"), "archive_manager.log"), autosave=debug)
+            CONFIG.log_dir, "archive_manager.log"), autosave=debug)
         self.transferred_files = []
         self.not_transferred_files = []
-        self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
-        self.archive_dir = str(os.environ.get("ARCHIVE_DIR"))
+        self.homework_dir = CONFIG.homework_dir
+        self.archive_dir = CONFIG.archive_dir
         self.debug = debug
-        self.email_address = os.environ.get("EMAIL_ADDRESS")
-        self.smtp = yagmail.SMTP(self.email_address,
-                                os.environ.get("EMAIL_PASSWD"))
+        self.email_address = CONFIG.email.address
+        self.smtp = yagmail.SMTP(
+            self.email_address,
+            CONFIG.email.password
+        )
 
     def parse_filename(self, path: str):  # pylint: disable=no-self-use
         """parse filename and return (subject, year, month), each as

@@ -9,12 +9,10 @@ from home_automation.archive_manager import ABBR_TO_SUBJECT
 from home_automation import config
 
 config.load_dotenv()
-HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
-HOME_ASSISTANT_TOKEN = os.environ.get("HASS_TOKEN")
-THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
 TIMEOUT = 10
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 
+CONFIG = config.load_config()
 
 class InvalidResponseError(Exception):
     """Invalid response (who would have guessed??)"""
@@ -29,9 +27,8 @@ class CompressionMiddleware:
     For example, it can be used to communicate with other services.
     Each coroutine is executed separately."""
 
-    def __init__(self, logger: fileloghelper.Logger, insecure_https = False):
+    def __init__(self, logger: fileloghelper.Logger):
         self.logger = logger
-        self.insecure_https = insecure_https
 
     async def act(self, path: str):  # pylint: disable=no-self-use
         """Act on the file being compressed."""
@@ -63,10 +60,12 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
 
     async def flash_lights_in_home_assistant(self):
         """What could be tried here?"""
-        headers = {"Authorization": "Bearer " + HOME_ASSISTANT_TOKEN}
-        async with httpx.AsyncClient(verify=not self.insecure_https) as client:
+        if not CONFIG.home_assistant:
+            raise Exception("Home Assistant data not configured.")
+        headers = {"Authorization": "Bearer " + CONFIG.home_assistant.token}
+        async with httpx.AsyncClient(verify=not CONFIG.home_assistant.insecure_https) as client:
             response = await client.post(
-                HOME_ASSISTANT_URL
+                CONFIG.home_assistant.url
                 + "/api/services/script/flash_miguels_room",
                 headers=headers,
                 timeout=TIMEOUT
@@ -82,8 +81,8 @@ class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     async def change_status_in_things(self, filename):
         """What could be tried here?"""
         subject = filename.split(" ")[0].upper()
-        async with httpx.AsyncClient(verify=not self.insecure_https) as client:
-            response = await client.post(THINGS_SERVER_URL +
+        async with httpx.AsyncClient(verify=not CONFIG.things_server.insecure_https) as client:
+            response = await client.post(CONFIG.things_server.url +
                                          "/api/v1/markhomeworkasdone?"
                                          + f"subject={subject}",
                                          timeout=TIMEOUT)

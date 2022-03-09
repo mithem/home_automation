@@ -20,14 +20,6 @@ BLACKLIST_BEGINNINGS = ["Scan ", ".", "_", "Scanned Document"]
 BLACKLIST_ENDINGS = [".small.pdf"]
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 LOG_DIR = ""
-EXTRA_COMPRESS_DIRS = os.environ.get("EXTRA_COMPRESS_DIRS", "").split(";")
-
-
-def load_envvars():
-    """Load constants from environment."""
-    for key in ["LOG_DIR"]:
-        setattr(sys.modules[__name__], key, os.environ[key])
-
 
 class LoopBreakingException(Exception):
     """Internal. Used to break a loop."""
@@ -36,10 +28,10 @@ class LoopBreakingException(Exception):
 class CompressionManager:
     """Manages compressing files."""
 
-    def __init__(self, debug=False, testing=False):
+    def __init__(self, config: config.Config, debug=False, testing=False):
         self.logger = fileloghelper.Logger(os.path.join(
             LOG_DIR, "compression_manager.log"), autosave=debug)
-        self.homework_dir = str(os.environ.get("HOMEWORK_DIR"))
+        self.config = config
         if not testing:
             # introduces weird fomatting in pytest
             self.logger.header(True, True)
@@ -51,7 +43,7 @@ class CompressionManager:
         if directory:
             dir_to_compress = directory
         else:
-            dir_to_compress = self.homework_dir
+            dir_to_compress = self.config.homework_dir
 
         self.logger.context = "compressing"
         self.logger.debug(f"Compressing directory '{dir_to_compress}'")
@@ -133,7 +125,7 @@ class CompressionManager:
         if directory:
             dir_to_compress = directory
         else:
-            dir_to_compress = self.homework_dir
+            dir_to_compress = self.config.homework_dir
 
         self.logger.context = "clean_up"
         self.logger.debug(f"Cleaning up directory: {directory}")
@@ -167,15 +159,12 @@ async def main(arguments: Union[str, List[str]] = None):
             action="store_true", help="verbose mode")
     args = parser.parse_args(arguments)
 
-    config.load_dotenv()
-    load_envvars()
-
-    insecure_https = bool(int(os.environ.get("INSECURE_HTTPS", 0)))
+    config_data = config.load_config()
 
     manager = CompressionManager(args.verbose)
 
     middleware = [
-        FlashLightsInHomeAssistantMiddleware(manager.logger, insecure_https),
+        FlashLightsInHomeAssistantMiddleware(manager.logger),
         ChangeStatusInThingsMiddleware(manager.logger)
     ]
 
@@ -184,7 +173,7 @@ async def main(arguments: Union[str, List[str]] = None):
 
     await manager.compress_directory()
 
-    for directory in EXTRA_COMPRESS_DIRS:
+    for directory in CONFIG.extra_compress_dirs:
         await manager.compress_directory(directory)
 
     manager.clean_up_directory()
