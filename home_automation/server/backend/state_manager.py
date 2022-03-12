@@ -1,15 +1,17 @@
 """StateManager manages the sqlite3 database under $DB_PATH."""
 import sqlite3
 import logging
-import os
 
 import home_automation
+from home_automation import config as haconfig
 
-DB_PATH = os.environ["DB_PATH"]
+CONFIG = haconfig.load_config()
 STATUS_KEYS = ["pulling", "upping", "downing", "pruning"]
+
 
 class StateManager:
     """StateManager managed the sqlite3 database under $DB_PATH."""
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.prepare_db()
@@ -64,14 +66,14 @@ ERE key=:key", {"key": key, "status": status})
     def reset_db(self):
         """Reset the DB to the default values."""
         default_values = [
-                ("pulling", False),
-                ("upping", False),
-                ("downing", False),
-                ("pruning", False),
-                ("version", home_automation.VERSION),
-                ("versionAvailable", ""),
-                ("versionAvailableSince", ""),
-                ("testingInitfileVersion", "")
+            ("pulling", False),
+            ("upping", False),
+            ("downing", False),
+            ("pruning", False),
+            ("version", home_automation.VERSION),
+            ("versionAvailable", ""),
+            ("versionAvailableSince", ""),
+            ("testingInitfileVersion", "")
         ]
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
@@ -111,22 +113,24 @@ ERE key=:key", {"key": key, "status": status})
         try:
             connection = sqlite3.connect(self.db_path)
             cur = connection.cursor()
-            elements = cur.execute("SELECT key, value FROM status WHERE key=?", [key])
+            elements = cur.execute(
+                "SELECT key, value FROM status WHERE key=?", [key])
             elems = list(elements)
             cur.close()
             connection.close()
             if len(elems) == 0:
                 return None
             if len(elems) == 1:
-                return elems[0][1] # each element: (key, value)
+                return elems[0][1]  # each element: (key, value)
             # I know, the db will already by reset, but "reset db" is ambiguous
             self.reset_db()
-            raise Exception("Multiple elements found for the same key. Resetting db.")
+            raise Exception(
+                "Multiple elements found for the same key. Resetting db.")
         except sqlite3.OperationalError:
             self.prepare_db()
             return self.get_value(key)
 
-    def execute(self, sql: str, *params, commit = False):
+    def execute(self, sql: str, *params, commit=False):
         """Execute an arbitrary SQL statement and return the result.
         If `commit`, commit the connection.
         Additional params will be passed to `cursor.execute`.

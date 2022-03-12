@@ -2,18 +2,15 @@
 import argparse
 import asyncio
 import os
-import sys
 from typing import List, Union
 
 import fileloghelper
-from home_automation import config
+import home_automation.config
 from home_automation.archive_manager import ABBR_TO_SUBJECT
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware, CompressionMiddleware,
     FlashLightsInHomeAssistantMiddleware
 )
-
-config.load_dotenv()
 
 BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_", "Scanned Document"]
@@ -21,14 +18,19 @@ BLACKLIST_ENDINGS = [".small.pdf"]
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 LOG_DIR = ""
 
+
 class LoopBreakingException(Exception):
     """Internal. Used to break a loop."""
 
 
 class CompressionManager:
     """Manages compressing files."""
+    logger: fileloghelper.Logger
+    config: home_automation.config.Config
+    debug: bool
+    middleware: List[CompressionMiddleware]
 
-    def __init__(self, config: config.Config, debug=False, testing=False):
+    def __init__(self, config: home_automation.config.Config, debug=False, testing=False):
         self.logger = fileloghelper.Logger(os.path.join(
             LOG_DIR, "compression_manager.log"), autosave=debug)
         self.config = config
@@ -78,7 +80,7 @@ class CompressionManager:
         Deal with logging and return True/False respectively."""
         def skip(path: str):
             self.logger.debug(
-                    f"Skipping {path} as it doesn't qualify for \
+                f"Skipping {path} as it doesn't qualify for \
                             compression")
 
         if fname in BLACKLIST or fname + ".small.pdf" in dirlist:
@@ -106,14 +108,14 @@ class CompressionManager:
         """Let all middleware act on `path`."""
         for middleware in self.middleware:
             task = asyncio.create_task(
-                    middleware.act(path))
+                middleware.act(path))
             if self.debug:
                 self.logger.debug(
-                        "Invoking middleware: '"
-                        + middleware.__class__.__name__
-                        + "' for '"
-                        + path
-                        + "'")
+                    "Invoking middleware: '"
+                    + middleware.__class__.__name__
+                    + "' for '"
+                    + path
+                    + "'")
             try:
                 await task
             except Exception as error:  # pylint: disable=broad-except
@@ -147,7 +149,7 @@ class CompressionManager:
         Required to be actually useful."""
         self.middleware.append(middleware)
         self.logger.info("Registered middleware "
-                + f"'{middleware.__class__.__name__}'", self.debug)
+                         + f"'{middleware.__class__.__name__}'", self.debug)
 
 
 async def main(arguments: Union[str, List[str]] = None):
@@ -156,16 +158,18 @@ async def main(arguments: Union[str, List[str]] = None):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", "-v",
-            action="store_true", help="verbose mode")
+                        action="store_true", help="verbose mode")
+    parser.add_argument("--config", "-c", type=str, default=None,
+                        help="path to config file (default='home_automation.conf.yml')")
     args = parser.parse_args(arguments)
 
-    config_data = config.load_config()
+    config_data = home_automation.config.load_config(args.config)
 
-    manager = CompressionManager(args.verbose)
+    manager = CompressionManager(config_data, debug=args.verbose)
 
     middleware = [
-        FlashLightsInHomeAssistantMiddleware(manager.logger),
-        ChangeStatusInThingsMiddleware(manager.logger)
+        FlashLightsInHomeAssistantMiddleware(config_data, manager.logger),
+        ChangeStatusInThingsMiddleware(config_data, manager.logger)
     ]
 
     for midware in middleware:
@@ -173,14 +177,16 @@ async def main(arguments: Union[str, List[str]] = None):
 
     await manager.compress_directory()
 
-    for directory in CONFIG.extra_compress_dirs:
+    for directory in config_data.extra_compress_dirs:
         await manager.compress_directory(directory)
 
     manager.clean_up_directory()
 
+
 def run_main():
     """Run the main coroutine via asyncio.run."""
     asyncio.run(main())
+
 
 if __name__ == "__main__":
     run_main()

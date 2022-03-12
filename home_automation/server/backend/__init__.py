@@ -19,7 +19,7 @@ from docker.models.containers import Container as DockerContainer, Image as Dock
 from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
 
-import home_automation
+import home_automation.config
 from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
 
@@ -31,11 +31,8 @@ class ServerAPIError(Exception):
 CURRENT_HASS_VERSION_REGEX = \
     r"image: homeassistant/home-assistant:(?P<version>\d\d\d\d\.\d\d?\.\d+)"
 PORTAINER_CALLS_TIMEOUT = 5
-
-PORTAINER_HOME_ASSISTANT_ENV: Optional[str]
-
-DB_PATH, COMPOSE_FILE, CLIENT, ERROR, INSECURE_HTTPS, PORTAINER_URL, PORTAINER_USER, PORTAINER_PASSWD, PORTAINER_HOME_ASSISTANT_ENV, PORTAINER_HOME_ASSISTANT_STACK, HASS_URL, HASS_TOKEN = [  # pylint: disable=line-too-long
-    None for _ in range(12)]
+CONFIG: home_automation.config.Config
+CLIENT, ERROR = None, None
 
 
 def try_reloading_client():
@@ -47,64 +44,41 @@ def try_reloading_client():
         ERROR = docker_exception
 
 
-def reload_env_values():
-    """Reload all .env-defined variables."""
-    global DB_PATH, COMPOSE_FILE, INSECURE_HTTPS, PORTAINER_URL, PORTAINER_USER, PORTAINER_PASSWD  # pylint: disable=global-statement
-    global PORTAINER_HOME_ASSISTANT_ENV, PORTAINER_HOME_ASSISTANT_STACK, HASS_URL, HASS_TOKEN  # pylint: disable=global-statement
-    DB_PATH = os.environ.get("DB_PATH", None)
-    if not DB_PATH:
-        raise home_automation.config.ConfigError("DB_PATH envvar not found.")
-    if not os.path.isfile(DB_PATH):
-        with open(DB_PATH, "w", encoding="utf-8"):
-            pass
-
-    COMPOSE_FILE = os.environ.get("COMPOSE_FILE", None)
-    if COMPOSE_FILE and os.path.isdir(COMPOSE_FILE):
-        COMPOSE_FILE = os.path.join(COMPOSE_FILE, "docker-compose.yml")
-
-    INSECURE_HTTPS = os.environ.get("INSECURE_HTTPS", False)
-
-    PORTAINER_URL = os.environ.get("PORTAINER_URL", None)
-    PORTAINER_USER = os.environ.get("PORTAINER_USER", "admin")
-    PORTAINER_PASSWD = os.environ.get("PORTAINER_PASSWD", "")
-    PORTAINER_HOME_ASSISTANT_ENV = os.environ.get(
-        "PORTAINER_HOME_ASSISTANT_ENV", "local")
-    PORTAINER_HOME_ASSISTANT_STACK = os.environ.get(
-        "PORTAINER_HOME_ASSISTANT_STACK", None)
-
-    HASS_URL = os.environ.get("HASS_BASE_URL", None)
-    HASS_TOKEN = os.environ.get("HASS_TOKEN", None)
+def reload_config():
+    """Reload configuration."""
+    global CONFIG  # pylint: disable=global-statement
+    CONFIG = home_automation.config.load_config()
 
 
 try_reloading_client()
-reload_env_values()
+reload_config()
 
 
 def compose_pull_exec():
     """Compose pull, blocking."""
-    os.system(f"docker-compose -f '{COMPOSE_FILE}' pull")
-    state_manager = StateManager(DB_PATH)
+    os.system(f"docker-compose -f '{CONFIG.compose_file}' pull")
+    state_manager = StateManager(CONFIG.db_path)
     state_manager.update_status("pulling", False)
 
 
 def compose_up_exec():
     """"Compose up, blocking."""
-    os.system(f"docker-compose -f '{COMPOSE_FILE}' up -d")
-    state_manager = StateManager(DB_PATH)
+    os.system(f"docker-compose -f '{CONFIG.compose_file}' up -d")
+    state_manager = StateManager(CONFIG.db_path)
     state_manager.update_status("upping", False)
 
 
 def compose_down_exec():
     """Compose down, blocking."""
-    os.system(f"docker-compose -f '{COMPOSE_FILE}' down")
-    state_manager = StateManager(DB_PATH)
+    os.system(f"docker-compose -f '{CONFIG.compose_file}' down")
+    state_manager = StateManager(CONFIG.db_path)
     state_manager.update_status("downing", False)
 
 
 def docker_prune_exec():
     """Docker prune, blocking."""
     os.system("docker system prune -af")
-    state_manager = StateManager(DB_PATH)
+    state_manager = StateManager(CONFIG.db_path)
     state_manager.update_status("pruning", False)
 
 
@@ -132,8 +106,8 @@ def start_auto_upgrade_process(version_manager: VersionManager):
 def create_app(options=None):  # pylint: disable=too-many-locals, too-many-statements
     """App factory."""
     app = Flask(__name__)
-    state_manager = StateManager(DB_PATH)
-    version_manager = VersionManager(DB_PATH)
+    state_manager = StateManager(CONFIG.db_path)
+    version_manager = VersionManager(CONFIG.db_path)
     start_update_version_info_process(version_manager)
     if options:
         app.config.update(options)
@@ -344,11 +318,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
 
     async def _log_in_to_portainer(client: httpx.AsyncClient) -> Dict[str, str]:
         """Log in to portainer and return authorization header. Might raise ServerAPIError."""
-        if not PORTAINER_URL:
+        if not CONFIG.portainer:
+            raise ServerAPIError("No portainer configuration provided.")
+        if not CONFIG.portainer.url:
             raise ServerAPIError("No portainer URL configured.")
-        payload = {"username": PORTAINER_USER, "password": PORTAINER_PASSWD}
+        payload = {"username": CONFIG.portainer.username,
+                   "password": CONFIG.portainer.password}
         response = await client.post(
-            PORTAINER_URL + "/api/auth",
+            CONFIG.portainer.url + "/api/auth",
             json=payload,
             timeout=PORTAINER_CALLS_TIMEOUT)
         auth_data = response.json()
@@ -362,25 +339,27 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         headers: Dict[str, str]
     ) -> Dict[str, str]:
         """Get portainer stack data. Might raise ServerAPIError."""
-        if not PORTAINER_URL:
+        if not CONFIG.portainer:
+            raise ServerAPIError("No portainer configuration provided.")
+        if not CONFIG.portainer.url:
             raise ServerAPIError("No portainer URL configured.")
-        if not PORTAINER_HOME_ASSISTANT_STACK:
+        if not CONFIG.portainer.home_assistant_stack:
             raise ServerAPIError(
                 "No portainer stack defining home assistant configured in env.")
-        response = await client.get(PORTAINER_URL + "/api/stacks",
+        response = await client.get(CONFIG.portainer.url + "/api/stacks",
                                     headers=headers,
                                     timeout=PORTAINER_CALLS_TIMEOUT)
         stacks = response.json()
         try:
             pot_stacks = filter(lambda s: s.get("Name", "").lower(
-            ) == PORTAINER_HOME_ASSISTANT_STACK.lower(), stacks)  # type: ignore
+            ) == CONFIG.portainer.home_assistant_stack.lower(), stacks)  # type: ignore
             # as it's actually checked for just a few lines above
             stack = list(pot_stacks)[0]
             stack_id = stack.get("Id", None)
             if not stack_id:
                 raise ServerAPIError("Invalid data received from portainer.")
             response = await client.get(
-                PORTAINER_URL + f"/api/stacks/{stack_id}/file",
+                CONFIG.portainer.url + f"/api/stacks/{stack_id}/file",
                 headers=headers,
                 timeout=PORTAINER_CALLS_TIMEOUT)
             stack_data = response.json()
@@ -392,7 +371,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             return stack
         except IndexError as err:
             raise ServerAPIError(
-                f"Stack '{PORTAINER_HOME_ASSISTANT_STACK}' not found.") from err
+                f"Stack '{CONFIG.portainer.home_assistant_stack}' not found.") from err
 
     async def _get_version_to_update_to(
         client: httpx.AsyncClient,
@@ -400,7 +379,9 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     ) -> Tuple[str, str]:
         """Get current version as well as version of home assistant to update to (as a tuple).
         Might throw ServerAPIError."""
-        if not HASS_URL:
+        if not CONFIG.home_assistant:
+            raise ServerAPIError("No Home Assistant configuration provided.")
+        if not CONFIG.home_assistant.url:
             raise ServerAPIError("No home assistant URL configured.")
         result = re.search(CURRENT_HASS_VERSION_REGEX,
                            stack["stackFileContent"])
@@ -415,9 +396,10 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                 version_to_update_to = data.get(
                     "update_to_version", None)
         if not version_to_update_to:
-            hass_headers = {"authorization": f"Bearer {HASS_TOKEN}"}
+            hass_headers = {
+                "authorization": f"Bearer {CONFIG.home_assistant.token}"}
             response = await client.get(
-                HASS_URL + "/api/states/sensor.docker_hub",
+                CONFIG.home_assistant.url + "/api/states/sensor.docker_hub",
                 headers=hass_headers,
                 timeout=PORTAINER_CALLS_TIMEOUT)
             data = response.json()
@@ -435,9 +417,11 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         stack: Dict[str, str],
         portainer_headers: Dict[str, str]
     ) -> Union[Tuple[Dict[str, Any], int], Dict[str, Any]]:
-        if not PORTAINER_URL:
+        if not CONFIG.portainer:
+            raise ServerAPIError("No portainer configuration provided.")
+        if not CONFIG.portainer.url:
             raise ServerAPIError("No portainer URL configured.")
-        if not PORTAINER_HOME_ASSISTANT_ENV:
+        if not CONFIG.portainer.home_assistant_env:
             raise ServerAPIError(
                 "No home assistant environment for portainer specified in .env.")
         # don't check whether version_to_update_to is greater than current one
@@ -449,20 +433,22 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                 stack["stackFileContent"]
             )
             response = await client.get(
-                PORTAINER_URL + "/api/endpoints",
+                CONFIG.portainer.url + "/api/endpoints",
                 headers=portainer_headers)
             endpoints = response.json()
             try:
                 pot_endpoints = filter(lambda e: e.get("Name", "").lower(
                     # as it's actually checked for just a few lines above
-                ) == PORTAINER_HOME_ASSISTANT_ENV.lower(), endpoints)  # type: ignore
+                ) == CONFIG.portainer.home_assistant_env.lower(), endpoints)  # type: ignore
                 endpoint = list(pot_endpoints)[0]
                 endpoint_id = endpoint.get("Id", 0)
             except IndexError:
-                return {"error": f"Environment '{PORTAINER_HOME_ASSISTANT_ENV}' not found"}, 404
+                return {
+                    "error": f"Environment '{CONFIG.portainer.home_assistant_env}' not found"
+                }, 404
             try:
                 response = await client.put(
-                    PORTAINER_URL +
+                    CONFIG.portainer.url +
                     f"/api/stacks/{stack['Id']}?endpointId={endpoint_id}",
                     json={"stackFileContent": new_stack_content},
                     headers=portainer_headers
@@ -477,14 +463,19 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
 
     @app.route("/api/update-home-assistant", methods=["POST", "PUT"])
     async def update_home_assistant():  # pylint: disable=too-many-return-statements
-        if not HASS_URL:
+        if not CONFIG.portainer:
+            raise ServerAPIError("No portainer configuration provided.")
+        if not CONFIG.home_assistant:
+            raise ServerAPIError("No Home Assistant configuration provided.")
+        if not CONFIG.home_assistant.url:
             return {"error": "No home assistant URL defined."}, 500
-        if not HASS_TOKEN:
+        if not CONFIG.home_assistant.token:
             return {"error": "No home assistant token defined."}, 401
-        async with httpx.AsyncClient(verify=not INSECURE_HTTPS) as client:
+        async with httpx.AsyncClient(verify=not CONFIG.portainer.insecure_https) as client:
             try:
                 portainer_headers = await _log_in_to_portainer(client)
                 stack = await _get_portainer_stack(client, portainer_headers)
+                client.verify = not CONFIG.home_assistant.insecure_https
                 current_version, version_to_update_to = await _get_version_to_update_to(
                     client,
                     stack
@@ -499,13 +490,13 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             except Exception as exc:  # pylint: disable=broad-except
                 return {"error": str(exc)}, 500
 
-    @app.route("/api/debug/env")
+    @app.route("/api/debug/config")
     def debug_env():
-        return dict(os.environ)
+        return CONFIG
 
-    @app.route("/api/debug/env/reload", methods=["POST"])
+    @app.route("/api/debug/config/reload", methods=["POST"])
     def debug_env_reload():
-        reload_env_values()
+        reload_config()
         return {"success": True}
 
     return app

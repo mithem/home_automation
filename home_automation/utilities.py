@@ -8,17 +8,14 @@ import yagmail
 
 import home_automation.config
 
-home_automation.config.load_dotenv()
+CONFIG = home_automation.config.load_config()
 
-_EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", None)
-if not _EMAIL_ADDRESS:
-    raise Exception("Invalid $EMAIL_ADDRESS.")
-_SMTP = yagmail.SMTP(_EMAIL_ADDRESS, os.environ.get("EMAIL_PASSWD"))
+_SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.password)
 
 
 def send_mail(subject: str, body: str = ""):
     """Send mail now."""
-    _SMTP.send(_EMAIL_ADDRESS, subject, body)
+    _SMTP.send(CONFIG.email.address, subject, body)
 
 
 def check_for_root_privileges() -> bool:
@@ -34,6 +31,8 @@ def drop_privileges(logger: logging.Logger = None):
     - OSError (error setting uid & gid)"""
     if logger:
         logger.info("Dropping privileges")
+    if not CONFIG.process:
+        return
     if not check_for_root_privileges():
         return
 
@@ -42,8 +41,8 @@ def drop_privileges(logger: logging.Logger = None):
     # only the first error will actually be thrown, though
     errors = []
 
-    target_username = os.environ.get("HOME_AUTOMATION_USER", None)
-    target_group = os.environ.get("HOME_AUTOMATION_GROUP", None)
+    target_username = CONFIG.process.user
+    target_group = CONFIG.process.group
 
     current_uid = os.getuid()
     current_gid = os.getgid()

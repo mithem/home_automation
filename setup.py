@@ -3,7 +3,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.1.2-a1"
+VERSION = "1.2.0"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()

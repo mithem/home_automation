@@ -6,13 +6,11 @@ import fileloghelper
 import httpx
 
 from home_automation.archive_manager import ABBR_TO_SUBJECT
-from home_automation import config
+import home_automation.config as haconfig
 
-config.load_dotenv()
 TIMEOUT = 10
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
 
-CONFIG = config.load_config()
 
 class InvalidResponseError(Exception):
     """Invalid response (who would have guessed??)"""
@@ -26,8 +24,11 @@ class CompressionMiddleware:
     """Middleware's `.act` method is called for each file (-path) being compressed.
     For example, it can be used to communicate with other services.
     Each coroutine is executed separately."""
+    logger: fileloghelper.Logger
+    config: haconfig.Config
 
-    def __init__(self, logger: fileloghelper.Logger):
+    def __init__(self, config: haconfig.Config, logger: fileloghelper.Logger):
+        self.config = config
         self.logger = logger
 
     async def act(self, path: str):  # pylint: disable=no-self-use
@@ -60,12 +61,15 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
 
     async def flash_lights_in_home_assistant(self):
         """What could be tried here?"""
-        if not CONFIG.home_assistant:
+        if not self.config.home_assistant:
             raise Exception("Home Assistant data not configured.")
-        headers = {"Authorization": "Bearer " + CONFIG.home_assistant.token}
-        async with httpx.AsyncClient(verify=not CONFIG.home_assistant.insecure_https) as client:
+        headers = {"Authorization": "Bearer " +
+                   self.config.home_assistant.token}
+        async with httpx.AsyncClient(
+            verify=not self.config.home_assistant.insecure_https
+        ) as client:
             response = await client.post(
-                CONFIG.home_assistant.url
+                self.config.home_assistant.url
                 + "/api/services/script/flash_miguels_room",
                 headers=headers,
                 timeout=TIMEOUT
@@ -81,8 +85,8 @@ class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     async def change_status_in_things(self, filename):
         """What could be tried here?"""
         subject = filename.split(" ")[0].upper()
-        async with httpx.AsyncClient(verify=not CONFIG.things_server.insecure_https) as client:
-            response = await client.post(CONFIG.things_server.url +
+        async with httpx.AsyncClient(verify=not self.config.things_server.insecure_https) as client:
+            response = await client.post(self.config.things_server.url +
                                          "/api/v1/markhomeworkasdone?"
                                          + f"subject={subject}",
                                          timeout=TIMEOUT)

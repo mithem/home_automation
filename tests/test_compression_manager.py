@@ -1,9 +1,5 @@
-# just so autoformatters won't reorder
-if True:  # pylint: disable=using-constant-test
-    # so CompressionManager and middleware can use correct envvars
-    import tests.test_config
-    from home_automation import config
-    config.load_into_environment(tests.test_config.VALID_CONFIG_DICT)
+from tests.test_config import TESTING_CONFIG
+from home_automation import config
 
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware,
@@ -18,17 +14,13 @@ import pytest
 import pytest_asyncio
 
 
-HOMEWORK_DIR = os.environ.get("HOMEWORK_DIR")
-HOME_ASSISTANT_URL = os.environ.get("HASS_BASE_URL")
-THINGS_SERVER_URL = os.environ.get("THINGS_SERVER_URL")
-
-
 @pytest.mark.usefixtures("do_setup")
 class AnyTestCase:
     @pytest_asyncio.fixture
     def do_setup(self, fs):
-        self.manager = CompressionManager(debug=True, testing=True)
-        [self.manager.register_middleware(m(self.manager.logger)) for m in [
+        self.manager = CompressionManager(
+            TESTING_CONFIG, debug=True, testing=True)
+        [self.manager.register_middleware(m(TESTING_CONFIG, self.manager.logger)) for m in [
             FlashLightsInHomeAssistantMiddleware,
             ChangeStatusInThingsMiddleware]]
         try:
@@ -38,7 +30,7 @@ class AnyTestCase:
 
 
 def create_file(fs, name: str):
-    dest = os.path.join(HOMEWORK_DIR, name)
+    dest = os.path.join(TESTING_CONFIG.homework_dir, name)
     d, f = os.path.split(dest)
     if not fs.isdir(d):
         fs.create_dir(d)
@@ -46,7 +38,7 @@ def create_file(fs, name: str):
 
 
 def file_exists(fs, name: str):
-    exists = fs.exists(os.path.join(HOMEWORK_DIR, name))
+    exists = fs.exists(os.path.join(TESTING_CONFIG.homework_dir, name))
     return exists
 
 
@@ -54,8 +46,8 @@ def file_exists(fs, name: str):
 def configure_mock_responses(httpx_mock):
     httpx_mock.add_response(
         method="POST",
-        url=HOME_ASSISTANT_URL + "/api/services/script/flash_miguels_room")
-    pattern = re.compile(THINGS_SERVER_URL +
+        url=TESTING_CONFIG.home_assistant.url + "/api/services/script/flash_miguels_room")
+    pattern = re.compile(TESTING_CONFIG.things_server.url +
                          r"/api/v1/markhomeworkasdone\?subject=\w{1,2}")
     httpx_mock.add_response(method="POST", url=pattern)
 
@@ -91,7 +83,7 @@ class TestCompressDirectory(AnyTestCase):
                 self.did_evaluate = True
                 for line in manager.logger._lines:
                     for f in self.files:
-                        path = os.path.join(HOMEWORK_DIR, f)
+                        path = os.path.join(TESTING_CONFIG.homework_dir, f)
                         if f"Compressing '{path}'" in line:
                             self.did_try_to_compress_files[f] = True
 
@@ -117,12 +109,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
+        assert len(fs.listdir(TESTING_CONFIG.homework_dir)) == len(files)
 
     async def test_compress_directory_is_nondestructive_2(self, fs):
         files = [
@@ -137,12 +129,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
+        assert len(fs.listdir(TESTING_CONFIG.homework_dir)) == len(files)
 
     async def test_compress_directory_is_nondestructive_3(self, fs):
         files = [
@@ -161,12 +153,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
+        assert len(fs.listdir(TESTING_CONFIG.homework_dir)) == len(files)
 
     async def test_compress_directory_blacklists(self, fs, httpx_mock):
         files = [
@@ -185,12 +177,12 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         for f in files:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(HOMEWORK_DIR)) == len(files)
+        assert len(fs.listdir(TESTING_CONFIG.homework_dir)) == len(files)
         assert len(httpx_mock.get_requests()) == 0
 
     @pytest.mark.usefixtures("configure_mock_responses")
@@ -205,7 +197,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         manager_did_compress_files.evaluate()
 
@@ -220,7 +212,7 @@ class TestCompressDirectory(AnyTestCase):
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         manager_did_compress_files.evaluate()
 
@@ -230,16 +222,16 @@ class TestCompressDirectory(AnyTestCase):
             "PH Material/text1.pdf",
             "PH Material/PH KW25.pdf"
         ]
-        hass_url = f"{HOME_ASSISTANT_URL}/api/services/" + \
+        hass_url = f"{TESTING_CONFIG.home_assistant.url}/api/services/" + \
             "script/flash_miguels_room"
         expected = [
             hass_url,
             hass_url,
-            f"{THINGS_SERVER_URL}/api/v1/markhomeworkasdone?subject=PH"
+            f"{TESTING_CONFIG.things_server.url}/api/v1/markhomeworkasdone?subject=PH"
         ]
         manager_did_compress_files.prepare(files)
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         manager_did_compress_files.evaluate()
 
@@ -266,13 +258,13 @@ class TestCompressDirectory(AnyTestCase):
             except FileExistsError:
                 pass
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         requests = httpx_mock.get_requests()
         # only ones which are valid (not on blacklist like (\.|_)*) and
         # where there isn't a compressed version already
         filtered = list(filter(lambda r: str(r.url).startswith(
-            HOME_ASSISTANT_URL), requests))
+            TESTING_CONFIG.home_assistant.url), requests))
         assert len(filtered) == 2
 
     @pytest.mark.usefixtures("configure_mock_responses")
@@ -300,7 +292,7 @@ class TestCompressDirectory(AnyTestCase):
             "M": 1
         }
 
-        await self.manager.compress_directory(HOMEWORK_DIR)
+        await self.manager.compress_directory(TESTING_CONFIG.homework_dir)
 
         result = {}
         requests = httpx_mock.get_requests()
@@ -334,12 +326,12 @@ class TestCleanUpDirectory(AnyTestCase):
         # referring to `files`: files up to this idx are supposed to be deleted
         idx_up_to_files_to_be_kept = 3
 
-        self.manager.clean_up_directory(HOMEWORK_DIR)
+        self.manager.clean_up_directory(TESTING_CONFIG.homework_dir)
 
         for f in files[:idx_up_to_files_to_be_kept]:
             assert not file_exists(fs, f)
         for f in files[idx_up_to_files_to_be_kept:]:
             assert file_exists(fs, f)
 
-        assert len(fs.listdir(HOMEWORK_DIR)) == len(
+        assert len(fs.listdir(TESTING_CONFIG.homework_dir)) == len(
             files[idx_up_to_files_to_be_kept:])

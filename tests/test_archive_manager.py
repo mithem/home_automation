@@ -1,10 +1,11 @@
+from tests.test_config import TESTING_CONFIG
+
 import datetime
 import os
 from typing import Dict, Optional
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import TestCase
-from tests.test_config import VALID_CONFIG_DICT
 from home_automation.archive_manager import (ABBR_TO_SUBJECT, BLACKLIST_EXT,
                                              BLACKLIST_FILES, MONTH_TO_DIR,
                                              TRESHOLD_DATE, ArchiveManager,
@@ -19,12 +20,15 @@ CURRENT_YEAR = str(_NOW.year)
 class AnyTestCase(TestCase):
     def setUp(self):
         self.setUpPyfakefs()
-        config.load_into_environment(VALID_CONFIG_DICT)
-        self.manager = ArchiveManager(debug=True)
+        self.manager = ArchiveManager(TESTING_CONFIG, debug=True)
         self.useful_data = {
             "year": str(TRESHOLD_DATE.year),
             "month": MONTH_TO_DIR[TRESHOLD_DATE.month]
         }
+        self.extra_setup()
+
+    def extra_setup(self):
+        pass
 
 
 class TestParseFilename(AnyTestCase):
@@ -175,8 +179,9 @@ class TestGetDestinationForFile(AnyTestCase):
         start = "/volume2/Hausaufgaben/HAs/"
         end = ".pdf"
         data_arr = ["D", "HA", "27-01-2022"]
-        flags = ["NO_TRANSFER", "NO-TRANSFER", "NOTRANSFER", "no_transfer", "no-transfer", "notransfer"]
-        combinations = [] # for debugging this test's logic only
+        flags = ["NO_TRANSFER", "NO-TRANSFER", "NOTRANSFER",
+                 "no_transfer", "no-transfer", "notransfer"]
+        combinations = []  # for debugging this test's logic only
         for flag in flags:
             for flag_pos in range(len(data_arr) + 1):
                 path = start
@@ -196,6 +201,7 @@ class TestGetDestinationForFile(AnyTestCase):
 
                 assert result == path
         print(combinations)
+
 
 class TestTransferFile(AnyTestCase):
     def test_transfer_file_throws_is_compressed_file_exception(self):
@@ -317,36 +323,6 @@ class TestTransferFile(AnyTestCase):
         assert self.fs.exists(new_root)
         for f in f_list:
             assert self.fs.exists(os.path.join(new_root, f))
-
-    def test_transfer_file_uses_correct_homework_and_archive_root(self):
-        override_env = {
-            "HOMEWORK_DIR": "/var/school/homework",
-            "ARCHIVE_DIR": "/var/school/archive"
-        }
-        for key, value in override_env.items():
-            os.environ[key] = value
-        subject = list(ABBR_TO_SUBJECT.keys())[0].upper()
-        fname = subject + " HA 22-06-2021.pdf"
-        path = os.path.join(override_env["HOMEWORK_DIR"], fname)
-        dest = os.path.join(
-            override_env["ARCHIVE_DIR"],
-            ABBR_TO_SUBJECT[subject],
-            "2021",
-            MONTH_TO_DIR[6],
-            fname
-        )
-
-        self.fs.create_file(path)
-        # needs to load environment variables and that good that way
-        # (anything else would make debugging in a changing environment a nightmare)
-        manager = ArchiveManager(True)
-
-        manager.transfer_file(path)
-
-        assert self.fs.exists(dest)
-        assert not self.fs.exists(path)
-        assert manager.transferred_files == [path]
-        assert manager.not_transferred_files == []
 
     def test_transfer_file_creates_directories(self):
         s = "/volume2/Hausaufgaben/Archive/PH HA 22-06-2021.pdf"
@@ -688,8 +664,9 @@ class TestReorganizeAllFiles(AnyTestCase):
             "M 2 HA.pdf": None
         }
         self.setup_root_directory_with_files(structure)
+        print(self.manager.config)
 
-        self.manager.transfer_directory(self.manager.homework_dir)
+        self.manager.transfer_directory(self.manager.config.homework_dir)
         self.manager.reorganize_all_files()
 
         self.evaluate_root_directory_with_files(expected)
