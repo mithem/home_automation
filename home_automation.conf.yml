@@ -1,0 +1,21 @@
+log_dir: ./logs
+homework_dir: ./homework
+archive_dir: ./archive
+db_path: ./home_automation.backend.db
+compose_file: ~/docker-compose.yml
+moodle_dl_dir: ~/moodle
+email:
+  address: hello
+  password: hello
+portainer:
+  url: "https://truenas.local:8000"
+  username: portainer
+  password: abc
+  insecure_https: true
+home_assistant:
+  url: "https:/homeassistant.local:8123"
+  token: abc
+  insecure_https: true
+process:
+  user: root
+  group: root
