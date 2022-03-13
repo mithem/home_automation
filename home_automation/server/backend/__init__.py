@@ -490,11 +490,11 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             except Exception as exc:  # pylint: disable=broad-except
                 return {"error": str(exc)}, 500
 
-    @app.route("/api/debug/config")
+    @app.route("/api/config")
     def debug_env():
-        return CONFIG
+        return CONFIG.to_dict()
 
-    @app.route("/api/debug/config/reload", methods=["POST"])
+    @app.route("/api/config/reload", methods=["POST", "PUT"])
     def debug_env_reload():
         reload_config()
         return {"success": True}

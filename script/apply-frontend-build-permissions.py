@@ -1,7 +1,11 @@
 #!/usr/bin/python3
+# pylint: disable=invalid-name
+"""Apply permissions for frontend build."""
 import os
 
+
 def apply_permissions(path: str):
+    """Apply permissions to dir at `path`"""
     if not os.path.isdir(path):
         raise Exception(f"Not a dir: '{path}'")
     for root, dirs, files in os.walk("."):
@@ -12,15 +16,16 @@ def apply_permissions(path: str):
             path = os.path.join(root, dirname)
             os.chmod(path, 0o755)
 
-path_progression = "home_automation/server/frontend/build"
-root = f"./{path_progression}"
+
+PATH_PROGRESSION = "home_automation/server/frontend/build"
+progression_root = f"./{PATH_PROGRESSION}"
 
 try:
-    apply_permissions(root)
-except Exception as e:
+    apply_permissions(progression_root)
+except Exception as e:  # pylint: disable=broad-except
     print(e)
-    root = f"../{path_progression}"
+    progression_root = f"../{PATH_PROGRESSION}"
     try:
-        apply_permissions(root)
-    except Exception as e:
+        apply_permissions(progression_root)
+    except Exception as e:  # pylint: disable=broad-except
         print(e)

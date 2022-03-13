@@ -1,6 +1,6 @@
 #!python3
-import os
-
+# pylint: disable=invalid-name
+"""Run moodle-dl."""
 import moodle_dl.main
 import home_automation.config
 

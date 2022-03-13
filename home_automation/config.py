@@ -24,6 +24,13 @@ class ConfigEmail:
             self.password == other.password
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'address': self.address,
+            'password': self.password
+        }
+
 
 class ConfigHomeAssistant:
     """Home Assistant configuration."""
@@ -48,6 +55,14 @@ class ConfigHomeAssistant:
             self.url == other.url and
             self.insecure_https == other.insecure_https
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'url': self.url,
+            'token': self.token,
+            'insecure_https': self.insecure_https
+        }
 
 
 class ConfigPortainer:
@@ -86,6 +101,17 @@ class ConfigPortainer:
             self.insecure_https == other.insecure_https
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'url': self.url,
+            'username': self.username,
+            'password': self.password,
+            'home_assistant_env': self.home_assistant_env,
+            'home_assistant_stack': self.home_assistant_stack,
+            'insecure_https': self.insecure_https
+        }
+
 
 class ConfigThingsServer:
     """Things server configuration."""
@@ -107,6 +133,13 @@ class ConfigThingsServer:
             self.url == other.url and
             self.insecure_https == other.insecure_https
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'url': self.url,
+            'insecure_https': self.insecure_https
+        }
 
 
 class ConfigProcess:
@@ -130,6 +163,13 @@ class ConfigProcess:
             self.group == other.group
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'user': self.user,
+            'group': self.group
+        }
+
 
 class ConfigRunner:  # pylint: disable=too-few-public-methods
     """home_automation.runner configuration."""
@@ -138,6 +178,17 @@ class ConfigRunner:  # pylint: disable=too-few-public-methods
     def __init__(self, data: Dict[str, str]):
         cron_user = data.get("cron_user")
         self.cron_user = cron_user
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.cron_user == other.cron_user
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'cron_user': self.cron_user
+        }
 
 
 class Config:  # pylint: disable=too-many-instance-attributes
@@ -210,8 +261,28 @@ class Config:  # pylint: disable=too-many-instance-attributes
             self.home_assistant == other.home_assistant and
             self.portainer == other.portainer and
             self.things_server == other.things_server and
-            self.process == other.process
+            self.process == other.process and
+            self.runner == other.runner and
+            self.extra_compress_dirs == other.extra_compress_dirs
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'log_dir': self.log_dir,
+            'homework_dir': self.homework_dir,
+            'archive_dir': self.archive_dir,
+            'db_path': self.db_path,
+            'compose_file': self.compose_file,
+            'moodle_dl_dir': self.moodle_dl_dir,
+            'email': self.email.to_dict() if self.email else None,
+            'home_assistant': self.home_assistant.to_dict() if self.home_assistant else None,
+            'portainer': self.portainer.to_dict() if self.portainer else None,
+            'things_server': self.things_server.to_dict() if self.things_server else None,
+            'process': self.process.to_dict() if self.process else None,
+            'runner': self.runner.to_dict() if self.runner else None,
+            'extra_compress_dirs': self.extra_compress_dirs
+        }
 
 
 class ConfigError(Exception):
