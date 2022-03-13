@@ -2,15 +2,14 @@
 
 Yes, I absolutely couldn't use Portainer!
 (Well, I use it but this has more requirements.)"""
+from time import time
 from typing import Any, Dict, Optional, Tuple, Union
 import json
 import os
-import asyncio
 import multiprocessing as mp
 import re
 
 import logging
-import sqlite3
 import semver
 import docker
 import httpx
@@ -82,6 +81,12 @@ def docker_prune_exec():
     state_manager.update_status("pruning", False)
 
 
+def restart_runner_exec():
+    """Restart runner."""
+    time.sleep(1)
+    os.system("script/restart-runner")
+
+
 def start_update_version_info_process(version_manager: VersionManager):
     """Start version update process, nonblocking."""
     process = mp.Process(target=version_manager.update_version_info,
@@ -100,6 +105,13 @@ def start_auto_upgrade_process(version_manager: VersionManager):
     """Start auto-upgrade process, nonblocking."""
     process = mp.Process(target=version_manager.auto_upgrade,
                          name="home_automation.runner.autoupgrader")
+    process.start()
+
+
+def start_restart_runner_process():
+    """Start restart process, nonblocking."""
+    process = mp.Process(target=restart_runner_exec,
+                         name="home_automation.runner.restart_runner")
     process.start()
 
 
@@ -295,6 +307,11 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/home_automation/healthcheck")
     def healthcheck():
         return "healthy"  # looks just fine for now
+
+    @app.route("/api/home_automation/restart", methods=["POST"])
+    def restart_server():
+        start_restart_runner_process()
+        return "Restarting.", 202
 
     @app.route("/api/status")
     def compose_status():

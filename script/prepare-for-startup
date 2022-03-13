@@ -1,6 +1,6 @@
 #!/bin/bash
 echo Preparing for startup...
-sudo chmod 777 script/*
+chmod 777 script/*
 sudo mkdir /var/run/home_automation
 sudo chown miguel:miguel /var/run/home_automation
 script/apply-frontend-build-permissions.py

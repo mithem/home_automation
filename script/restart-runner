@@ -1,1 +1,2 @@
-sudo systemctl restart home_automation
+#!/bin/bash
+systemctl --user restart home_automation

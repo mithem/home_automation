@@ -15,6 +15,7 @@ dist
 *.pdf
 tests/*.pdf
 home_automation.tab
+home_automation.conf.yml
 
 # frontend
 home_automation/server/frontend/node_modules

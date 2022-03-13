@@ -1,1 +1,2 @@
-systemctl stop home_automation
+#!/bin/bash
+systemctl --user stop home_automation
