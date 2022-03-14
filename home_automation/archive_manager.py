@@ -264,11 +264,13 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         # I mean, common!
 
 def archive():
+    """Archive with the default config loaded (still from filesystem)"""
     config_data = haconfig.load_config()
     manager = ArchiveManager(config_data)
     manager.transfer_all_files()
 
 def reorganize():
+    """Reorganize with the default config loaded (still from filesystem)"""
     config_data = haconfig.load_config()
     manager = ArchiveManager(config_data)
     manager.reorganize_all_files()
