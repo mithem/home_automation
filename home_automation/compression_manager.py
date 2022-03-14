@@ -183,9 +183,9 @@ async def main(arguments: Union[str, List[str]] = None):
     manager.clean_up_directory()
 
 
-def run_main():
+def run_main(arguments: Union[str, List[str]] = None):
     """Run the main coroutine via asyncio.run."""
-    asyncio.run(main())
+    asyncio.run(main(arguments))
 
 
 if __name__ == "__main__":

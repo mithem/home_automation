@@ -144,7 +144,15 @@ class TestChangesStatusInThings:
 
         # don't need to check manually as pytest-httpx automatically raises
         # an error when mock endpoints remain uncontacted.
-        await self.middleware.act("PH HA 22-06-2021.pdf")
+        path = os.path.join(TESTING_CONFIG.homework_dir,
+                            "PH HA 22-06-2021.pdf")
+        await self.middleware.act(path)
+
+    @pytest.mark.asyncio
+    async def test_doesnt_check_homework_when_not_called_from_homework_dir(self, httpx_mock):
+        root = TESTING_CONFIG.archive_dir if TESTING_CONFIG.archive_dir != TESTING_CONFIG.homework_dir else ""
+        path = os.path.join(root, "PH HA 22-06-2021.pdf")
+        await self.middleware.act(path)
 
 
 # referring to this class being in this module: feels like this is more at home here

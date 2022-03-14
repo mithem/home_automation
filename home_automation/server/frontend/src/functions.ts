@@ -183,3 +183,11 @@ export async function forceHomeAssistantUpdate(forcedVersion: string) {
     return { success: false, error: error as Error };
   }
 }
+
+export async function compress() {
+  await axios.post(BASE_URL + "/api/compress", axiosDefaultConfig);
+}
+
+export async function archive() {
+  await axios.post(BASE_URL + "/api/archive", axiosDefaultConfig);
+}

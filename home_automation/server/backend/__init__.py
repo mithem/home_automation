@@ -19,6 +19,7 @@ from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
 
 import home_automation.config
+from home_automation import archive_manager, compression_manager
 from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
 
@@ -514,6 +515,21 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/config/reload", methods=["POST", "PUT"])
     def debug_env_reload():
         reload_config()
+        return {"success": True}
+
+    @app.route("/api/compress", methods=["POST"])
+    def compress():
+        compression_manager.run_main([])
+        return {"success": True}
+
+    @app.route("/api/archive", methods=["POST"])
+    def archive():
+        archive_manager.main(["archive"])
+        return {"success": True}
+
+    @app.route("/api/reorganize", methods=["POST"])
+    def reorganize():
+        archive_manager.main(["reorganize"])
         return {"success": True}
 
     return app
