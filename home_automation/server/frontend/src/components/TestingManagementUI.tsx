@@ -1,9 +1,10 @@
 import React from "react";
-import { Alert, Button } from "react-bootstrap";
+import { Alert, Button, Card } from "react-bootstrap";
 import {
   testingSetVersionAvailable,
   testingInitiateAutoUpgrade,
   forceHomeAssistantUpdate,
+  reloadConfig
 } from "../functions";
 import TestingManagementData from "../models/TestingManagementData";
 
