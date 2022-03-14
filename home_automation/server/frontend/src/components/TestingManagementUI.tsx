@@ -39,6 +39,13 @@ export default class TestingManagementUI extends React.Component<
     }
   }
 
+  reloadConfig() {
+    reloadConfig()
+    .catch((error) => {
+      this.setState({error: new Error(error.response.data.error)})
+    })
+  }
+
   render() {
     const alert =
       this.state.error !== undefined ? (
@@ -49,22 +56,26 @@ export default class TestingManagementUI extends React.Component<
     return (
       <div className="testing-management">
         {alert}
-        <Button variant="primary" onClick={() => this.setVersionAvailable()}>
-          Set version available
-        </Button>
-        <br />
-        <br />
-        <Button variant="primary" onClick={() => this.initiateAutoUpgrade()}>
-          Initiate auto upgrade
-        </Button>
-        <br />
-        <br />
-        <Button
-          variant="primary"
-          onClick={() => this.forceHomeAssistantUpdate()}
-        >
-          Force home assistant update
-        </Button>
+        <Card>
+          <Button variant="primary" onClick={() => this.setVersionAvailable()}>
+            Set version available
+          </Button>
+          <Button variant="primary" onClick={() => this.initiateAutoUpgrade()}>
+            Initiate auto upgrade
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => this.forceHomeAssistantUpdate()}
+          >
+            Force home assistant update
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => this.reloadConfig()}
+          >
+            Reload config
+          </Button>
+        </Card>
       </div>
     );
   }

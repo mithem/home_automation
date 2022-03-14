@@ -5,7 +5,7 @@ import os
 from typing import List, Union
 
 import fileloghelper
-import home_automation.config
+from home_automation import config as haconfig
 from home_automation.archive_manager import ABBR_TO_SUBJECT
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware, CompressionMiddleware,
@@ -26,11 +26,11 @@ class LoopBreakingException(Exception):
 class CompressionManager:
     """Manages compressing files."""
     logger: fileloghelper.Logger
-    config: home_automation.config.Config
+    config: haconfig.Config
     debug: bool
     middleware: List[CompressionMiddleware]
 
-    def __init__(self, config: home_automation.config.Config, debug=False, testing=False):
+    def __init__(self, config: haconfig.Config, debug=False, testing=False):
         self.logger = fileloghelper.Logger(os.path.join(
             LOG_DIR, "compression_manager.log"), autosave=debug)
         self.config = config
@@ -151,9 +151,7 @@ class CompressionManager:
         self.logger.info("Registered middleware "
                          + f"'{middleware.__class__.__name__}'", self.debug)
 
-
 async def main(arguments: Union[str, List[str]] = None):
-    """What could this do?"""
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
@@ -162,8 +160,16 @@ async def main(arguments: Union[str, List[str]] = None):
     parser.add_argument("--config", "-c", type=str, default=None,
                         help="path to config file (default='home_automation.conf.yml')")
     args = parser.parse_args(arguments)
+    config = haconfig.load_config(args.config)
+    await run(config)
 
-    config_data = home_automation.config.load_config(args.config)
+
+async def compress(config: Optional[haconfig.Config] = None):
+    """Run. compress homework_dir + extra_compress_dirs and clean up."""
+    if config:
+        config_data = config
+    else:
+        config_data = haconfig.load_config()
 
     manager = CompressionManager(config_data, debug=args.verbose)
 

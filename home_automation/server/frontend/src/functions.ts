@@ -191,3 +191,7 @@ export async function compress() {
 export async function archive() {
   await axios.post(BASE_URL + "/api/archive", axiosDefaultConfig);
 }
+
+export async function reloadConfig() {
+  await axios.post(BASE_URL + "/api/config/reload", axiosDefaultConfig);
+}
