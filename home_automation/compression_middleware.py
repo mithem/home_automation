@@ -1,6 +1,7 @@
 """The middleware framework used to act on each file getting compressed."""
 # pylint: disable=global-statement
 import os
+import re
 
 import fileloghelper
 import httpx
@@ -47,9 +48,9 @@ class SubjectCompressionMiddleware(CompressionMiddleware):
     async def act(self, path: str):
         _, filename = os.path.split(path)
         if filename.split(" ")[0].upper() in SUBJECT_ABBRS:
-            await self.act_subject_valid(filename)
+            await self.act_subject_valid(path)
 
-    async def act_subject_valid(self, filename: str):
+    async def act_subject_valid(self, path: str):
         """Act on the file being compressed having a verified subject identifiable."""
         raise NotImplementedError()
 
@@ -79,11 +80,21 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
 
 class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     """Responsible for trying to encourage things_server to check the appropriate homework."""
-    async def act_subject_valid(self, filename: str):
-        await self.change_status_in_things(filename)
+    async def act_subject_valid(self, path: str):
+        homework_dir_pattern_group = re.escape(self.config.homework_dir)
+        pattern = rf"^{homework_dir_pattern_group}/.+$"
+        match = re.match(pattern, path)
+        if not match:
+            return
+        await self.change_status_in_things(path)
 
-    async def change_status_in_things(self, filename):
+    async def change_status_in_things(self, path: str):
         """What could be tried here?"""
+        if not self.config.things_server:
+            raise Exception("Things server data not configured.")
+        if not self.config.things_server.url:
+            raise Exception("Things server URL not configured.")
+        _, filename = os.path.split(path)
         subject = filename.split(" ")[0].upper()
         async with httpx.AsyncClient(verify=not self.config.things_server.insecure_https) as client:
             response = await client.post(self.config.things_server.url +

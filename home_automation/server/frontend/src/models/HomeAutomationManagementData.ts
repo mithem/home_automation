@@ -5,6 +5,7 @@ export default interface HomeAutomationManagementData {
   versionAvailableFetchingError?: Error;
   homeAssistantUpdateError?: Error;
   upgradeServerError?: Error;
+  otherError?: Error;
 }
 
 interface VersionAvailable {

@@ -5,7 +5,7 @@ import datetime
 import os
 import re
 import shutil
-from typing import List
+from typing import List, Sequence
 
 import fileloghelper
 import yagmail
@@ -264,7 +264,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         # I mean, common!
 
 
-def main():
+def main(arguments: Sequence[str]):
     """Guess what this does, pylint!"""
     parser = argparse.ArgumentParser(
         description="Archive files from HAs or reorganize Archive.")
@@ -274,7 +274,7 @@ def main():
                         help="verbose mode (additional logging (to stdout))")
     parser.add_argument("--config", "-c", type=str, default=None,
                         help="path to config file (default='home_automation.conf.yml')")
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
     config_data = home_automation.config.load_config(path=args.config)
     manager = ArchiveManager(config_data, args.verbose)
     manager.logger.header(True, True)

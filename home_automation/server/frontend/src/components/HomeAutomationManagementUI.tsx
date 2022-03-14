@@ -6,6 +6,8 @@ import {
   upgradeServer,
   refreshVersionInfo,
   upgradeHomeAssistant,
+  compress,
+  archive,
 } from "../functions";
 import HomeAutomationManagementData from "../models/HomeAutomationManagementData";
 
@@ -25,6 +27,7 @@ export default class HomeAutomationManagementUI extends React.Component<
       homeAssistantUpdateError: undefined,
       upgradeServerError: undefined,
       newHomeAssistantVersion: undefined,
+      otherError: undefined,
     };
     this.timerID = undefined;
   }
@@ -69,7 +72,6 @@ export default class HomeAutomationManagementUI extends React.Component<
   upgradeHomeAssistant() {
     upgradeHomeAssistant()
       .then((result) => {
-        console.log(result);
         if (!result.success) {
           this.setState({ homeAssistantUpdateError: result.error });
         } else {
@@ -84,6 +86,18 @@ export default class HomeAutomationManagementUI extends React.Component<
           homeAssistantUpdateError: new Error(error.response.data.error),
         });
       });
+  }
+
+  compress() {
+    compress().catch((error) => {
+      this.setState({ otherError: new Error(error.response.data.error) });
+    });
+  }
+
+  archive() {
+    archive().catch((error) => {
+      this.setState({ otherError: new Error(error.response.data.error) });
+    });
   }
 
   render() {
@@ -117,6 +131,7 @@ export default class HomeAutomationManagementUI extends React.Component<
       this.state.versionAvailableFetchingError,
       this.state.upgradeServerError,
       this.state.homeAssistantUpdateError,
+      this.state.otherError,
     ]) {
       if (error !== undefined) {
         errors.push(<Alert variant="danger">{error.message}</Alert>);
@@ -134,13 +149,14 @@ export default class HomeAutomationManagementUI extends React.Component<
         </Alert>
         {newVersionAvailableAlert}
         <div>
-          <Button
-            variant="primary"
-            onClick={() => {
-              this.upgradeHomeAssistant();
-            }}
-          >
+          <Button variant="primary" onClick={this.upgradeHomeAssistant}>
             Upgrade home assistant
+          </Button>
+          <Button variant="primary" onClick={this.compress}>
+            Compress
+          </Button>
+          <Button variant="primary" onClick={this.archive}>
+            Archive
           </Button>
         </div>
       </div>
