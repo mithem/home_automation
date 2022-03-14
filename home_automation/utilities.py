@@ -6,9 +6,9 @@ import logging
 
 import yagmail
 
-import home_automation.config
+from home_automation import config as haconfig
 
-CONFIG = home_automation.config.load_config()
+CONFIG = haconfig.load_config()
 
 _SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.password)
 

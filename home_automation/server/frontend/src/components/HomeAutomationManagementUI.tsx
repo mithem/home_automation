@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Button } from "react-bootstrap";
+import { Alert, Button, Card } from "react-bootstrap";
 import { refreshInterval } from "../constants";
 import {
   getHomeAutomationManagementData,
@@ -143,22 +143,24 @@ export default class HomeAutomationManagementUI extends React.Component<
         {newHomeAssistantVersionSuccessAlert}
         <Alert variant="secondary" className="version current">
           <span>Current version: {this.state.version ?? "N/A"}</span>
-          <Button variant="primary" onClick={refreshVersionInfo}>
+          <Button variant="primary" onClick={() => refreshVersionInfo}>
             Check for updates
           </Button>
         </Alert>
         {newVersionAvailableAlert}
-        <div>
-          <Button variant="primary" onClick={this.upgradeHomeAssistant}>
-            Upgrade home assistant
-          </Button>
-          <Button variant="primary" onClick={this.compress}>
-            Compress
-          </Button>
-          <Button variant="primary" onClick={this.archive}>
-            Archive
-          </Button>
-        </div>
+        <Card>
+          <Card.Body>
+            <Button variant="primary" onClick={() => this.upgradeHomeAssistant()}>
+              Upgrade home assistant
+            </Button>
+            <Button variant="primary" onClick={() => this.compress()}>
+              Compress
+            </Button>
+            <Button variant="primary" onClick={() => this.archive()}>
+              Archive
+            </Button>
+          </Card.Body>
+        </Card>
       </div>
     );
   }

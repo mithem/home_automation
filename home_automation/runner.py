@@ -20,7 +20,7 @@ from watchdog.events import (
 )
 
 from home_automation import compression_manager
-import home_automation.config as haconfig
+from home_automation import config as haconfig
 from home_automation import utilities as util
 
 # logging system copied from

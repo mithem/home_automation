@@ -18,7 +18,7 @@ from docker.models.containers import Container as DockerContainer, Image as Dock
 from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
 
-import home_automation.config
+from home_automation import config as haconfig
 from home_automation import archive_manager, compression_manager
 from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
@@ -31,7 +31,7 @@ class ServerAPIError(Exception):
 CURRENT_HASS_VERSION_REGEX = \
     r"image: homeassistant/home-assistant:(?P<version>\d\d\d\d\.\d\d?\.\d+)"
 PORTAINER_CALLS_TIMEOUT = 5
-CONFIG: home_automation.config.Config
+CONFIG: haconfig.Config
 CLIENT, ERROR = None, None
 
 
@@ -47,7 +47,7 @@ def try_reloading_client():
 def reload_config():
     """Reload configuration."""
     global CONFIG  # pylint: disable=global-statement
-    CONFIG = home_automation.config.load_config()
+    CONFIG = haconfig.load_config()
 
 
 try_reloading_client()
@@ -519,17 +519,17 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
 
     @app.route("/api/compress", methods=["POST"])
     def compress():
-        compression_manager.run_main([])
+        compression_manager.compress(CONFIG)
         return {"success": True}
 
     @app.route("/api/archive", methods=["POST"])
     def archive():
-        archive_manager.main(["archive"])
+        archive_manager.archive()
         return {"success": True}
 
     @app.route("/api/reorganize", methods=["POST"])
     def reorganize():
-        archive_manager.main(["reorganize"])
+        archive_manager.reorganize()
         return {"success": True}
 
     return app

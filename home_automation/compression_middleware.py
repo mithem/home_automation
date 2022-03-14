@@ -7,7 +7,7 @@ import fileloghelper
 import httpx
 
 from home_automation.archive_manager import ABBR_TO_SUBJECT
-import home_automation.config as haconfig
+from home_automation import config as haconfig
 
 TIMEOUT = 10
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()

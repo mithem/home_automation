@@ -10,7 +10,7 @@ from typing import List, Sequence
 import fileloghelper
 import yagmail
 
-import home_automation.config
+from home_automation import config as haconfig
 
 MONTH_TO_DIR = {
     1: "Januar",
@@ -67,14 +67,14 @@ class IsCompressedFileException(Exception):
 
 class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     """ArchiveManager manages the archive. Wait, what?"""
-    config: home_automation.config.Config
+    config: haconfig.Config
     logger: fileloghelper.Logger
     transferred_files: List[str]
     not_transferred_files: List[str]
     debug: bool
     smtp: yagmail.SMTP
 
-    def __init__(self, config: home_automation.config.Config, debug=False):
+    def __init__(self, config: haconfig.Config, debug=False):
         self.config = config
         self.logger = fileloghelper.Logger(os.path.join(
             config.log_dir, "archive_manager.log"), autosave=debug)
@@ -263,6 +263,15 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 fname, self.debug)  # pylint: disable=multiple-statements
         # I mean, common!
 
+def archive():
+    config_data = haconfig.load_config()
+    manager = ArchiveManager(config_data)
+    manager.transfer_all_files()
+
+def reorganize():
+    config_data = haconfig.load_config()
+    manager = ArchiveManager(config_data)
+    manager.reorganize_all_files()
 
 def main(arguments: Sequence[str]):
     """Guess what this does, pylint!"""
@@ -275,7 +284,7 @@ def main(arguments: Sequence[str]):
     parser.add_argument("--config", "-c", type=str, default=None,
                         help="path to config file (default='home_automation.conf.yml')")
     args = parser.parse_args(arguments)
-    config_data = home_automation.config.load_config(path=args.config)
+    config_data = haconfig.load_config(path=args.config)
     manager = ArchiveManager(config_data, args.verbose)
     manager.logger.header(True, True)
     manager.logger.autosave = manager.debug
