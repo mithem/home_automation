@@ -2,7 +2,7 @@
 import argparse
 import asyncio
 import os
-from typing import List, Union
+from typing import List, Union, Optional
 
 import fileloghelper
 from home_automation import config as haconfig
