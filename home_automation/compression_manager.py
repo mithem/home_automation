@@ -152,6 +152,7 @@ class CompressionManager:
                          + f"'{middleware.__class__.__name__}'", self.debug)
 
 async def main(arguments: Union[str, List[str]] = None):
+    """Main entry point with parsing argumets from cli."""
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
@@ -161,7 +162,7 @@ async def main(arguments: Union[str, List[str]] = None):
                         help="path to config file (default='home_automation.conf.yml')")
     args = parser.parse_args(arguments)
     config = haconfig.load_config(args.config)
-    await run(config)
+    await compress(config)
 
 
 async def compress(config: Optional[haconfig.Config] = None):
@@ -171,7 +172,7 @@ async def compress(config: Optional[haconfig.Config] = None):
     else:
         config_data = haconfig.load_config()
 
-    manager = CompressionManager(config_data, debug=args.verbose)
+    manager = CompressionManager(config_data)
 
     middleware = [
         FlashLightsInHomeAssistantMiddleware(config_data, manager.logger),

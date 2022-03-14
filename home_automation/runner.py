@@ -195,8 +195,8 @@ def run_watchdog(config: haconfig.Config, queue: mp.Queue):
     event_handler = _WatchdogEventHandler()
     observer = WatchdogObserver()
     observer.schedule(event_handler, config.homework_dir, True)
-    for dir in config.extra_compress_dirs:
-        observer.schedule(event_handler, dir, True)
+    for extra_dir in config.extra_compress_dirs:
+        observer.schedule(event_handler, extra_dir, True)
     observer.start()
     logger.info("Started watchdog observer.")
     # yes, 'simulate' is a strong word
