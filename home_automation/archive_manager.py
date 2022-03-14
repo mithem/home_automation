@@ -5,7 +5,7 @@ import datetime
 import os
 import re
 import shutil
-from typing import List, Sequence
+from typing import List, Sequence, Optional
 
 import fileloghelper
 import yagmail
@@ -275,7 +275,7 @@ def reorganize():
     manager = ArchiveManager(config_data)
     manager.reorganize_all_files()
 
-def main(arguments: Sequence[str]):
+def main(arguments: Optional[Sequence[str]] = None):
     """Guess what this does, pylint!"""
     parser = argparse.ArgumentParser(
         description="Archive files from HAs or reorganize Archive.")
