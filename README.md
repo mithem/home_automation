@@ -1,4 +1,5 @@
 [![CI status](https://github.com/mithem/home_automation/actions/workflows/main.yml/badge.svg)](https://github.com/mithem/home_automation/actions/workflows/main.yml)
+[![CodeQL](https://github.com/mithem/home_automation/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mithem/home_automation/actions/workflows/codeql-analysis.yml)
 
 # home_automation
 
