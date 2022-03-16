@@ -5,12 +5,13 @@ from flask import Flask, request
 from flask.wrappers import Response
 from home_automation.archive_manager import ABBR_TO_SUBJECT
 
-SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = "/Users/miguel/repos/home_automation/script/MarkHomeworkAsDone.scpt"
+SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = \
+    "/Users/miguel/repos/home_automation/script/MarkHomeworkAsDone.scpt"
 SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = \
     "/Users/miguel/repos/home_automation/script/CreateThingsTaskToUpdateHass.scpt"
 
-VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys(
-)]  # pylint: disable=consider-iterating-dictionary
+# pylint: disable=consider-iterating-dictionary
+VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys()]
 RAN_SCRIPT = b"Ran script."
 
 
