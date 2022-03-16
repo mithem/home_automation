@@ -1,15 +1,12 @@
-"""A server intended to create tasks in Things when appropriate."""
+"""A server intended to interact with Things when appropriate."""
 import os
 
 from flask import Flask, request
 from flask.wrappers import Response
 from home_automation.archive_manager import ABBR_TO_SUBJECT
 
-SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = "/Users/miguel/Library/Mobile Documents/com~apple~Automator/\
-Documents/MarkHomeworkAsDone.scpt"
-SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = "/Users/miguel/Library/"\
-    + "Mobile Documents/com~apple~Automator/Documents/"\
-    + "CreateThingsTaskToUpdateHass.scpt"
+SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = "~/repos/home_automation/script/MarkHomeworkAsDone.scpt"
+SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = "~/repos/home_automation/script/CreateThingsTaskToUpdateHass.scpt"
 
 VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys()] # pylint: disable=consider-iterating-dictionary
 RAN_SCRIPT = b"Ran script."
@@ -55,5 +52,10 @@ def create_app() -> Flask:
         os.system(
             f"osascript '{SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS}'")
         return RAN_SCRIPT
+
+    @app.route("/")
+    def inde():
+        """Index (return hello world)"""
+        return "Hello, world!"
 
     return app
