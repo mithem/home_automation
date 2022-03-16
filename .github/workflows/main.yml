@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Copy config files
+        run: cp home_automation_ci.conf.yml home_automation.conf.yml
       - name: Install tox
         run: pip3 install -r requirements_dev.txt | grep tox
       - name: Run tox
