@@ -5,10 +5,12 @@ from flask import Flask, request
 from flask.wrappers import Response
 from home_automation.archive_manager import ABBR_TO_SUBJECT
 
-SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = "~/repos/home_automation/script/MarkHomeworkAsDone.scpt"
-SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = "~/repos/home_automation/script/CreateThingsTaskToUpdateHass.scpt"
+SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = "/Users/miguel/repos/home_automation/script/MarkHomeworkAsDone.scpt"
+SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = \
+    "/Users/miguel/repos/home_automation/script/CreateThingsTaskToUpdateHass.scpt"
 
-VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys()] # pylint: disable=consider-iterating-dictionary
+VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys(
+)]  # pylint: disable=consider-iterating-dictionary
 RAN_SCRIPT = b"Ran script."
 
 
@@ -17,7 +19,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     @app.errorhandler(404)
-    def not_found(error): # pylint: disable=unused-argument
+    def not_found(error):  # pylint: disable=unused-argument
         """404 error handler."""
         return "Not found.", 404
 
@@ -26,7 +28,7 @@ def create_app() -> Flask:
         """Mark the corresponding homework (identified via query) as done in Things."""
         subject = request.args.get("subject", None)
         testing = request.args.get("testing", False)
-        if subject is None:
+        if not subject:
             return Response("Missing subject parameter", 400)
 
         subject = subject.upper()
@@ -35,9 +37,6 @@ def create_app() -> Flask:
 
         if testing:
             return RAN_SCRIPT
-
-        if not subject.upper() in ABBR_TO_SUBJECT.keys(): # pylint: disable=consider-iterating-dictionary
-            return "Invalid subject", 404
 
         os.system(f"osascript '{SCRIPT_LOC_MARK_HOMEWORK_AS_DONE}' {subject}")
         return RAN_SCRIPT

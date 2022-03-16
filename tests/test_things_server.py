@@ -11,12 +11,14 @@ def app():
 
 class TestMarkHomeworkAsDone:
     def test_mark_homework_as_done_missing_parameter(self, client):
-        r = client.post("/api/v1/markhomeworkasdone")
+        url = url_for("mark_homework_as_done")
+        r = client.post(url)
         assert r.status_code == 400
         assert r.data == b"Missing subject parameter"
 
     def test_mark_homework_as_done_subject_not_found(self, client):
-        r = client.post(url_for("mark_homework_as_done", subject="HA"))
+        url = url_for("mark_homework_as_done", subject="HA")
+        r = client.post(url)
         assert r.status_code == 404
         assert r.data == b"Subject not found."
 
@@ -37,7 +39,7 @@ class TestCreateThingsTaskToUpdateHass():
         assert r.data == RAN_SCRIPT
 
 
-def test_not_found(client):
+def test_hello_world(client):
     r = client.get("/")
-    assert r.status_code == 404
-    assert r.data == b"Not found."
+    assert r.status_code == 200
+    assert r.data == b"Hello, world!"
