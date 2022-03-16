@@ -8,12 +8,14 @@ def apply_permissions(path: str):
     """Apply permissions to dir at `path`"""
     if not os.path.isdir(path):
         raise Exception(f"Not a dir: '{path}'")
-    for root, dirs, files in os.walk("."):
+    for root, dirs, files in os.walk(path):
         for fname in files:
             path = os.path.join(root, fname)
+            os.chown(path, 33, 33)  # what nginx container has for www-data
             os.chmod(path, 0o644)
         for dirname in dirs:
             path = os.path.join(root, dirname)
+            os.chown(path, 33, 33)  # what nginx container has for www-data
             os.chmod(path, 0o755)
 
 
