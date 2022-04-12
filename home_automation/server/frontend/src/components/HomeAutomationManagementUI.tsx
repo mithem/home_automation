@@ -8,6 +8,7 @@ import {
   upgradeHomeAssistant,
   compress,
   archive,
+  sendTestMail,
 } from "../functions";
 import HomeAutomationManagementData from "../models/HomeAutomationManagementData";
 
@@ -100,6 +101,12 @@ export default class HomeAutomationManagementUI extends React.Component<
     });
   }
 
+  sendTestMail() {
+    sendTestMail().catch((error) => {
+      this.setState({ otherError: new Error(error.response.data.error) });
+    });
+  }
+
   render() {
     const newVersionAvailableAlert =
       this.state.available !== undefined ? (
@@ -150,7 +157,10 @@ export default class HomeAutomationManagementUI extends React.Component<
         {newVersionAvailableAlert}
         <Card>
           <Card.Body>
-            <Button variant="primary" onClick={() => this.upgradeHomeAssistant()}>
+            <Button
+              variant="primary"
+              onClick={() => this.upgradeHomeAssistant()}
+            >
               Upgrade home assistant
             </Button>
             <Button variant="primary" onClick={() => this.compress()}>
@@ -158,6 +168,9 @@ export default class HomeAutomationManagementUI extends React.Component<
             </Button>
             <Button variant="primary" onClick={() => this.archive()}>
               Archive
+            </Button>
+            <Button variant="primary" onClick={() => this.sendTestMail()}>
+              Send test mail
             </Button>
           </Card.Body>
         </Card>
