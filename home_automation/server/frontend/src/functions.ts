@@ -195,3 +195,7 @@ export async function archive() {
 export async function reloadConfig() {
   await axios.post(BASE_URL + "/api/config/reload", axiosDefaultConfig);
 }
+
+export async function sendTestMail() {
+  await axios.post(BASE_URL + "/api/mail/test", axiosDefaultConfig);
+}

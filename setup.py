@@ -2,7 +2,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -49,7 +49,7 @@ requirements = [
     "pyyaml"
 ]
 
-with open("requirements_dev.txt", "w") as f:
+with open("requirements.txt", "w") as f:
     f.writelines([r + "\n" for r in requirements])
 
 setup(

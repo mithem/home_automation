@@ -6,6 +6,7 @@ After=home_automation.setup.service
 [Service]
 WorkingDirectory=/mnt/FastStorage/mithem-applications/home_automation
 ExecStart=/bin/python3 -m home_automation.runner
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

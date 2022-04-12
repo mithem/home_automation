@@ -9,8 +9,17 @@ import yagmail
 from home_automation import config as haconfig
 
 CONFIG = haconfig.load_config()
+OAUTH_CLIENT_SECRETS_FILE = "client_secrets.json"
 
-_SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.password)
+if CONFIG.email.oauth2_enabled:
+    if not os.path.isfile(OAUTH_CLIENT_SECRETS_FILE):
+        raise FileNotFoundError("Could not find client_secrets.json.")
+    _SMTP = yagmail.SMTP(CONFIG.email.address,
+                         oauth2_file=OAUTH_CLIENT_SECRETS_FILE)
+elif CONFIG.email.api_key:
+    _SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.api_key)
+else:
+    _SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.password)
 
 
 def send_mail(subject: str, body: str = ""):

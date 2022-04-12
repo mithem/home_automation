@@ -1,8 +1,9 @@
 #!/bin/bash
 echo Installing the home_automation project...
-sudo cp systemd/home_automation.setup.service /usr/lib/systemd/user/
-sudo cp systemd/home_automation.service /usr/lib/systemd/user/
+sudo cp systemd/home_automation.setup.service ~/.config/systemd/user/
+sudo cp systemd/home_automation.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 echo Systemd services are copied and loaded. Enabling and starting...
 systemctl --user enable --now home_automation
+loginctl enable-linger "${whoami}"
 echo Done

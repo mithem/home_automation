@@ -22,6 +22,7 @@ from home_automation import config as haconfig
 from home_automation import archive_manager, compression_manager
 from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
+import home_automation.utilities
 
 
 class ServerAPIError(Exception):
@@ -518,8 +519,8 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         return {"success": True}
 
     @app.route("/api/compress", methods=["POST"])
-    def compress():
-        compression_manager.compress(CONFIG)
+    async def compress():
+        await compression_manager.compress(CONFIG)
         return {"success": True}
 
     @app.route("/api/archive", methods=["POST"])
@@ -530,6 +531,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/reorganize", methods=["POST"])
     def reorganize():
         archive_manager.reorganize()
+        return {"success": True}
+
+    @app.route("/api/mail/test", methods=["POST"])
+    def mail_test():
+        home_automation.utilities.send_mail(
+            "Test",
+            "This is a test mail sent from home_automation."
+        )
         return {"success": True}
 
     return app

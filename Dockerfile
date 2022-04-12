@@ -10,7 +10,7 @@ RUN mkdir /var/run/home_automation
 
 RUN script/install-system-dependencies
 
-RUN --mount=type=cache,target=/var/root/.cache/pip python3 -m pip install -r requirements_dev.txt
+RUN --mount=type=cache,target=/var/root/.cache/pip python3 -m pip install -r requirements.txt
 
 RUN python3 setup.py install
 

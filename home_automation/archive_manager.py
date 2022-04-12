@@ -8,7 +8,7 @@ import shutil
 from typing import List, Sequence, Optional
 
 import fileloghelper
-import yagmail
+import home_automation.utilities
 
 from home_automation import config as haconfig
 
@@ -72,7 +72,6 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     transferred_files: List[str]
     not_transferred_files: List[str]
     debug: bool
-    smtp: yagmail.SMTP
 
     def __init__(self, config: haconfig.Config, debug=False):
         self.config = config
@@ -81,10 +80,6 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         self.transferred_files = []
         self.not_transferred_files = []
         self.debug = debug
-        self.smtp = yagmail.SMTP(
-            config.email.address,
-            config.email.password
-        )
 
     def parse_filename(self, path: str):  # pylint: disable=no-self-use
         """parse filename and return (subject, year, month), each as
@@ -248,7 +243,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             mail_body += self.not_transferred_files
         mail_body.append(f"Thats {len(self.transferred_files)} files.")
         mail_subject = "[NAS] Archiving at end of week"
-        self.smtp.send(self.config.email.address, mail_subject, mail_body)
+        home_automation.utilities.send_mail(mail_subject, mail_body)
         self.logger.success("Sent mail notifying of the archiving process.")
 
     def reorganize_all_files(self):
@@ -263,17 +258,20 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 fname, self.debug)  # pylint: disable=multiple-statements
         # I mean, common!
 
+
 def archive():
     """Archive with the default config loaded (still from filesystem)"""
     config_data = haconfig.load_config()
     manager = ArchiveManager(config_data)
     manager.transfer_all_files()
 
+
 def reorganize():
     """Reorganize with the default config loaded (still from filesystem)"""
     config_data = haconfig.load_config()
     manager = ArchiveManager(config_data)
     manager.reorganize_all_files()
+
 
 def main(arguments: Optional[Sequence[str]] = None):
     """Guess what this does, pylint!"""

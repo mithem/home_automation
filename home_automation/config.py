@@ -6,11 +6,21 @@ import yaml
 class ConfigEmail:
     """Email configuration."""
     address: str
-    password: str
+    password: Optional[str]
+    api_key: Optional[str]
+    oauth2_enabled: bool
 
-    def __init__(self, address: str, password: str):
+    def __init__(
+        self,
+        address: str,
+        password: Optional[str] = None,
+        api_key: Optional[str] = None,
+        oauth2_enabled: bool = False
+    ):
         self.address = address
         self.password = password
+        self.api_key = api_key
+        self.oauth2_enabled = oauth2_enabled
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -21,14 +31,18 @@ class ConfigEmail:
     def __eq__(self, other) -> bool:
         return (
             self.address == other.address and
-            self.password == other.password
+            self.password == other.password and
+            self.api_key == other.api_key and
+            self.oauth2_enabled == other.oauth2_enabled
         )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'address': self.address,
-            'password': self.password
+            "address": self.address,
+            "password": self.password,
+            "api_key": self.api_key,
+            "oauth2_enabled": self.oauth2_enabled
         }
 
 
@@ -59,9 +73,9 @@ class ConfigHomeAssistant:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'url': self.url,
-            'token': self.token,
-            'insecure_https': self.insecure_https
+            "url": self.url,
+            "token": self.token,
+            "insecure_https": self.insecure_https
         }
 
 
@@ -104,12 +118,12 @@ class ConfigPortainer:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'url': self.url,
-            'username': self.username,
-            'password': self.password,
-            'home_assistant_env': self.home_assistant_env,
-            'home_assistant_stack': self.home_assistant_stack,
-            'insecure_https': self.insecure_https
+            "url": self.url,
+            "username": self.username,
+            "password": self.password,
+            "home_assistant_env": self.home_assistant_env,
+            "home_assistant_stack": self.home_assistant_stack,
+            "insecure_https": self.insecure_https
         }
 
 
@@ -137,8 +151,8 @@ class ConfigThingsServer:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'url': self.url,
-            'insecure_https': self.insecure_https
+            "url": self.url,
+            "insecure_https": self.insecure_https
         }
 
 
@@ -166,8 +180,8 @@ class ConfigProcess:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'user': self.user,
-            'group': self.group
+            "user": self.user,
+            "group": self.group
         }
 
 
@@ -187,7 +201,7 @@ class ConfigRunner:  # pylint: disable=too-few-public-methods
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'cron_user': self.cron_user
+            "cron_user": self.cron_user
         }
 
 
@@ -207,7 +221,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     process: Optional[ConfigProcess]
     runner: Optional[ConfigRunner]
 
-    # opress dangerous default values as that's only dangerous if they are modified
+    # opress dangerous default values as that"s only dangerous if they are modified
     def __init__(
         self,
         log_dir: str,
@@ -215,7 +229,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         archive_dir: str,
         db_path: str,
         compose_file: str,
-        email: Dict[str, str],
+        email: Dict[str, Any],
         home_assistant: Dict[str, Any] = {
         },  # pylint: disable=dangerous-default-value
         portainer: Dict[str, Any] = {
@@ -269,19 +283,19 @@ class Config:  # pylint: disable=too-many-instance-attributes
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'log_dir': self.log_dir,
-            'homework_dir': self.homework_dir,
-            'archive_dir': self.archive_dir,
-            'db_path': self.db_path,
-            'compose_file': self.compose_file,
-            'moodle_dl_dir': self.moodle_dl_dir,
-            'email': self.email.to_dict() if self.email else None,
-            'home_assistant': self.home_assistant.to_dict() if self.home_assistant else None,
-            'portainer': self.portainer.to_dict() if self.portainer else None,
-            'things_server': self.things_server.to_dict() if self.things_server else None,
-            'process': self.process.to_dict() if self.process else None,
-            'runner': self.runner.to_dict() if self.runner else None,
-            'extra_compress_dirs': self.extra_compress_dirs
+            "log_dir": self.log_dir,
+            "homework_dir": self.homework_dir,
+            "archive_dir": self.archive_dir,
+            "db_path": self.db_path,
+            "compose_file": self.compose_file,
+            "moodle_dl_dir": self.moodle_dl_dir,
+            "email": self.email.to_dict() if self.email else None,
+            "home_assistant": self.home_assistant.to_dict() if self.home_assistant else None,
+            "portainer": self.portainer.to_dict() if self.portainer else None,
+            "things_server": self.things_server.to_dict() if self.things_server else None,
+            "process": self.process.to_dict() if self.process else None,
+            "runner": self.runner.to_dict() if self.runner else None,
+            "extra_compress_dirs": self.extra_compress_dirs
         }
 
 

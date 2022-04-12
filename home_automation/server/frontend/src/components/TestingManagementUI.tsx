@@ -4,7 +4,8 @@ import {
   testingSetVersionAvailable,
   testingInitiateAutoUpgrade,
   forceHomeAssistantUpdate,
-  reloadConfig
+  reloadConfig,
+  sendTestMail,
 } from "../functions";
 import TestingManagementData from "../models/TestingManagementData";
 
@@ -40,11 +41,16 @@ export default class TestingManagementUI extends React.Component<
     }
   }
 
+  sendTestMail() {
+    sendTestMail().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   reloadConfig() {
-    reloadConfig()
-    .catch((error) => {
-      this.setState({error: new Error(error.response.data.error)})
-    })
+    reloadConfig().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
   }
 
   render() {
@@ -70,11 +76,11 @@ export default class TestingManagementUI extends React.Component<
           >
             Force home assistant update
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => this.reloadConfig()}
-          >
+          <Button variant="primary" onClick={() => this.reloadConfig()}>
             Reload config
+          </Button>
+          <Button variant="primary" onClick={() => this.sendTestMail()}>
+            Send test mail
           </Button>
         </Card>
       </div>
