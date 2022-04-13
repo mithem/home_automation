@@ -8,6 +8,8 @@ def apply_permissions(path: str):
     """Apply permissions to dir at `path`"""
     if not os.path.isdir(path):
         raise Exception(f"Not a dir: '{path}'")
+    os.chown(path, 33, 33)
+    os.chmod(path, 0o755)
     for root, dirs, files in os.walk(path):
         for fname in files:
             path = os.path.join(root, fname)
