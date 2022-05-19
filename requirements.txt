@@ -27,3 +27,4 @@ semver
 GitPython
 moodle-dl
 pyyaml
+kubernetes

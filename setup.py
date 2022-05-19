@@ -2,7 +2,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -46,7 +46,8 @@ requirements = [
     "semver",
     "GitPython",
     "moodle-dl",
-    "pyyaml"
+    "pyyaml",
+    "kubernetes",
 ]
 
 with open("requirements.txt", "w") as f:

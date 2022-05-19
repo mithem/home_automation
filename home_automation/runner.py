@@ -168,7 +168,7 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
     moodle_dl_job.minute.on(0)
     moodle_dl_job.hour.every(1)
 
-    auto_upgrade_job.minute.every(30)
+    auto_upgrade_job.minute.every(10)
 
     cron.write()  # not sure if I could run the scheduler without writing the file
 
@@ -231,7 +231,7 @@ def run_backend_server(queue: mp.Queue):
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
         os.system("python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w 2 --bi\
-nd 127.0.0.1:10001 'home_automation.server.backend:create_app()'")
+nd 0.0.0.0:10001 'home_automation.server.backend:create_app()'")
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
         sys.exit(0)
