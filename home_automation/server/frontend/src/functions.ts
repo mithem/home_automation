@@ -196,6 +196,28 @@ export async function reloadConfig() {
   await axios.post(BASE_URL + "/api/config/reload", axiosDefaultConfig);
 }
 
+export function requestGoogleOAuth2() {
+  window.open(BASE_URL + "/backend/home_automation/oauth2/google/request");
+}
+
 export async function sendTestMail() {
-  await axios.post(BASE_URL + "/api/mail/test", axiosDefaultConfig);
+  try {
+    await axios.post(BASE_URL + "/api/mail/test", axiosDefaultConfig);
+  } catch (e) {
+    requestGoogleOAuth2();
+  }
+}
+
+export async function revokeGoogleOAuth() {
+  await axios.post(
+    BASE_URL + "/api/home_automation/oauth2/google/revoke",
+    axiosDefaultConfig
+  );
+}
+
+export async function clearGoogleOAuth() {
+  await axios.delete(
+    BASE_URL + "/api/home_automation/oauth2/google/clear",
+    axiosDefaultConfig
+  );
 }

@@ -10,7 +10,7 @@ STATUS_KEYS = ["pulling", "upping", "downing", "pruning"]
 
 
 class StateManager:
-    """StateManager managed the sqlite3 database under $DB_PATH."""
+    """StateManager managing the sqlite3 database under $DB_PATH."""
 
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -25,14 +25,19 @@ class StateManager:
         tables = map(lambda t: t[0], cur.execute("SELECT name FROM sqlite_\
 master WHERE type IN ('table', 'view')").fetchall())
         if "status" not in tables:
-            self.create_table()
-            self.reset_db()
+            self.create_status_table()
+            self.reset_status()
         elif self.get_status() == {}:
-            self.reset_db()
+            self.reset_status()
+        if "oauth2" not in tables:
+            self.create_oauth2_table()
+            self.reset_oauth2()
+        elif self.get_oauth2_credentials() == {}:
+            self.reset_oauth2()
         cur.close()
         connection.close()
 
-    def create_table(self):
+    def create_status_table(self):
         """Create the table for storing status information."""
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
@@ -41,11 +46,29 @@ master WHERE type IN ('table', 'view')").fetchall())
         cur.close()
         connection.close()
 
-    def drop_table(self):
+    def create_oauth2_table(self):
+        """Create the table for storing oauth2 information."""
+        connection = sqlite3.connect(self.db_path)
+        cur = connection.cursor()
+        cur.execute("CREATE TABLE oauth2 (key text, value text)")
+        connection.commit()
+        cur.close()
+        connection.close()
+
+
+    def drop_status_table(self):
         """Drop/Delete the table for status information."""
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
         cur.execute("DROP TABLE IF EXISTS status")
+        cur.close()
+        connection.close()
+
+    def drop_oauth2_table(self):
+        """Drop/Delete the table for oauth2 information."""
+        connection = sqlite3.connect(self.db_path)
+        cur = connection.cursor()
+        cur.execute("DROP TABLE IF EXISTS oauth2")
         cur.close()
         connection.close()
 
@@ -63,8 +86,21 @@ ERE key=:key", {"key": key, "status": status})
             self.prepare_db()
             self.update_status(key, status)
 
-    def reset_db(self):
-        """Reset the DB to the default values."""
+    def update_oauth2_credentials(self, key: str, value):
+        """Change the value for the specified key in the oauth2 database."""
+        try:
+            connection = sqlite3.connect(self.db_path)
+            cur = connection.cursor()
+            cur.execute("UPDATE oauth2 SET value=:value WHERE key=:key", {"key": key, "value": value})
+            connection.commit()
+            cur.close()
+            connection.close()
+        except sqlite3.OperationalError:
+            self.prepare_db()
+            self.update_oauth2_credentials(key, value)
+
+    def reset_status(self):
+        """Reset the status table."""
         default_values = [
             ("pulling", False),
             ("upping", False),
@@ -73,7 +109,8 @@ ERE key=:key", {"key": key, "status": status})
             ("version", home_automation.VERSION),
             ("versionAvailable", ""),
             ("versionAvailableSince", ""),
-            ("testingInitfileVersion", "")
+            ("testingInitfileVersion", ""),
+            ("test_email_pending", False)
         ]
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
@@ -82,6 +119,24 @@ ERE key=:key", {"key": key, "status": status})
         connection.commit()
         cur.close()
         connection.close()
+
+    def reset_oauth2(self):
+        """Reset the oauth2 table."""
+        default_values = [
+            ("access_token", "")
+        ]
+        connection = sqlite3.connect(self.db_path)
+        cur = connection.cursor()
+        cur.execute("DELETE FROM oauth2 WHERE true")
+        cur.executemany("INSERT INTO oauth2 VALUES (?, ?)", default_values)
+        connection.commit()
+        cur.close()
+        connection.close()
+
+    def reset_db(self):
+        """Reset the DB to the default values."""
+        self.reset_status()
+        self.reset_oauth2()
 
     def get_status(self):
         """Return status information in the following format:
@@ -129,6 +184,21 @@ ERE key=:key", {"key": key, "status": status})
         except sqlite3.OperationalError:
             self.prepare_db()
             return self.get_value(key)
+
+    def get_oauth2_credentials(self):
+        """Return oauth2 credentials as returned from the db."""
+        try:
+            connection = sqlite3.connect(self.db_path)
+            cur = connection.cursor()
+            keys = ["access_token"]
+            elements = cur.execute("SELECT key, value FROM oauth2 WHERE key=?", keys)
+            elems = list(elements)
+            cur.close()
+            connection.close()
+            return elems
+        except sqlite3.OperationalError:
+            self.prepare_db()
+            return self.get_oauth2_credentials()
 
     def execute(self, sql: str, *params, commit=False):
         """Execute an arbitrary SQL statement and return the result.

@@ -31,5 +31,5 @@ except Exception as e:  # pylint: disable=broad-except
     progression_root = f"../{PATH_PROGRESSION}"
     try:
         apply_permissions(progression_root)
-    except Exception as e:  # pylint: disable=broad-except
-        print(e)
+    except Exception as exc:  # pylint: disable=broad-except
+        print(exc)

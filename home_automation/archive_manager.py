@@ -235,6 +235,14 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         necessarily '/') to their corresponding destination."""
         self.logger.context = "mail"
         self.transfer_directory(self.config.homework_dir)
+        self.send_archiving_mail()
+
+    def send_archiving_mail(self):
+        """Send mail to notify that the archiving process has finished."""
+        if len(self.transferred_files) == 0 and len(self.not_transferred_files) == 0:
+            self.logger.info(
+                "No files transferred or failed to be transferred.")
+            return
         mail_body = ["The following files were successfully archived: "]\
             + self.transferred_files
         if len(self.not_transferred_files) > 0:

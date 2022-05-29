@@ -13,25 +13,31 @@ import logging
 import semver
 import docker
 import httpx
+import oauthlib.oauth2.rfc6749.errors
 from flask import Flask, render_template, request, url_for, redirect, escape
 from docker.models.containers import Container as DockerContainer, Image as DockerImage
 from docker.models.volumes import Volume as DockerVolume
 from docker.errors import NotFound as ContainerNotFound, DockerException, APIError
+from google.auth.transport.requests import Request
+import google.auth.exceptions
+from google.oauth2.credentials import Credentials
+import google_auth_oauthlib.flow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from home_automation import config as haconfig
 from home_automation import archive_manager, compression_manager
 from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
 import home_automation.utilities
+import home_automation.home_assistant_updater
+import home_automation.server.backend.oauth2_helpers as oauth2_helpers
 
 
 class ServerAPIError(Exception):
     """Any API error (that might be returned to the user)."""
 
 
-CURRENT_HASS_VERSION_REGEX = \
-    r"image: homeassistant/home-assistant:(?P<version>\d\d\d\d\.\d\d?\.\d+)"
-PORTAINER_CALLS_TIMEOUT = 5
 CONFIG: haconfig.Config
 CLIENT, ERROR = None, None
 
@@ -335,179 +341,19 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         version = state_manager.get_value("testingInitfileVersion")
         return f"VERSION='{version}'"
 
-    async def _log_in_to_portainer(client: httpx.AsyncClient) -> Dict[str, str]:
-        """Log in to portainer and return authorization header. Might raise ServerAPIError."""
-        if not CONFIG.portainer:
-            raise ServerAPIError("No portainer configuration provided.")
-        if not CONFIG.portainer.url:
-            raise ServerAPIError("No portainer URL configured.")
-        payload = {"username": CONFIG.portainer.username,
-                   "password": CONFIG.portainer.password}
-        response = await client.post(
-            CONFIG.portainer.url + "/api/auth",
-            json=payload,
-            timeout=PORTAINER_CALLS_TIMEOUT)
-        auth_data = response.json()
-        jwt = auth_data.get("jwt", None)
-        if not jwt:
-            raise APIError("Forbidden (portainer credentials).")
-        return {"authorization": f"Bearer {jwt}"}
-
-    async def _get_portainer_stack(
-        client: httpx.AsyncClient,
-        headers: Dict[str, str]
-    ) -> Dict[str, str]:
-        """Get portainer stack data. Might raise ServerAPIError."""
-        if not CONFIG.portainer:
-            raise ServerAPIError("No portainer configuration provided.")
-        if not CONFIG.portainer.url:
-            raise ServerAPIError("No portainer URL configured.")
-        if not CONFIG.portainer.home_assistant_stack:
-            raise ServerAPIError(
-                "No portainer stack defining home assistant configured in env.")
-        response = await client.get(CONFIG.portainer.url + "/api/stacks",
-                                    headers=headers,
-                                    timeout=PORTAINER_CALLS_TIMEOUT)
-        stacks = response.json()
-        try:
-            pot_stacks = filter(lambda s: s.get("Name", "").lower(
-            ) == CONFIG.portainer.home_assistant_stack.lower(), stacks)  # type: ignore
-            # as it's actually checked for just a few lines above
-            stack = list(pot_stacks)[0]
-            stack_id = stack.get("Id", None)
-            if not stack_id:
-                raise ServerAPIError("Invalid data received from portainer.")
-            response = await client.get(
-                CONFIG.portainer.url + f"/api/stacks/{stack_id}/file",
-                headers=headers,
-                timeout=PORTAINER_CALLS_TIMEOUT)
-            stack_data = response.json()
-            file_content = stack_data.get("StackFileContent", None)
-            if not file_content:
-                raise ServerAPIError(
-                    "No StackFileContent provided from portainer.")
-            stack["stackFileContent"] = file_content
-            return stack
-        except IndexError as err:
-            raise ServerAPIError(
-                f"Stack '{CONFIG.portainer.home_assistant_stack}' not found.") from err
-
-    async def _get_version_to_update_to(
-        client: httpx.AsyncClient,
-        stack: Dict[str, str]
-    ) -> Tuple[str, str]:
-        """Get current version as well as version of home assistant to update to (as a tuple).
-        Might throw ServerAPIError."""
-        if not CONFIG.home_assistant:
-            raise ServerAPIError("No Home Assistant configuration provided.")
-        if not CONFIG.home_assistant.url:
-            raise ServerAPIError("No home assistant URL configured.")
-        result = re.search(CURRENT_HASS_VERSION_REGEX,
-                           stack["stackFileContent"])
-        if not result:
-            raise ServerAPIError(
-                "Could not extract version information from stack info.")
-        current_version = result.groupdict().get("version", None)
-        data = request.get_json()
-        version_to_update_to = None
-        if data:
-            if isinstance(data, dict):
-                version_to_update_to = data.get(
-                    "update_to_version", None)
-        if not version_to_update_to:
-            hass_headers = {
-                "authorization": f"Bearer {CONFIG.home_assistant.token}"}
-            response = await client.get(
-                CONFIG.home_assistant.url + "/api/states/sensor.docker_hub",
-                headers=hass_headers,
-                timeout=PORTAINER_CALLS_TIMEOUT)
-            data = response.json()
-            version_to_update_to = data.get(
-                "state", None)
-        if not version_to_update_to:
-            raise ServerAPIError(
-                "Could not retreive newest available version from home assistant.")
-        return current_version, version_to_update_to
-
-    async def _update_home_assistant(
-        client: httpx.AsyncClient,
-        current_version: str,
-        version_to_update_to: str,
-        stack: Dict[str, str],
-        portainer_headers: Dict[str, str]
-    ) -> Union[Tuple[Dict[str, Any], int], Dict[str, Any]]:
-        if not CONFIG.portainer:
-            raise ServerAPIError("No portainer configuration provided.")
-        if not CONFIG.portainer.url:
-            raise ServerAPIError("No portainer URL configured.")
-        if not CONFIG.portainer.home_assistant_env:
-            raise ServerAPIError(
-                "No home assistant environment for portainer specified in .env.")
-        # don't check whether version_to_update_to is greater than current one
-        # with semver to allow forced downgrades
-        if current_version != version_to_update_to:
-            new_stack_content = re.sub(
-                CURRENT_HASS_VERSION_REGEX,
-                f"image: homeassistant/home-assistant:{version_to_update_to}",
-                stack["stackFileContent"]
-            )
-            response = await client.get(
-                CONFIG.portainer.url + "/api/endpoints",
-                headers=portainer_headers)
-            endpoints = response.json()
-            try:
-                pot_endpoints = filter(lambda e: e.get("Name", "").lower(
-                    # as it's actually checked for just a few lines above
-                ) == CONFIG.portainer.home_assistant_env.lower(), endpoints)  # type: ignore
-                endpoint = list(pot_endpoints)[0]
-                endpoint_id = endpoint.get("Id", 0)
-            except IndexError:
-                return {
-                    "error": f"Environment '{CONFIG.portainer.home_assistant_env}' not found"
-                }, 404
-            try:
-                response = await client.put(
-                    CONFIG.portainer.url +
-                    f"/api/stacks/{stack['Id']}?endpointId={endpoint_id}",
-                    json={"stackFileContent": new_stack_content},
-                    headers=portainer_headers
-                )
-                return {"success": True, "new_version": version_to_update_to}
-            except Exception as error:
-                if str(error) == "":
-                    return {"success": True, "new_version": version_to_update_to}
-                raise Exception(
-                    f"Error applying new stack definition: {error}") from error
-        return {"previous_version": current_version, "new_version": version_to_update_to}
-
     @app.route("/api/update-home-assistant", methods=["POST", "PUT"])
     async def update_home_assistant():  # pylint: disable=too-many-return-statements
-        if not CONFIG.portainer:
-            raise ServerAPIError("No portainer configuration provided.")
         if not CONFIG.home_assistant:
             raise ServerAPIError("No Home Assistant configuration provided.")
         if not CONFIG.home_assistant.url:
             return {"error": "No home assistant URL defined."}, 500
         if not CONFIG.home_assistant.token:
             return {"error": "No home assistant token defined."}, 401
-        async with httpx.AsyncClient(verify=not CONFIG.portainer.insecure_https) as client:
-            try:
-                portainer_headers = await _log_in_to_portainer(client)
-                stack = await _get_portainer_stack(client, portainer_headers)
-                client.verify = not CONFIG.home_assistant.insecure_https
-                current_version, version_to_update_to = await _get_version_to_update_to(
-                    client,
-                    stack
-                )
-                return await _update_home_assistant(
-                    client,
-                    current_version,
-                    version_to_update_to,
-                    stack,
-                    portainer_headers
-                )
-            except Exception as exc:  # pylint: disable=broad-except
-                return {"error": str(exc)}, 500
+        try:
+            home_automation.home_assistant_updater.update_home_assistant()
+        except Exception as e:
+            logging.error(e)
+            return {"error": str(e)}, 500
 
     @app.route("/api/config")
     def debug_env():
@@ -535,10 +381,64 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
 
     @app.route("/api/mail/test", methods=["POST"])
     def mail_test():
-        home_automation.utilities.send_mail(
-            "Test",
-            "This is a test mail sent from home_automation."
-        )
-        return {"success": True}
+        creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
+        try:
+            home_automation.utilities.send_mail(
+                creds,
+                "Test",
+                "This is a test mail sent from home_automation."
+            )
+            return {"success": True}
+        except google.auth.exceptions.RefreshError as error:
+            if "credentials do not contain the necessary fields" in str(error):
+                state_manager.update_status("test_email_pending", True)
+                return "Unauthorized.", 401
+            return str(error), 401
+
+    @app.route("/backend/home_automation/oauth2/google/callback")
+    def google_oauth2_callback():
+        authorization_response = request.url
+        authorization_response = authorization_response.replace("http://192.168.0.197:10001", "https://helix2.ddns.net:10000")
+        flow = oauth2_helpers.get_oauth_flow()
+        try:
+            flow.fetch_token(authorization_response=authorization_response)
+        except oauthlib.oauth2.rfc6749.errors.InvalidGrantError:
+            return "Invalid grant.", 500
+        oauth2_helpers.save_credentials(flow.credentials, state_manager)
+        pending = bool(int(state_manager.get_value("test_email_pending")))
+        if pending:
+            state_manager.update_status("test_email_pending", False)
+            mail_test()
+        return "Saved credentials successfully. You may now <button onclick='() => window.close()'>close</button> this window.<script>setTimeout(() => window.close(), 3000)</script>"
+
+    @app.route("/backend/home_automation/oauth2/google/request")
+    def request_google_oauth2_auth():
+        creds = None
+        # The file token.json stores the user"s access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", oauth2_helpers.GOOGLE_MAIL_SEND_SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = oauth2_helpers.get_oauth_flow()
+                authorization_url, state = flow.authorization_url(access_type="offline", include_granted_scopes="true")
+                return redirect(authorization_url)
+
+    @app.route("/api/home_automation/oauth2/google/revoke", methods=["POST"])
+    def revoke_google_oauth2_token():
+        cred = oauth2_helpers.get_google_oauth2_credentials(state_manager)
+        params = {"token": cred.token}
+        headers = {"content-type": "applications/x-www-form-urlencoded"}
+        res = httpx.post("https://oauth2.googleapis.com/revoke", params=params, headers=headers)
+        return res.text, res.status_code
+
+    @app.route("/api/home_automation/oauth2/google/clear", methods=["DELETE"])
+    def clear_google_oauth2_credentials():
+        oauth2_helpers.clear_credentials(state_manager)
+        return ("", 204)
 
     return app

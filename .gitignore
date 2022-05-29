@@ -16,7 +16,7 @@ dist
 tests/*.pdf
 home_automation.tab
 home_automation.conf.yml
-client_secrets.json
+client_secret.json
 
 # frontend
 home_automation/server/frontend/node_modules

@@ -2,7 +2,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.4.4"
+VERSION = "1.5.0-a1"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -48,6 +48,10 @@ requirements = [
     "moodle-dl",
     "pyyaml",
     "kubernetes",
+    "google-api-python-client",
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-auth-httplib2"
 ]
 
 with open("requirements.txt", "w") as f:

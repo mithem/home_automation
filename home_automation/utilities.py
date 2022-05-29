@@ -3,28 +3,29 @@ import os
 import pwd
 import grp
 import logging
+import base64
 
 import yagmail
+from email.mime.text import MIMEText
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 from home_automation import config as haconfig
 
 CONFIG = haconfig.load_config()
-OAUTH_CLIENT_SECRETS_FILE = "client_secrets.json"
 
-if CONFIG.email.oauth2_enabled:
-    if not os.path.isfile(OAUTH_CLIENT_SECRETS_FILE):
-        raise FileNotFoundError("Could not find client_secrets.json.")
-    _SMTP = yagmail.SMTP(CONFIG.email.address,
-                         oauth2_file=OAUTH_CLIENT_SECRETS_FILE)
-elif CONFIG.email.api_key:
-    _SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.api_key)
-else:
-    _SMTP = yagmail.SMTP(CONFIG.email.address, CONFIG.email.password)
-
-
-def send_mail(subject: str, body: str = ""):
+def send_mail(credentials: Credentials, subject: str, body: str = ""):
     """Send mail now."""
-    _SMTP.send(CONFIG.email.address, subject, body)
+    gmail = build("gmail", "v1", credentials=credentials)
+    message = MIMEText(body)
+    message["To"] = CONFIG.email.address
+    message["From"] = CONFIG.email.address
+    message["Subject"] = subject
+    encoded = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    payload = {
+        "raw": encoded
+    }
+    gmail.users().messages().send(userId="me", body=payload).execute()
 
 
 def check_for_root_privileges() -> bool:

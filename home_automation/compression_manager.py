@@ -151,6 +151,7 @@ class CompressionManager:
         self.logger.info("Registered middleware "
                          + f"'{middleware.__class__.__name__}'", self.debug)
 
+
 async def main(arguments: Union[str, List[str]] = None):
     """Main entry point with parsing argumets from cli."""
     if isinstance(arguments, str):
@@ -184,8 +185,9 @@ async def compress(config: Optional[haconfig.Config] = None):
 
     await manager.compress_directory()
 
-    for directory in config_data.extra_compress_dirs:
-        await manager.compress_directory(directory)
+    if config_data.extra_compress_dirs:
+        for directory in config_data.extra_compress_dirs:
+            await manager.compress_directory(directory)
 
     manager.clean_up_directory()
 

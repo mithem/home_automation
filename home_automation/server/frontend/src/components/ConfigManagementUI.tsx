@@ -6,12 +6,15 @@ import {
   forceHomeAssistantUpdate,
   reloadConfig,
   sendTestMail,
+  revokeGoogleOAuth,
+  clearGoogleOAuth,
+  requestGoogleOAuth2,
 } from "../functions";
-import TestingManagementData from "../models/TestingManagementData";
+import ConfigManagementData from "../models/ConfigManagementData";
 
-export default class TestingManagementUI extends React.Component<
+export default class ConfigManagementUI extends React.Component<
   {},
-  TestingManagementData
+  ConfigManagementData
 > {
   constructor(props: any) {
     super(props);
@@ -53,6 +56,18 @@ export default class TestingManagementUI extends React.Component<
     });
   }
 
+  revokeGoogleOAuth2() {
+    revokeGoogleOAuth().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
+  clearGoogleOAuth2() {
+    clearGoogleOAuth().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   render() {
     const alert =
       this.state.error !== undefined ? (
@@ -81,6 +96,15 @@ export default class TestingManagementUI extends React.Component<
           </Button>
           <Button variant="primary" onClick={() => this.sendTestMail()}>
             Send test mail
+          </Button>
+          <Button variant="primary" onClick={() => requestGoogleOAuth2()}>
+            Authorize with gmail
+          </Button>
+          <Button variant="primary" onClick={() => this.revokeGoogleOAuth2()}>
+            Revoke google OAuth2
+          </Button>
+          <Button variant="primary" onClick={() => this.clearGoogleOAuth2()}>
+            Clear google OAuth2
           </Button>
         </Card>
       </div>

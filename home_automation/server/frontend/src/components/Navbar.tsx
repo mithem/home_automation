@@ -19,26 +19,14 @@ const Navbar = () => {
         <RBNavbar.Toggle aria-controls="basic-navbar-nav" />
         <RBNavbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Link
-              className="nav-link"
-              //className={getClassForActivity("/docker/containers")}
-              to="/docker/containers"
-            >
+            <Link className="nav-link" to="/docker/containers">
               Containers
             </Link>
-            <Link
-              //className={getClassForActivity("/docker/volumes")}
-              className="nav-link"
-              to="/docker/volumes"
-            >
+            <Link className="nav-link" to="/docker/volumes">
               Volumes
             </Link>
-            <Link
-              className="nav-link"
-              //className={getClassForActivity("/testing")}
-              to="/testing"
-            >
-              Testing
+            <Link className="nav-link" to="/config">
+              Config
             </Link>
             <ExternalLink
               target={ExternalLinkType.truenasGUI}
