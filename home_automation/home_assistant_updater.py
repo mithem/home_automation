@@ -1,7 +1,8 @@
 import httpx
 import re
 import logging
-from kubernetes import client, config
+from kubernetes import client as klient
+from kubernetes import config as konfig
 from typing import Dict, Tuple, Any, Union
 from home_automation.config import Config, ConfigError
 
@@ -74,27 +75,29 @@ async def _get_portainer_stack(
             f"Stack '{config.portainer.home_assistant_stack}' not found.") from err
 
 
-async def _get_version_to_update_to(
-    config: Config,
-    client: httpx.AsyncClient,
-    stack: Dict[str, str],
-    user_payload: Dict[str, str] = None
-) -> Tuple[str, str]:
-    """Get current version as well as version of home assistant to update to (as a tuple).
-    Might throw ServerAPIError."""
-    if not config.home_assistant:
-        raise ConfigError("No Home Assistant configuration provided.")
-    if not config.home_assistant.url:
-        raise ConfigError("No home assistant URL configured.")
-    result = re.search(CURRENT_HASS_VERSION_REGEX,
-                       stack["stackFileContent"])
+def _get_current_version_from_portainer_stack(stack: Dict[str, str]):
+    """Get current home assistant version from stack definition."""
+    result = re.search(CURRENT_HASS_VERSION_REGEX, stack["stackFileContent"])
     if not result:
         raise UpdaterError(
             "Could not extract version information from stack info.")
     current_version = result.groupdict().get("version", None)
+    return current_version
+
+
+async def _get_version_to_update_to(
+    config: Config,
+    client: httpx.AsyncClient,
+    user_payload: Dict[str, str] = None
+) -> str:
+    """Get version of home assistant to update to. Might throw ServerAPIError."""
+    if not config.home_assistant:
+        raise ConfigError("No Home Assistant configuration provided.")
+    if not config.home_assistant.url:
+        raise ConfigError("No home assistant URL configured.")
     version_to_update_to = None
     if user_payload:
-        if isinstance(data, dict):
+        if isinstance(user_payload, dict):
             version_to_update_to = user_payload.get(
                 "update_to_version", None)
     if not version_to_update_to:
@@ -110,7 +113,7 @@ async def _get_version_to_update_to(
     if not version_to_update_to:
         raise UpdaterError(
             "Could not retreive newest available version from home assistant.")
-    return current_version, version_to_update_to
+    return version_to_update_to
 
 
 async def _update_home_assistant_with_portainer(
@@ -172,7 +175,8 @@ async def update_home_assistant_with_portainer(config: Config):
             portainer_headers = await _log_in_to_portainer(config, client)
             stack = await _get_portainer_stack(config, client, portainer_headers)
             client.verify = not config.home_assistant.insecure_https
-            current_version, version_to_update_to = await _get_version_to_update_to(
+            current_version = _get_current_version_from_portainer_stack(stack)
+            version_to_update_to = await _get_version_to_update_to(
                 config,
                 client,
                 stack
@@ -190,23 +194,30 @@ async def update_home_assistant_with_portainer(config: Config):
 
 
 async def update_home_assistant_with_kubernetes(config: Config):
-    kConfig = client.Configuration()
+    kConfig = klient.Configuration()
     kConfig.host = config.kubernetes.url
     kConfig.verify_ssl = not config.kubernetes.insecure_https
     kConfig.api_key = {
         "authorization": f"Bearer {config.kubernetes.token}"}
 
-    kClient = client.ApiClient(kConfig)
-    appsV1 = client.AppsV1Api(kClient)
+    async with httpx.AsyncClient(verify=not config.home_assistant.insecure_https) as client:
+        version_to_update_to = _get_version_to_update_to(config, client)
 
-    image = "homeassistant/home-assistant:2022.05.2"
-    containers = [client.V1Container(image=image)]
-    pod_spec = client.V1PodSpec(containers=containers)
-    template = client.V1PodTemplateSpec(spec=pod_spec)
-    deploy_spec = client.V1DeploymentSpec(template=template)
-    deploy = client.V1Deployment(spec=deploy_spec)
+    kClient = klient.ApiClient(kConfig)
+    appsV1 = klient.AppsV1Api(kClient)
+
+    deploys = list(filter(lambda deploy: deploy.metadata.name == config.kubernetes.deployment_name,
+                          appsV1.list_namespaced_deployment(config.kubernetes.namespace).items))
+    if len(deploys) == 0:
+        raise ValueError(
+            f"Deployment {config.kubernetes.deployment_name} not found.")
+    if len(deploys) > 1:
+        raise ValueError("Multiple deployments with same name.")
+    dep = deploys[0]
+    dep.spec.template.spec.containers[
+        0].image = f"homeassistant/home-assistant:{version_to_update_to}"
     appsV1.patch_namespaced_deployment(
-        config.kubernetes.deployment_name, config.kubernetes.namespace, body=deploy)
+        config.kubernetes.deployment_name, config.kubernetes.namespace, body=dep)
 
 
 async def update_home_assistant(config: Config):
