@@ -351,6 +351,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             return {"error": "No home assistant token defined."}, 401
         try:
             home_automation.home_assistant_updater.update_home_assistant(CONFIG)
+            return {"success": True}
         except Exception as e:
             logging.error(e)
             return {"error": str(e)}, 500
