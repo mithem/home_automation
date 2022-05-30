@@ -198,7 +198,7 @@ async def update_home_assistant_with_kubernetes(config: Config):
     kConfig.host = config.kubernetes.url
     kConfig.verify_ssl = not config.kubernetes.insecure_https
     kConfig.api_key = {
-        "authorization": f"Bearer {config.kubernetes.token}"}
+        "authorization": f"Bearer {config.kubernetes.api_key}"}
 
     async with httpx.AsyncClient(verify=not config.home_assistant.insecure_https) as client:
         version_to_update_to = _get_version_to_update_to(config, client)
