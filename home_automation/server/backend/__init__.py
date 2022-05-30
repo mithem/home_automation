@@ -350,7 +350,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         if not CONFIG.home_assistant.token:
             return {"error": "No home assistant token defined."}, 401
         try:
-            home_automation.home_assistant_updater.update_home_assistant()
+            home_automation.home_assistant_updater.update_home_assistant(CONFIG)
         except Exception as e:
             logging.error(e)
             return {"error": str(e)}, 500
@@ -425,7 +425,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
                 creds.refresh(Request())
             else:
                 flow = oauth2_helpers.get_oauth_flow()
-                authorization_url, state = flow.authorization_url(access_type="offline", include_granted_scopes="true")
+                authorization_url, _ = flow.authorization_url(access_type="offline", include_granted_scopes="true")
                 return redirect(authorization_url)
 
     @app.route("/api/home_automation/oauth2/google/revoke", methods=["POST"])
