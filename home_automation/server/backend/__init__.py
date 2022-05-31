@@ -399,12 +399,13 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/backend/home_automation/oauth2/google/callback")
     def google_oauth2_callback():
         authorization_response = request.url
-        authorization_response = authorization_response.replace("http://192.168.0.197:10001", "https://helix2.ddns.net:10000")
         flow = oauth2_helpers.get_oauth_flow()
         try:
             flow.fetch_token(authorization_response=authorization_response)
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError:
             return "Invalid grant.", 500
+        except oauthlib.oauth2.rfc6749.errors.InsecureTransportError:
+            return "InsecureTransportError. Consider configuring home_automation.api_server to use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_path respectively).", 500
         oauth2_helpers.save_credentials(flow.credentials, state_manager)
         pending = bool(int(state_manager.get_value("test_email_pending")))
         if pending:

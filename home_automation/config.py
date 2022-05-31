@@ -265,6 +265,45 @@ class ConfigKubernetes:
     def valid(self) -> bool:
         return self.url and self.api_key and (self.insecure_https or self.ssl_ca_cert_path)
 
+class ConfigAPIServer:
+    """Configuration for the gunicorn server running the API."""
+    interface: Optional[str]
+    ssl_cert_path: Optional[str]
+    ssl_key_path: Optional[str]
+    workers: Optional[int]
+
+    def __init__(self, data: Dict[str, str]):
+        if not data:
+            self.interface = None
+            self.ssl_cert_path = None
+            self.ssl_key_path = None
+            self.workers = None
+            return
+        self.interface = data.get("interface")
+        self.ssl_cert_path = data.get("ssl_cert_path")
+        self.ssl_key_path = data.get("ssl_key_path")
+        self.workers = data.get("workers")
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.interface == other.interface and
+            self.ssl_cert_path == other.ssl_cert_path and
+            self.ssl_key_path == other.ssl_key_path and
+            self.workers == other.workers
+        )
+
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dictionary."""
+        return {
+            "interface": self.interface,
+            "ssl_cert_path": self.ssl_cert_path,
+            "ssl_key_path": self.ssl_key_path,
+            "workers": self.workers
+        }
+
+    def valid_ssl(self) -> bool:
+        return self.ssl_cert_path and self.ssl_key_path
+
 
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
@@ -282,6 +321,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     process: Optional[ConfigProcess]
     runner: Optional[ConfigRunner]
     kubernetes: Optional[ConfigKubernetes]
+    api_server: Optional[ConfigAPIServer]
 
     # opress dangerous default values as that"s only dangerous if they are modified
     def __init__(
@@ -300,6 +340,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         extra_compress_dirs: List[str] = None,
         moodle_dl_dir: Optional[str] = None,
         kubernetes: Dict[str, Any] = None,
+        api_server: Dict[str, str] = None
     ):  # pylint: disable=too-many-arguments
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -315,6 +356,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.process = ConfigProcess(process)
         self.runner = ConfigRunner(runner)
         self.kubernetes = ConfigKubernetes(kubernetes)
+        self.api_server = ConfigAPIServer(api_server)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -337,7 +379,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             self.process == other.process and
             self.runner == other.runner and
             self.extra_compress_dirs == other.extra_compress_dirs and
-            self.kubernetes == other.kubernetes
+            self.kubernetes == other.kubernetes and
+            self.api_server == other.api_server
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -356,7 +399,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "process": self.process.to_dict() if self.process else None,
             "runner": self.runner.to_dict() if self.runner else None,
             "extra_compress_dirs": self.extra_compress_dirs,
-            "kubernetes": self.kubernetes.to_dict() if self.kubernetes else None
+            "kubernetes": self.kubernetes.to_dict() if self.kubernetes else None,
+            "api_server": self.api_server.to_dict() if self.api_server else None
         }
 
 

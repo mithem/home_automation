@@ -212,7 +212,7 @@ def run_watchdog(config: haconfig.Config, queue: mp.Queue):
         sys.exit(0)
 
 
-def run_backend_server(queue: mp.Queue):
+def run_backend_server(config: haconfig.Config, queue: mp.Queue):
     """Run the WSGI gunicorn server (not the frontend)."""
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
@@ -230,8 +230,14 @@ def run_backend_server(queue: mp.Queue):
 
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
-        os.system("python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w 2 --bi\
-nd 0.0.0.0:10001 'home_automation.server.backend:create_app()'")
+        interface = config.api_server.interface if config.api_server.interface else "127.0.0.1"
+        workers = config.api_server.workers if config.api_server.workers else 2
+        extra_flags = ""
+        if config.api_server.valid_ssl():
+            extra_flags += f"--certfile '{config.api_server.ssl_cert_path}' --keyfile '{config.api_server.ssl_key_path}'"
+        command = f"python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w '{workers}' --bi\
+nd {interface}:10001 {extra_flags} 'home_automation.server.backend:create_app()'"
+        os.system(command)
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
         sys.exit(0)
@@ -274,7 +280,7 @@ def main():
                    name="home_automation.runner.cron"),
         mp.Process(target=run_watchdog, args=(config_data, queue,),
                    name="home_automation.runner.watchdog"),
-        mp.Process(target=run_backend_server, args=(queue,),
+        mp.Process(target=run_backend_server, args=(config_data, queue,),
                    name="home_automation.runner.backend"),
         mp.Process(target=build_frontend, args=(queue,),
                    name="home_automation.runner.frontend")
