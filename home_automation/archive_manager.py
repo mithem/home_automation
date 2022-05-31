@@ -9,7 +9,8 @@ from typing import List, Sequence, Optional
 
 import fileloghelper
 import home_automation.utilities
-
+import home_automation.server.backend.state_manager
+from home_automation.server.backend import oauth2_helpers
 from home_automation import config as haconfig
 
 MONTH_TO_DIR = {
@@ -251,7 +252,9 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             mail_body += self.not_transferred_files
         mail_body.append(f"Thats {len(self.transferred_files)} files.")
         mail_subject = "[NAS] Archiving at end of week"
-        home_automation.utilities.send_mail(mail_subject, mail_body)
+        state_manager = home_automation.server.backend.state_manager.StateManager(self.config.db_path)
+        creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
+        home_automation.utilities.send_mail(creds, mail_subject, mail_body)
         self.logger.success("Sent mail notifying of the archiving process.")
 
     def reorganize_all_files(self):

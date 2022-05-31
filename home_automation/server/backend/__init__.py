@@ -31,7 +31,7 @@ from home_automation.server.backend.state_manager import StateManager
 from home_automation.server.backend.version_manager import VersionManager
 import home_automation.utilities
 import home_automation.home_assistant_updater
-import home_automation.server.backend.oauth2_helpers as oauth2_helpers
+from home_automation.server.backend import oauth2_helpers
 
 
 class ServerAPIError(Exception):
