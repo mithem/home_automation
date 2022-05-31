@@ -244,13 +244,11 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             self.logger.info(
                 "No files transferred or failed to be transferred.")
             return
-        mail_body = ["The following files were successfully archived: "]\
-            + self.transferred_files
+        mail_body = "The following files were successfully archived:\n" + (f + "\n" for f in self.transferred_files)
         if len(self.not_transferred_files) > 0:
-            mail_body += ["", f"Also, these files ({len(self.not_transferred_files)})\
-                    were not archived:"]
-            mail_body += self.not_transferred_files
-        mail_body.append(f"Thats {len(self.transferred_files)} files.")
+            mail_body += f"\nAlso, these files ({len(self.not_transferred_files)}) were not archived:\n"
+            mail_body += (f + "\n" for f in self.not_transferred_files)
+        mail_body += f"\nThat's {len(self.transferred_files)} files."
         mail_subject = "[NAS] Archiving at end of week"
         state_manager = home_automation.server.backend.state_manager.StateManager(self.config.db_path)
         creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
