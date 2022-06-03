@@ -195,7 +195,8 @@ def run_watchdog(config: haconfig.Config, queue: mp.Queue):
     event_handler = _WatchdogEventHandler()
     observer = WatchdogObserver()
     observer.schedule(event_handler, config.homework_dir, True)
-    for extra_dir in config.extra_compress_dirs:
+    extra_dirs = config.extra_compress_dirs if config.extra_compress_dirs else []
+    for extra_dir in extra_dirs:
         observer.schedule(event_handler, extra_dir, True)
     observer.start()
     logger.info("Started watchdog observer.")
