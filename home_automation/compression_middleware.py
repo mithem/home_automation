@@ -6,7 +6,7 @@ import re
 import fileloghelper
 import httpx
 
-from home_automation.archive_manager import ABBR_TO_SUBJECT
+from home_automation.constants import ABBR_TO_SUBJECT
 from home_automation import config as haconfig
 
 TIMEOUT = 10
@@ -25,6 +25,7 @@ class CompressionMiddleware:
     """Middleware's `.act` method is called for each file (-path) being compressed.
     For example, it can be used to communicate with other services.
     Each coroutine is executed separately."""
+
     logger: fileloghelper.Logger
     config: haconfig.Config
 
@@ -32,11 +33,11 @@ class CompressionMiddleware:
         self.config = config
         self.logger = logger
 
-    async def act(self, path: str):  # pylint: disable=no-self-use
+    async def act(self, path: str):  # pylint: disable=R0102,unused-argument
         """Act on the file being compressed."""
         raise NotImplementedError()
 
-    def handle_response(self, response: httpx.Response):  # pylint: disable=no-self-use
+    def handle_response(self, response: httpx.Response):  # pylint: disable=R0102
         """Just throw an exception if something isn't right!"""
         if not response.status_code == 200:
             raise InvalidResponseError(response.text)
@@ -45,6 +46,7 @@ class CompressionMiddleware:
 class SubjectCompressionMiddleware(CompressionMiddleware):
     """A Middleware that ensures that the name of the file compressed
     starts with a valid subject abbreviation."""
+
     async def act(self, path: str):
         _, filename = os.path.split(path)
         if filename.split(" ")[0].upper() in SUBJECT_ABBRS:
@@ -57,6 +59,7 @@ class SubjectCompressionMiddleware(CompressionMiddleware):
 
 class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
     """Responsible for trying to encourage HomeAssistant to flash lights."""
+
     async def act(self, path: str):
         await self.flash_lights_in_home_assistant()
 
@@ -64,8 +67,7 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
         """What could be tried here?"""
         if not self.config.home_assistant:
             raise Exception("Home Assistant data not configured.")
-        headers = {"Authorization": "Bearer " +
-                   self.config.home_assistant.token}
+        headers = {"Authorization": "Bearer " + self.config.home_assistant.token}
         async with httpx.AsyncClient(
             verify=not self.config.home_assistant.insecure_https
         ) as client:
@@ -73,13 +75,14 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
                 self.config.home_assistant.url
                 + "/api/services/script/flash_miguels_room",
                 headers=headers,
-                timeout=TIMEOUT
+                timeout=TIMEOUT,
             )
         self.handle_response(response)
 
 
 class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     """Responsible for trying to encourage things_server to check the appropriate homework."""
+
     async def act_subject_valid(self, path: str):
         homework_dir_pattern_group = re.escape(self.config.homework_dir)
         pattern = rf"^{homework_dir_pattern_group}/.+$"
@@ -96,9 +99,13 @@ class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
             raise Exception("Things server URL not configured.")
         _, filename = os.path.split(path)
         subject = filename.split(" ")[0].upper()
-        async with httpx.AsyncClient(verify=not self.config.things_server.insecure_https) as client:
-            response = await client.post(self.config.things_server.url +
-                                         "/api/v1/markhomeworkasdone?"
-                                         + f"subject={subject}",
-                                         timeout=TIMEOUT)
+        async with httpx.AsyncClient(
+            verify=not self.config.things_server.insecure_https
+        ) as client:
+            response = await client.post(
+                self.config.things_server.url
+                + "/api/v1/markhomeworkasdone?"
+                + f"subject={subject}",
+                timeout=TIMEOUT,
+            )
         self.handle_response(response)

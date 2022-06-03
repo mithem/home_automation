@@ -2,7 +2,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.5.0-a12"
+VERSION = "1.5.0"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -20,7 +20,6 @@ packages = ["home_automation", "home_automation.server.backend"]
 requirements = [
     "argparse",
     "flask[async]",
-    "yagmail",
     "fileloghelper",
     "httpx>=0.18,<0.24",
     "pytest",
@@ -51,7 +50,7 @@ requirements = [
     "google-api-python-client",
     "google-auth",
     "google-auth-oauthlib",
-    "google-auth-httplib2"
+    "google-auth-httplib2",
 ]
 
 with open("requirements.txt", "w") as f:
@@ -61,5 +60,5 @@ setup(
     name="home_automation",
     version=VERSION,
     packages=packages,
-    install_requires=requirements
+    install_requires=requirements,
 )

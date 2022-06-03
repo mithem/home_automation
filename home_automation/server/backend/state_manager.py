@@ -22,8 +22,13 @@ class StateManager:
         logging.info("Preparing DB...")
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
-        tables = map(lambda t: t[0], cur.execute("SELECT name FROM sqlite_\
-master WHERE type IN ('table', 'view')").fetchall())
+        tables = map(
+            lambda t: t[0],
+            cur.execute(
+                "SELECT name FROM sqlite_\
+master WHERE type IN ('table', 'view')"
+            ).fetchall(),
+        )
         if "status" not in tables:
             self.create_status_table()
             self.reset_status()
@@ -55,7 +60,6 @@ master WHERE type IN ('table', 'view')").fetchall())
         cur.close()
         connection.close()
 
-
     def drop_status_table(self):
         """Drop/Delete the table for status information."""
         connection = sqlite3.connect(self.db_path)
@@ -77,8 +81,11 @@ master WHERE type IN ('table', 'view')").fetchall())
         try:
             connection = sqlite3.connect(self.db_path)
             cur = connection.cursor()
-            cur.execute("UPDATE status SET value=:status WH\
-ERE key=:key", {"key": key, "status": status})
+            cur.execute(
+                "UPDATE status SET value=:status WH\
+ERE key=:key",
+                {"key": key, "status": status},
+            )
             connection.commit()
             cur.close()
             connection.close()
@@ -91,7 +98,10 @@ ERE key=:key", {"key": key, "status": status})
         try:
             connection = sqlite3.connect(self.db_path)
             cur = connection.cursor()
-            cur.execute("UPDATE oauth2 SET value=:value WHERE key=:key", {"key": key, "value": value})
+            cur.execute(
+                "UPDATE oauth2 SET value=:value WHERE key=:key",
+                {"key": key, "value": value},
+            )
             connection.commit()
             cur.close()
             connection.close()
@@ -110,7 +120,7 @@ ERE key=:key", {"key": key, "status": status})
             ("versionAvailable", ""),
             ("versionAvailableSince", ""),
             ("testingInitfileVersion", ""),
-            ("test_email_pending", False)
+            ("test_email_pending", False),
         ]
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
@@ -122,9 +132,7 @@ ERE key=:key", {"key": key, "status": status})
 
     def reset_oauth2(self):
         """Reset the oauth2 table."""
-        default_values = [
-            ("access_token", "")
-        ]
+        default_values = [("access_token", "")]
         connection = sqlite3.connect(self.db_path)
         cur = connection.cursor()
         cur.execute("DELETE FROM oauth2 WHERE true")
@@ -168,8 +176,7 @@ ERE key=:key", {"key": key, "status": status})
         try:
             connection = sqlite3.connect(self.db_path)
             cur = connection.cursor()
-            elements = cur.execute(
-                "SELECT key, value FROM status WHERE key=?", [key])
+            elements = cur.execute("SELECT key, value FROM status WHERE key=?", [key])
             elems = list(elements)
             cur.close()
             connection.close()
@@ -179,8 +186,7 @@ ERE key=:key", {"key": key, "status": status})
                 return elems[0][1]  # each element: (key, value)
             # I know, the db will already by reset, but "reset db" is ambiguous
             self.reset_db()
-            raise Exception(
-                "Multiple elements found for the same key. Resetting db.")
+            raise Exception("Multiple elements found for the same key. Resetting db.")
         except sqlite3.OperationalError:
             self.prepare_db()
             return self.get_value(key)

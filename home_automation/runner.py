@@ -16,7 +16,7 @@ from watchdog.events import (
     FileMovedEvent,
     FileDeletedEvent,
     DirModifiedEvent,
-    FileSystemEventHandler
+    FileSystemEventHandler,
 )
 
 from home_automation import compression_manager
@@ -39,7 +39,7 @@ class _ProcessExit(Exception):
 
 
 class _WatchdogEventHandler(FileSystemEventHandler):
-    def act(self):  # pylint: disable=no-self-use
+    def act(self):  # pylint: disable=R0102
         """React to a event triggering compression of HOMEWORK_DIR"""
         # this is so much simpler than observing file size over time
         # or implementing inotify etc. and does the job just fine
@@ -47,8 +47,12 @@ class _WatchdogEventHandler(FileSystemEventHandler):
         compression_manager.run_main()
 
     def dispatch(self, event):
-        event_types = [FileModifiedEvent, FileMovedEvent,
-                       FileDeletedEvent, DirModifiedEvent]
+        event_types = [
+            FileModifiedEvent,
+            FileMovedEvent,
+            FileDeletedEvent,
+            DirModifiedEvent,
+        ]
         for event_type in event_types:
             if isinstance(event, event_type):
                 self.act()
@@ -57,10 +61,7 @@ class _WatchdogEventHandler(FileSystemEventHandler):
 
 def _signal_handler(num, frame):  # pylint: disable=unused-argument
     """Respond to signal. Supports: SIGINT, SIGTERM."""
-    supported = [
-        signal.SIGINT,
-        signal.SIGTERM
-    ]
+    supported = [signal.SIGINT, signal.SIGTERM]
     if num in supported:
         raise _ProcessExit()
 
@@ -68,10 +69,12 @@ def _signal_handler(num, frame):  # pylint: disable=unused-argument
 def _configure_log_listener(config: haconfig.Config):
     root = logging.getLogger()
     file_handler = logging.handlers.RotatingFileHandler(
-        os.path.join(config.log_dir, "home_automation_runner.log"))
+        os.path.join(config.log_dir, "home_automation_runner.log")
+    )
     console_handler = logging.StreamHandler()
     formatter = logging.Formatter(
-        "%(asctime)s %(processName)-10s %(levelname)-8s %(message)s")
+        "%(asctime)s %(processName)-10s %(levelname)-8s %(message)s"
+    )
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
     root.addHandler(file_handler)
@@ -148,14 +151,17 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
     cron.remove_all()
 
     archiving_job = cron.new(
-        command="python3 -m home_automation.archive_manager archive")
+        command="python3 -m home_automation.archive_manager archive"
+    )
     reorganization_job = cron.new(
-        command="python3 -m home_automation.archive_manager reorganize")
+        command="python3 -m home_automation.archive_manager reorganize"
+    )
     if config.moodle_dl_dir is not None and not os.path.isdir(config.moodle_dl_dir):
         raise Exception(f"Directory not found: {config.moodle_dl_dir}")
     moodle_dl_job = cron.new(command="script/run-moodle-dl.py")
     auto_upgrade_job = cron.new(
-        command="curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade")
+        command="curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade"
+    )
 
     archiving_job.minute.on(5)
     archiving_job.hour.on(13)
@@ -177,8 +183,7 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
         for result in cron.run_scheduler():
             logger.info("Ran cron job. Ouput: %s", result)
     except (KeyboardInterrupt, _ProcessExit):
-        logger.info(
-            "Stopped cron scheduler. home_automation will not run future jobs.")
+        logger.info("Stopped cron scheduler. home_automation will not run future jobs.")
         sys.exit(0)
 
 
@@ -231,13 +236,16 @@ def run_backend_server(config: haconfig.Config, queue: mp.Queue):
 
         # proxy for certificate management (don't want to re-configure 20 services
         # once the certificate changes)
-        interface = config.api_server.interface if config.api_server.interface else "127.0.0.1"
+        interface = (
+            config.api_server.interface if config.api_server.interface else "127.0.0.1"
+        )
         workers = config.api_server.workers if config.api_server.workers else 2
         extra_flags = ""
         if config.api_server.valid_ssl():
-            extra_flags += f"--certfile '{config.api_server.ssl_cert_path}' --keyfile '{config.api_server.ssl_key_path}'"
-        command = f"python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w '{workers}' --bi\
-nd {interface}:10001 {extra_flags} 'home_automation.server.backend:create_app()'"
+            extra_flags += f"--certfile '{config.api_server.ssl_cert_path}'"
+            extra_flags += " --keyfile '{config.api_server.ssl_key_path}'"
+        command = f"python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w '{workers}'\
+ --bind {interface}:10001 {extra_flags} 'home_automation.server.backend:create_app()'"
         os.system(command)
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
@@ -268,23 +276,51 @@ def main():
     """Run cron jobs and observe homework dir
     (+ extra dirs and all the other stuff) for changes (blocks permanently)"""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", "-c", type=str, default=None,
-                        help="path to config file (default='home_automation.conf.yml')")
+    # pylint: disable=R0801
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        default=None,
+        help="path to config file (default='home_automation.conf.yml')",
+    )
     args = parser.parse_args()
     config_data = haconfig.load_config(args.config)
     setup(config_data)
     queue: mp.Queue = mp.Queue(-1)
     processes = [
-        mp.Process(target=_logging_listener, args=(config_data, queue,),
-                   name="home_automation.runner.log_listener"),
-        mp.Process(target=run_cron_jobs, args=(config_data, queue),
-                   name="home_automation.runner.cron"),
-        mp.Process(target=run_watchdog, args=(config_data, queue,),
-                   name="home_automation.runner.watchdog"),
-        mp.Process(target=run_backend_server, args=(config_data, queue,),
-                   name="home_automation.runner.backend"),
-        mp.Process(target=build_frontend, args=(queue,),
-                   name="home_automation.runner.frontend")
+        mp.Process(
+            target=_logging_listener,
+            args=(
+                config_data,
+                queue,
+            ),
+            name="home_automation.runner.log_listener",
+        ),
+        mp.Process(
+            target=run_cron_jobs,
+            args=(config_data, queue),
+            name="home_automation.runner.cron",
+        ),
+        mp.Process(
+            target=run_watchdog,
+            args=(
+                config_data,
+                queue,
+            ),
+            name="home_automation.runner.watchdog",
+        ),
+        mp.Process(
+            target=run_backend_server,
+            args=(
+                config_data,
+                queue,
+            ),
+            name="home_automation.runner.backend",
+        ),
+        mp.Process(
+            target=build_frontend, args=(queue,), name="home_automation.runner.frontend"
+        ),
     ]
     for process in processes:
         process.start()

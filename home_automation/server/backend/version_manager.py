@@ -11,8 +11,7 @@ import requests
 import semver
 
 import home_automation.utilities
-from home_automation.server.backend.state_manager \
-    import StateManager
+from home_automation.server.backend.state_manager import StateManager
 
 REPO_INIT_FILE_URL = "https://raw.githubusercontent.com/\
 mithem/home_automation/master/home_automation/__init__.py"
@@ -26,11 +25,11 @@ if int(testing):
 
 SQL_TO_PYTHON_KEY_NAME = {
     "versionAvailable": "version_available",
-    "versionAvailableSince": "version_available_since"
+    "versionAvailableSince": "version_available_since",
 }
 
 
-class VersionManager:  # pylint: disable=no-self-use
+class VersionManager:
     """VersionManager is responsible for comparing the current
     to the available version and upgrading if wanted."""
 
@@ -63,8 +62,10 @@ class VersionManager:  # pylint: disable=no-self-use
             "version_available_since": datetime.datetime
         }"""
         data = {}
-        elements = self.state_manager.execute("SELECT * FROM status WH\
-ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
+        elements = self.state_manager.execute(
+            "SELECT * FROM status WH\
+ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'"
+        )
         for elem in elements:
             key = SQL_TO_PYTHON_KEY_NAME.get(elem[0], elem[0])
             value = self._make_value(key, elem[1])
@@ -83,19 +84,22 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
 
     def update_version_info(self):
         """Refresh the version information. BLOCKING!"""
+
         def fallback():
-            self.state_manager.update_status(
-                "version", home_automation.VERSION)
+            self.state_manager.update_status("version", home_automation.VERSION)
             self.state_manager.update_status("versionAvailable", "")
             self.state_manager.update_status("versionAvailableSince", "")
 
         logging.info("Updating version info...")
         try:
             response = requests.get(INIT_FILE_URL, None)
-            text = "\n".join(filter(lambda x: x.startswith("VERSION"),
-                                    response.text.split("\n")))
+            text = "\n".join(
+                filter(lambda x: x.startswith("VERSION"), response.text.split("\n"))
+            )
             match = re.match(
-                r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-?(?P<prerelease>\w+))?)(\"|')", text)
+                r"VERSION ?= ?(\"|')(?P<version>\d+\.\d+\.\d+(-?(?P<prerelease>\w+))?)(\"|')",
+                text,
+            )
         except Exception as exc:  # pylint: disable=broad-except
             logging.error(exc)
             fallback()
@@ -111,8 +115,7 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         available_since = datetime.datetime.now().isoformat()
         self.state_manager.update_status("version", home_automation.VERSION)
         self.state_manager.update_status("versionAvailable", version_available)
-        self.state_manager.update_status(
-            "versionAvailableSince", available_since)
+        self.state_manager.update_status("versionAvailableSince", available_since)
         logging.info("Version available: %s", version_available)
 
     def upgrade_server(self):
@@ -140,4 +143,5 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'")
         version_available = self.get_version_info()["version_available"]
         home_automation.utilities.send_mail(
             "Home Automation - VersionManager",
-            f"Home Automation will now update to {version_available}")
+            f"Home Automation will now update to {version_available}",
+        )

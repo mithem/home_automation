@@ -3,7 +3,7 @@ import os
 
 from flask import Flask, request
 from flask.wrappers import Response
-from home_automation.archive_manager import ABBR_TO_SUBJECT
+from home_automation.constants import ABBR_TO_SUBJECT
 
 SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = \
     "/Users/miguel/repos/home_automation/script/MarkHomeworkAsDone.scpt"

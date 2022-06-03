@@ -6,7 +6,6 @@ compose_file: ~/docker-compose.yml
 moodle_dl_dir: ~/moodle
 email:
   address: hello
-  password: hello
 portainer:
   url: "https://truenas.local:8000"
   username: portainer

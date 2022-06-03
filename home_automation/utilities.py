@@ -4,15 +4,15 @@ import pwd
 import grp
 import logging
 import base64
-
-import yagmail
 from email.mime.text import MIMEText
+
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 from home_automation import config as haconfig
 
 CONFIG = haconfig.load_config()
+
 
 def send_mail(credentials: Credentials, subject: str, body: str = ""):
     """Send mail now."""
@@ -22,10 +22,10 @@ def send_mail(credentials: Credentials, subject: str, body: str = ""):
     message["From"] = CONFIG.email.address
     message["Subject"] = subject
     encoded = base64.urlsafe_b64encode(message.as_bytes()).decode()
-    payload = {
-        "raw": encoded
-    }
-    gmail.users().messages().send(userId="me", body=payload).execute()
+    payload = {"raw": encoded}
+    gmail.users().messages().send(  # pylint: disable=no-member
+        userId="me", body=payload
+    ).execute()
 
 
 def check_for_root_privileges() -> bool:
@@ -83,8 +83,7 @@ def drop_privileges(logger: logging.Logger = None):
     username = usrstruct.pw_name
     groupname = groupstruct.gr_name
     if logger:
-        logger.info("Dropped privileges. Now running as %s / %s",
-                    username, groupname)
+        logger.info("Dropped privileges. Now running as %s / %s", username, groupname)
 
     if errors:
         raise errors[0]

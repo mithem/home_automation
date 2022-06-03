@@ -6,7 +6,7 @@ from typing import List, Union, Optional
 
 import fileloghelper
 from home_automation import config as haconfig
-from home_automation.archive_manager import ABBR_TO_SUBJECT
+from home_automation.constants import ABBR_TO_SUBJECT
 from home_automation.compression_middleware import (
     ChangeStatusInThingsMiddleware, CompressionMiddleware,
     FlashLightsInHomeAssistantMiddleware

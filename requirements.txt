@@ -1,6 +1,5 @@
 argparse
 flask[async]
-yagmail
 fileloghelper
 httpx>=0.18,<0.24
 pytest

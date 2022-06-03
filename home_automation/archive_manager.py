@@ -12,37 +12,7 @@ import home_automation.utilities
 import home_automation.server.backend.state_manager
 from home_automation.server.backend import oauth2_helpers
 from home_automation import config as haconfig
-
-MONTH_TO_DIR = {
-    1: "Januar",
-    2: "Feburar",
-    3: "März",
-    4: "April",
-    5: "Mai",
-    6: "Juni",
-    7: "Juli",
-    8: "August",
-    9: "September",
-    10: "Oktober",
-    11: "November",
-    12: "Dezember"
-}
-
-ABBR_TO_SUBJECT = {
-    "D": "Deutsch",
-    "E": "Englisch",
-    "EK": "Erdkunde",
-    "GE": "Geschichte",
-    "IF": "Informatik",
-    "K": "Kunst",
-    "M": "Mathe",
-    "PL": "Philosophie",
-    "PSE": "Software Engineering",
-    "PH": "Physik",
-    "SW": "SoWi",
-    "SP": "Sport"
-}
-
+from home_automation.constants import MONTH_TO_DIR, ABBR_TO_SUBJECT
 
 BLACKLIST_FILES = [".DS_Store", "@eaDir"]
 BLACKLIST_EXT = ["sh", "@SynoRessource"]
@@ -52,8 +22,10 @@ TRESHOLD_DATE = TODAY - datetime.timedelta(days=5)
 YEAR = str(TRESHOLD_DATE.year)
 MONTH = MONTH_TO_DIR[TRESHOLD_DATE.month]
 
-DATE_REGEX = r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|" \
-             + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
+DATE_REGEX = (
+    r"^[\w\s_\-]*(KW((?P<calendar_week>\d{1,2}))|"
+    + r"(?P<date>(\d{2}\-\d{2}\-\d{4})|(\d{4}\-\d{2}\-\d{2})))[\w\s_\-]*\.pdf$"
+)
 YEAR_REGEX = r"^.+(?P<year>\d\d\d\d).+$"
 NO_TRANSFER_REGEX = r"^.*(?P<notransferflag>NO(_|-)?TRANSFER).*$"
 
@@ -68,6 +40,7 @@ class IsCompressedFileException(Exception):
 
 class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     """ArchiveManager manages the archive. Wait, what?"""
+
     config: haconfig.Config
     logger: fileloghelper.Logger
     transferred_files: List[str]
@@ -76,13 +49,15 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, config: haconfig.Config, debug=False):
         self.config = config
-        self.logger = fileloghelper.Logger(os.path.join(
-            config.log_dir, "archive_manager.log"), autosave=debug)
+        self.logger = fileloghelper.Logger(
+            os.path.join(config.log_dir, "archive_manager.log"), autosave=debug
+        )
         self.transferred_files = []
         self.not_transferred_files = []
         self.debug = debug
 
-    def parse_filename(self, path: str):  # pylint: disable=no-self-use
+    @staticmethod
+    def parse_filename(path: str):
         """parse filename and return (subject, year, month), each as
         the name of the directory the file is supposed to go in."""
         date_str = None
@@ -115,7 +90,8 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 # using isoweeks
                 year = year_str if year_str else TODAY.year
                 date = datetime.datetime.strptime(
-                    f"{year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u")
+                    f"{year}-W{calendar_week.zfill(2)}-1", "%G-W%V-%u"
+                )
                 return (subject, str(date.year), MONTH_TO_DIR[date.month])
         except ValueError as error:
             raise InvalidFormattingException(path) from error
@@ -124,31 +100,35 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     def get_destination_for_file(self, path: str):
         """Get appropriate destination for file (got that guess right?!?!).
         Might throw InvalidFormattingException."""
+
         def return_timestamped_filepath():
             dest = os.path.join(self.config.archive_dir, subject, year, month)
             if not os.path.isdir(dest):
                 os.makedirs(dest)
             return os.path.join(dest, os.path.split(path)[-1])
+
         try:
-            no_transfer_match = re.match(
-                NO_TRANSFER_REGEX, path, re.IGNORECASE)
+            no_transfer_match = re.match(NO_TRANSFER_REGEX, path, re.IGNORECASE)
             if no_transfer_match:
                 return path
-            subject, year, month = self.parse_filename(path)
+            subject, year, month = ArchiveManager.parse_filename(path)
             if year is None or month is None:
                 # e.g. is in Archive/Physik/2021/Juni or lower
-                a_dir = self.config.archive_dir if not self.config.archive_dir.endswith("/")\
+                a_dir = (
+                    self.config.archive_dir
+                    if not self.config.archive_dir.endswith("/")
                     else self.config.archive_dir[:-1]
-                is_in_lowest_level_archive = os.path.split(
+                )
+                is_in_lowest_level_archive = (
                     os.path.split(
-                        os.path.split(
-                            os.path.split(
-                                path
-                            )[0]
-                        )[0]
+                        os.path.split(os.path.split(os.path.split(path)[0])[0])[0]
                     )[0]
-                )[0] == a_dir  # better way to do this?
-                if path.startswith(self.config.homework_dir) or not is_in_lowest_level_archive:
+                    == a_dir
+                )  # better way to do this?
+                if (
+                    path.startswith(self.config.homework_dir)
+                    or not is_in_lowest_level_archive
+                ):
                     year = YEAR
                     month = MONTH
                     return return_timestamped_filepath()
@@ -178,12 +158,15 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
             self.logger.debug(
-                f"Trying to move '{fname}' to '{destination}'", self.debug)
+                f"Trying to move '{fname}' to '{destination}'", self.debug
+            )
             shutil.move(fname, destination)
             self.logger.success(
-                f"Transferred file from '{fname}' to '{destination}'", True)
-            small_f = os.path.join(self.config.homework_dir,
-                                   fname.replace(".pdf", ".small.pdf"))
+                f"Transferred file from '{fname}' to '{destination}'", True
+            )
+            small_f = os.path.join(
+                self.config.homework_dir, fname.replace(".pdf", ".small.pdf")
+            )
             if os.path.isfile(small_f):
                 os.remove(small_f)
                 self.logger.debug(f"Deleted {small_f}")
@@ -194,6 +177,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
 
     def transfer_directory(self, path: str):
         """Transfer all files and directories in given directory."""
+
         def handle_file(filepath):
             try:
                 if os.path.isdir(filepath):
@@ -201,15 +185,17 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                     # ...with validly formatted files
                     subject = None
                     try:
-                        subject, _, _ = self.parse_filename(filepath)
+                        subject, _, _ = ArchiveManager.parse_filename(filepath)
                     except InvalidFormattingException:
                         did_move_invalidly_formatted_directory = True
                     if subject is not None:
                         self.transfer_file(filepath)
                     else:
                         self.transfer_directory(filepath)
-                        if did_move_invalidly_formatted_directory and\
-                                os.path.split(filepath)[0] == self.config.homework_dir:
+                        if (
+                            did_move_invalidly_formatted_directory
+                            and os.path.split(filepath)[0] == self.config.homework_dir
+                        ):
                             os.removedirs(filepath)
                 else:
                     self.transfer_file(filepath)
@@ -219,16 +205,19 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                 self.logger.warning(f"Is compressed file: {filepath}", False)
             except Exception as error:  # pylint: disable=broad-except
                 # better safe than sorry
-                self.logger.error(
-                    f"Error occured when transferring {filepath}.")
+                self.logger.error(f"Error occured when transferring {filepath}.")
                 self.logger.handle_exception(error)
+
         self.logger.context = "archiving"
         self.logger.debug(f"Transferring/Archiving {path}", self.debug)
         for fname in os.listdir(path):
             filepath = os.path.join(path, fname)
             ext = fname.split(".")[-1]
-            if (ext not in BLACKLIST_EXT) and (not fname.startswith("@"))\
-                    and (fname not in BLACKLIST_FILES):
+            if (
+                (ext not in BLACKLIST_EXT)
+                and (not fname.startswith("@"))
+                and (fname not in BLACKLIST_FILES)
+            ):
                 handle_file(filepath)
 
     def transfer_all_files(self):
@@ -241,16 +230,20 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     def send_archiving_mail(self):
         """Send mail to notify that the archiving process has finished."""
         if len(self.transferred_files) == 0 and len(self.not_transferred_files) == 0:
-            self.logger.info(
-                "No files transferred or failed to be transferred.")
+            self.logger.info("No files transferred or failed to be transferred.")
             return
-        mail_body = "The following files were successfully archived:\n" + "\n".join(self.transferred_files)
+        mail_body = "The following files were successfully archived:\n" + "\n".join(
+            self.transferred_files
+        )
         if len(self.not_transferred_files) > 0:
-            mail_body += f"\nAlso, these files ({len(self.not_transferred_files)}) were not archived:\n"
+            mail_body += f"\nAlso, these files \
+({len(self.not_transferred_files)}) were not archived:\n"
             mail_body += "\n".join(self.not_transferred_files)
         mail_body += f"\nThat's {len(self.transferred_files)} files."
         mail_subject = "[NAS] Archiving at end of week"
-        state_manager = home_automation.server.backend.state_manager.StateManager(self.config.db_path)
+        state_manager = home_automation.server.backend.state_manager.StateManager(
+            self.config.db_path
+        )
         creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
         home_automation.utilities.send_mail(creds, mail_subject, mail_body)
         self.logger.success("Sent mail notifying of the archiving process.")
@@ -260,11 +253,9 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         self.logger.context = "reorganization"
         self.logger.debug("Reorganizing!")
         self.transfer_directory(self.config.archive_dir)
-        self.logger.info(
-            f"Transferred {len(self.transferred_files)} files:", True)
+        self.logger.info(f"Transferred {len(self.transferred_files)} files:", True)
         for fname in self.transferred_files:
-            self.logger.debug(
-                fname, self.debug)  # pylint: disable=multiple-statements
+            self.logger.debug(fname, self.debug)  # pylint: disable=multiple-statements
         # I mean, common!
 
 
@@ -285,13 +276,24 @@ def reorganize():
 def main(arguments: Optional[Sequence[str]] = None):
     """Guess what this does, pylint!"""
     parser = argparse.ArgumentParser(
-        description="Archive files from HAs or reorganize Archive.")
-    parser.add_argument("action", type=str,
-                        help="Action to perform (archive, reorganize)")
-    parser.add_argument("--verbose", "-v", action="store_true",
-                        help="verbose mode (additional logging (to stdout))")
-    parser.add_argument("--config", "-c", type=str, default=None,
-                        help="path to config file (default='home_automation.conf.yml')")
+        description="Archive files from HAs or reorganize Archive."
+    )
+    parser.add_argument(
+        "action", type=str, help="Action to perform (archive, reorganize)"
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="verbose mode (additional logging (to stdout))",
+    )
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        default=None,
+        help="path to config file (default='home_automation.conf.yml')",
+    )
     args = parser.parse_args(arguments)
     config_data = haconfig.load_config(path=args.config)
     manager = ArchiveManager(config_data, args.verbose)

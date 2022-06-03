@@ -69,7 +69,7 @@ def compose_pull_exec():
 
 
 def compose_up_exec():
-    """"Compose up, blocking."""
+    """ "Compose up, blocking."""
     os.system(f"docker-compose -f '{CONFIG.compose_file}' up -d")
     state_manager = StateManager(CONFIG.db_path)
     state_manager.update_status("upping", False)
@@ -97,29 +97,34 @@ def restart_runner_exec():
 
 def start_update_version_info_process(version_manager: VersionManager):
     """Start version update process, nonblocking."""
-    process = mp.Process(target=version_manager.update_version_info,
-                         name="home_automation.runner.update_version_info")
+    process = mp.Process(
+        target=version_manager.update_version_info,
+        name="home_automation.runner.update_version_info",
+    )
     process.start()
 
 
 def start_upgrade_process(version_manager: VersionManager):
     """Start upgrade process, nonblocking."""
-    process = mp.Process(target=version_manager.upgrade_server,
-                         name="home_automation.runner.upgrader")
+    process = mp.Process(
+        target=version_manager.upgrade_server, name="home_automation.runner.upgrader"
+    )
     process.start()
 
 
 def start_auto_upgrade_process(version_manager: VersionManager):
     """Start auto-upgrade process, nonblocking."""
-    process = mp.Process(target=version_manager.auto_upgrade,
-                         name="home_automation.runner.autoupgrader")
+    process = mp.Process(
+        target=version_manager.auto_upgrade, name="home_automation.runner.autoupgrader"
+    )
     process.start()
 
 
 def start_restart_runner_process():
     """Start restart process, nonblocking."""
-    process = mp.Process(target=restart_runner_exec,
-                         name="home_automation.runner.restart_runner")
+    process = mp.Process(
+        target=restart_runner_exec, name="home_automation.runner.restart_runner"
+    )
     process.start()
 
 
@@ -146,7 +151,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         return {
             "name": cont.name,
             "state": cont.status,
-            "image": create_dict_from_image(cont.image)
+            "image": create_dict_from_image(cont.image),
         }
 
     def create_dict_from_image(img: DockerImage):
@@ -158,9 +163,12 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/containers")
     def get_containers():
         try:
-            data = {"containers": [
-                    create_dict_from_container(c) for c in CLIENT.containers.list(all=True)
-                    ]}
+            data = {
+                "containers": [
+                    create_dict_from_container(c)
+                    for c in CLIENT.containers.list(all=True)
+                ]
+            }
             return data
         except AttributeError:
             return {"error": str(ERROR)}, 500
@@ -251,8 +259,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/volumes")
     def get_volumes():
         try:
-            volumes = [create_dict_from_volume(v)
-                       for v in CLIENT.volumes.list()]
+            volumes = [create_dict_from_volume(v) for v in CLIENT.volumes.list()]
             data = {"volumes": volumes}
             return data
         except AttributeError:
@@ -280,15 +287,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             info = version_manager.get_version_info()
             if not info["version_available"] or not info["version"]:
                 raise ValueError("No version_available or version data.")
-            ver_comp = semver.compare(
-                info["version_available"], info["version"])
+            ver_comp = semver.compare(info["version_available"], info["version"])
             if ver_comp > 0:
                 return {
                     "version": info["version"],
                     "available": {
                         "version": info["version_available"],
-                        "availableSince": info["version_available_since"]
-                    }
+                        "availableSince": info["version_available_since"],
+                    },
                 }
             return {"version": info["version"]}
         except ValueError as err:
@@ -352,9 +358,9 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         try:
             await home_automation.home_assistant_updater.update_home_assistant(CONFIG)
             return {"success": True}
-        except Exception as e:
-            logging.error(e)
-            return {"error": str(e)}, 500
+        except Exception as error:  # pylint: disable=broad-except
+            logging.error(error)
+            return {"error": str(error)}, 500
 
     @app.route("/api/config")
     def debug_env():
@@ -385,9 +391,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
         try:
             home_automation.utilities.send_mail(
-                creds,
-                "Test",
-                "This is a test mail sent from home_automation."
+                creds, "Test", "This is a test mail sent from home_automation."
             )
             return {"success": True}
         except google.auth.exceptions.RefreshError as error:
@@ -405,13 +409,15 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError:
             return "Invalid grant.", 500
         except oauthlib.oauth2.rfc6749.errors.InsecureTransportError:
-            return "InsecureTransportError. Consider configuring home_automation.api_server to use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_path respectively).", 500
+            error = "InsecureTransportError. Consider configuring home_automation.api_server to \
+use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_path respectively)."
+            return render_template("error.html", error=error), 500
         oauth2_helpers.save_credentials(flow.credentials, state_manager)
         pending = bool(int(state_manager.get_value("test_email_pending")))
         if pending:
             state_manager.update_status("test_email_pending", False)
             mail_test()
-        return "Saved credentials successfully. You may now <button onclick='() => window.close()'>close</button> this window.<script>setTimeout(() => window.close(), 3000)</script>"
+        return render_template("oauth2-credentials-saved-successfully.html")
 
     @app.route("/backend/home_automation/oauth2/google/request")
     def request_google_oauth2_auth():
@@ -420,22 +426,29 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         # created automatically when the authorization flow completes for the first
         # time.
         if os.path.exists("token.json"):
-            creds = Credentials.from_authorized_user_file("token.json", oauth2_helpers.GOOGLE_MAIL_SEND_SCOPES)
+            creds = Credentials.from_authorized_user_file(
+                "token.json", oauth2_helpers.GOOGLE_MAIL_SEND_SCOPES
+            )
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
                 flow = oauth2_helpers.get_oauth_flow()
-                authorization_url, _ = flow.authorization_url(access_type="offline", include_granted_scopes="true")
+                authorization_url, _ = flow.authorization_url(
+                    access_type="offline", include_granted_scopes="true"
+                )
                 return redirect(authorization_url)
+        return "Already authorized."
 
     @app.route("/api/home_automation/oauth2/google/revoke", methods=["POST"])
     def revoke_google_oauth2_token():
         cred = oauth2_helpers.get_google_oauth2_credentials(state_manager)
         params = {"token": cred.token}
         headers = {"content-type": "applications/x-www-form-urlencoded"}
-        res = httpx.post("https://oauth2.googleapis.com/revoke", params=params, headers=headers)
+        res = httpx.post(
+            "https://oauth2.googleapis.com/revoke", params=params, headers=headers
+        )
         return res.text, res.status_code
 
     @app.route("/api/home_automation/oauth2/google/clear", methods=["DELETE"])

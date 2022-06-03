@@ -2,7 +2,7 @@ import email
 import os
 
 import pytest
-from home_automation.config import ConfigEmail, parse_config, Config
+from home_automation.config import ConfigEmail, parse_config, Config, ConfigThingsServer
 
 TESTING_CONFIG = Config(
     log_dir="/var/logs",
