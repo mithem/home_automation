@@ -132,7 +132,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     """App factory."""
     app = Flask(__name__)
     state_manager = StateManager(CONFIG.db_path)
-    version_manager = VersionManager(CONFIG.db_path)
+    version_manager = VersionManager(CONFIG)
     start_update_version_info_process(version_manager)
     if options:
         app.config.update(options)

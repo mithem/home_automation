@@ -4,13 +4,14 @@ import datetime
 import re
 import os
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import git
 import requests
 import semver
 
 import home_automation.utilities
+from home_automation.config import Config
 from home_automation.server.backend.state_manager import StateManager
 
 REPO_INIT_FILE_URL = "https://raw.githubusercontent.com/\
@@ -29,19 +30,31 @@ SQL_TO_PYTHON_KEY_NAME = {
 }
 
 
+class RemoteNotFoundError(Exception):
+    """Remote to pull from not found (configured in home_automation.git.remotes)."""
+
+
+class BranchNotFoundError(Exception):
+    """Branch to pull not found (configured in home_automation.git.branch)."""
+
+
 class VersionManager:
     """VersionManager is responsible for comparing the current
     to the available version and upgrading if wanted."""
 
-    def __init__(self, db_path: str):
+    config: Config
+
+    def __init__(self, config: Config):
         global INIT_FILE_URL  # pylint: disable=global-statement
-        self.state_manager = StateManager(db_path)
+        self.config = config
+        self.state_manager = StateManager(config.db_path)
         if testing:
             INIT_FILE_URL = REPO_INIT_FILE_URL
             self.update_version_info()
             INIT_FILE_URL = TESTING_INIT_FILE_URL
 
-    def _make_value(self, key, value: str):
+    @staticmethod
+    def _make_value(key, value: str):
         if value == "":
             return None
         try:
@@ -68,7 +81,7 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'"
         )
         for elem in elements:
             key = SQL_TO_PYTHON_KEY_NAME.get(elem[0], elem[0])
-            value = self._make_value(key, elem[1])
+            value = VersionManager._make_value(key, elem[1])
             data[key] = value
         return data
 
@@ -122,10 +135,31 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'"
         """Upgrade the server. Restarts it. BLOCKING!"""
         logging.info("Upgrading server...")
         repo = git.Repo(os.curdir)
+        if self.config.git.discard_changes:
+            logging.info("Discarding changes in repo...")
+            repo.git.reset("--hard")
         # please (don't) fail spectaculary
-        branch = list(filter(lambda b: b.name == "master", repo.branches))[0]
+        branch_name = self.config.git.branch
+        if branch_name is None:
+            branch_name = "master"
+        try:
+            branch = list(filter(lambda b: b.name == branch_name, repo.branches))[0]
+        except IndexError:
+            raise BranchNotFoundError(  # pylint: disable=raise-missing-from
+                f"Branch {branch_name} not found."
+            )
         # seriously, though, that should not happen and isn't this project's responsibility
-        for remote in repo.remotes:
+        remotes: List[str] = []
+        if len(self.config.git.remotes) == 0:
+            remotes = repo.remotes
+        else:
+            remotes = filter(lambda r: r.name in self.config.git.remotes, repo.remotes)
+        plural = "s" if len(remotes) > 1 else ""
+        remotes_str = ", ".join(map(lambda r: r.name, remotes))
+        if len(remotes) == 0:
+            raise RemoteNotFoundError(f"Remote{plural} not found: {remotes_str}")
+        logging.info("Pulling from remote%s: %s", plural, remotes_str)
+        for remote in remotes:
             repo.git.pull(remote.name, branch)
         os.system("bash script/restart-runner &")
 

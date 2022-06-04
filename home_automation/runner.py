@@ -243,7 +243,7 @@ def run_backend_server(config: haconfig.Config, queue: mp.Queue):
         extra_flags = ""
         if config.api_server.valid_ssl():
             extra_flags += f"--certfile '{config.api_server.ssl_cert_path}'"
-            extra_flags += " --keyfile '{config.api_server.ssl_key_path}'"
+            extra_flags += f" --keyfile '{config.api_server.ssl_key_path}'"
         command = f"python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w '{workers}'\
  --bind {interface}:10001 {extra_flags} 'home_automation.server.backend:create_app()'"
         os.system(command)

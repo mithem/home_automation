@@ -1,5 +1,7 @@
 """Everything to do with configuration."""
+import os
 from typing import Any, List, Dict, Optional, Union
+import git
 import yaml
 
 
@@ -334,6 +336,59 @@ class ConfigAPIServer:
         return bool(self.ssl_cert_path) and bool(self.ssl_key_path)
 
 
+class ConfigGit:
+    """Configuration for the git repository."""
+
+    remotes: List[str]
+    branch: Optional[str]
+    discard_changes: bool
+
+    def __init__(self, data: Optional[Dict[str, Union[List[str], str, bool]]] = None):
+        if not data:
+            self.remotes = []
+            self.branch = None
+            self.discard_changes = False
+            return
+        remotes = data.get("remotes")
+        branch = data.get("branch")
+        discard_changes = data.get("discard_changes")
+        self.remotes = (
+            remotes
+            if isinstance(remotes, list)
+            else [remotes]
+            if isinstance(remotes, str)
+            else []
+        )
+        self.branch = branch if isinstance(branch, str) else None
+        self.discard_changes = (
+            discard_changes if isinstance(discard_changes, bool) else False
+        )
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.remotes == other.remotes
+            and self.branch == other.branch
+            and self.discard_changes == other.discard_changes
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "remotes": self.remotes,
+            "branch": self.branch,
+            "discard_changes": self.discard_changes,
+        }
+
+    def valid(self) -> bool:
+        """Check if configuration is valid."""
+        remotes_valid = all(isinstance(x, str) for x in self.remotes)
+        repo = git.Repo(os.curdir)
+        branch_found = self.branch is None or self.branch in [
+            branch.name for branch in repo.branches  # type: ignore
+        ]
+        return remotes_valid and branch_found
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
@@ -352,6 +407,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     runner: ConfigRunner
     kubernetes: ConfigKubernetes
     api_server: ConfigAPIServer
+    git: ConfigGit
 
     # opress dangerous default values as that"s only dangerous if they are modified
     def __init__(
@@ -371,6 +427,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         moodle_dl_dir: Optional[str] = None,
         kubernetes: Dict[str, Union[str, bool]] = None,
         api_server: Dict[str, str] = None,
+        git_data: Dict[str, Union[List[str], str, bool]] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -387,6 +444,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.runner = ConfigRunner(runner)
         self.kubernetes = ConfigKubernetes(kubernetes)
         self.api_server = ConfigAPIServer(api_server)
+        self.git = ConfigGit(git_data)
 
     def __str__(self) -> str:
         return str(vars(self))
