@@ -13,6 +13,9 @@ function getExternalURL(link: ExternalLinkType) {
   const hostname = window.location.hostname;
   let scheme: String;
   switch (link) {
+    case ExternalLinkType.heimdall:
+      scheme = "http";
+      break;
     default:
       scheme = "https";
   }
