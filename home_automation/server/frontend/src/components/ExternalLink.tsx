@@ -1,21 +1,18 @@
 import React from "react";
 
 export enum ExternalLinkType {
-  truenasGUI = 80,
+  truenasGUI = 443,
   portainer = 10201,
   homeassistant = 10101,
   nextcloud = 10302,
   plex = 32400,
+  heimdall = 11401,
 }
 
 function getExternalURL(link: ExternalLinkType) {
   const hostname = window.location.hostname;
   let scheme: String;
   switch (link) {
-    case ExternalLinkType.truenasGUI:
-    case ExternalLinkType.plex:
-      scheme = "http";
-      break;
     default:
       scheme = "https";
   }

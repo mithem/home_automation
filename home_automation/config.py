@@ -1,7 +1,7 @@
 """Everything to do with configuration."""
 import os
 from typing import Any, List, Dict, Optional, Union
-import git
+import git as gitlib
 import yaml
 
 
@@ -382,7 +382,7 @@ class ConfigGit:
     def valid(self) -> bool:
         """Check if configuration is valid."""
         remotes_valid = all(isinstance(x, str) for x in self.remotes)
-        repo = git.Repo(os.curdir)
+        repo = gitlib.Repo(os.curdir)
         branch_found = self.branch is None or self.branch in [
             branch.name for branch in repo.branches  # type: ignore
         ]
@@ -427,7 +427,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         moodle_dl_dir: Optional[str] = None,
         kubernetes: Dict[str, Union[str, bool]] = None,
         api_server: Dict[str, str] = None,
-        git_data: Dict[str, Union[List[str], str, bool]] = None,
+        git: Dict[str, Union[List[str], str, bool]] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -444,7 +444,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.runner = ConfigRunner(runner)
         self.kubernetes = ConfigKubernetes(kubernetes)
         self.api_server = ConfigAPIServer(api_server)
-        self.git = ConfigGit(git_data)
+        self.git = ConfigGit(git)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -469,6 +469,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.extra_compress_dirs == other.extra_compress_dirs
             and self.kubernetes == other.kubernetes
             and self.api_server == other.api_server
+            and self.git == other.git
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -493,6 +494,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "extra_compress_dirs": self.extra_compress_dirs,
             "kubernetes": self.kubernetes.to_dict() if self.kubernetes else None,
             "api_server": self.api_server.to_dict() if self.api_server else None,
+            "git": self.git.to_dict() if self.git else None,
         }
 
 

@@ -28,23 +28,7 @@ const Navbar = () => {
             <Link className="nav-link" to="/config">
               Config
             </Link>
-            <ExternalLink
-              target={ExternalLinkType.truenasGUI}
-              title="Truenas GUI"
-            />
-            <ExternalLink
-              target={ExternalLinkType.homeassistant}
-              title="Home Assistant"
-            />
-            <ExternalLink
-              target={ExternalLinkType.portainer}
-              title="Portainer"
-            />
-            <ExternalLink
-              target={ExternalLinkType.nextcloud}
-              title="Nextcloud"
-            />
-            <ExternalLink target={ExternalLinkType.plex} title="Plex" />
+            <ExternalLink target={ExternalLinkType.heimdall} title="Heimdall" />
           </Nav>
         </RBNavbar.Collapse>
       </Container>
