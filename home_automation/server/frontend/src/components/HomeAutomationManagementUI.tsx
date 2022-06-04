@@ -143,7 +143,7 @@ export default class HomeAutomationManagementUI extends React.Component<
         {newHomeAssistantVersionSuccessAlert}
         <Alert variant="secondary" className="version current">
           <span>Current version: {this.state.version ?? "N/A"}</span>
-          <Button variant="primary" onClick={() => refreshVersionInfo}>
+          <Button variant="primary" onClick={() => refreshVersionInfo()}>
             Check for updates
           </Button>
         </Alert>
