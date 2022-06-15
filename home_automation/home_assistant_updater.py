@@ -253,9 +253,9 @@ async def update_home_assistant(config: Config):
     try:
         if config.kubernetes.valid():
             return await update_home_assistant_with_kubernetes(config)
+        if config.portainer.valid():
+            return await update_home_assistant_with_portainer(config)
+        raise ConfigError("Neither Kubernetes nor Portainer configuration provided.")
     except Exception as error:  # pylint: disable=broad-except
         logging.error(error)
-        logging.info("Falling back to portainer update mechanism.")
-    if config.portainer.valid():
-        return await update_home_assistant_with_portainer(config)
-    raise ConfigError("Neither Kubernetes nor Portainer configuration provided.")
+        return {"error": str(error)}, 500
