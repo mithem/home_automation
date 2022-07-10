@@ -2,7 +2,7 @@ from setuptools import setup
 import re
 import home_automation
 
-VERSION = "1.7.4"
+VERSION = "1.7.5"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
