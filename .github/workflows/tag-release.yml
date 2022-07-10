@@ -2,6 +2,7 @@ name: tag-release
 
 on:
   - push
+  - create
 jobs:
   tag-release:
     runs-on: ubuntu-latest
