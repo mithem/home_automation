@@ -2,6 +2,9 @@ name: tag-release
 
 on:
   - push
+  - create
+  - pull_request
+  - workflow_dispatch
 jobs:
   tag-release:
     runs-on: ubuntu-latest
