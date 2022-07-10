@@ -15,3 +15,5 @@ jobs:
         with:
           version_regex: ^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+
           prerelease_regex: ^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+-?(a|b)[[:digit:]]+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
