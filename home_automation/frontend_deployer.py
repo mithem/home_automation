@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 import re
+import sys
 from typing import List, Tuple
 
 import docker
@@ -23,6 +24,16 @@ logging.basicConfig(level=logging.INFO)
 
 def _get_image_tag(config: Config) -> str:
     """Return the image tag."""
+    pattern = r"^(?P<image>([a-z\d_\-\.]*(:\d+)?/)?[a-z\d]+[a-z\d_\-\.]*)(?P<tag>:[\w\.\-]+)?$"
+    match = re.match(pattern, config.frontend.image_name)
+    if match:
+        if match.group("tag"):
+            raise ValueError(
+                f"Invalid frontend image name '{config.frontend.image_name}'. \
+Image name already contains a tag."
+            )
+    else:
+        raise ValueError(f"Invalid frontend image name '{config.frontend.image_name}'.")
     return f"{config.frontend.image_name}:{home_automation.VERSION}"
 
 
@@ -146,7 +157,9 @@ def _get_new_registry_authentication_secret(config: Config) -> klient.V1Secret:
 
 
 def _create_registry_secret_if_necessary(config: Config):
-    """Create the registry secret if it doesn't exist."""
+    """Create the registry secret if it doesn't exist and if credentials are given."""
+    if not config.docker.registry or not config.docker.registry.auth:
+        return
     _, registry_name = _parse_registry_url(config)
     k_client = utilities.get_k8s_client(config)
     v1 = klient.CoreV1Api(k_client)
@@ -243,9 +256,11 @@ def build_image(config: Config):
             password=config.docker.registry.auth.password,
             registry=config.docker.registry.registry_url,
         )
-    image: Image = client.images.build(
+    image, log_stream = client.images.build(
         path="home_automation/server/frontend", tag=tag, nocache=True
-    )[0]
+    )
+    for entry in log_stream:
+        logging.info(entry.get("stream", entry))
     version = semver.VersionInfo.parse(home_automation.VERSION)
     prod_tag_endings = [
         "latest",

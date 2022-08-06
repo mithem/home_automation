@@ -1,6 +1,6 @@
 """Everything to do with configuration."""
 import os
-import socket
+import socket as socketlib
 from typing import Any, Dict, List, Optional, Union
 
 import git as gitlib
@@ -450,7 +450,7 @@ class ConfigFrontend:
             self.deployment_name = "frontend"
             self.namespace = "default"
             self.service_name = "frontend"
-            self.backend_ip_address = socket.gethostbyname(socket.gethostname())
+            self.backend_ip_address = socketlib.gethostbyname(socketlib.gethostname())
             return
         image_name = data.get("image_name")
         deployment_name = data.get("deployment_name")
@@ -481,7 +481,7 @@ class ConfigFrontend:
         if isinstance(backend_ip_address, str):
             self.backend_ip_address = backend_ip_address
         else:
-            self.backend_ip_address = socket.gethostbyname(socket.gethostname())
+            self.backend_ip_address = socketlib.gethostbyname(socketlib.gethostname())
 
     def __eq__(self, other) -> bool:
         return (
@@ -617,8 +617,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
         homework_dir: str,
         archive_dir: str,
         db_path: str,
-        compose_file: str,
         email: Dict[str, Any],
+        compose_file: str = None,
         home_assistant: Dict[str, Any] = None,
         portainer: Dict[str, Any] = None,
         things_server: Dict[str, Any] = None,
@@ -636,7 +636,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.homework_dir = homework_dir
         self.archive_dir = archive_dir
         self.db_path = db_path
-        self.compose_file = compose_file
+        self.compose_file = compose_file if compose_file else "docker-compose.yml"
         self.moodle_dl_dir = moodle_dl_dir
         self.extra_compress_dirs = extra_compress_dirs if extra_compress_dirs else []
         self.email = ConfigEmail(email)
