@@ -1,8 +1,7 @@
 from setuptools import setup
-import re
 import home_automation
 
-VERSION = "1.7.5"
+VERSION = "2.0.0b1"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -15,7 +14,8 @@ with open("home_automation/__init__.py", "w") as f:
 with open("VERSION", "w") as f:
     f.write(VERSION)
 
-packages = ["home_automation", "home_automation.server.backend"]
+packages = ["home_automation"]
+
 
 requirements = [
     "argparse",

@@ -1,27 +1,31 @@
 """Schedule appropriate cron jobs and run them (blocks permanently)"""
 import argparse
-import os
-import time
-import multiprocessing as mp
 import logging
 import logging.handlers
+import multiprocessing as mp
+import os
 import signal
 import sys
-from pid.decorator import pidfile
+import time
 
 from crontab import CronTab
-from watchdog.observers import Observer as WatchdogObserver
+from pid.decorator import pidfile
 from watchdog.events import (
+    DirModifiedEvent,
+    FileDeletedEvent,
     FileModifiedEvent,
     FileMovedEvent,
-    FileDeletedEvent,
-    DirModifiedEvent,
     FileSystemEventHandler,
 )
+from watchdog.observers import Observer as WatchdogObserver
 
 from home_automation import compression_manager
 from home_automation import config as haconfig
+from home_automation import frontend_deployer
 from home_automation import utilities as util
+from home_automation.server.backend.run_backend_server import (
+    run_backend_server as run_backend_server_blocking,
+)
 
 # logging system copied from
 # https://fanchenbao.medium.com/python3-logging-with-multiprocessing-f51f460b8778
@@ -79,7 +83,7 @@ def _configure_log_listener(config: haconfig.Config):
     console_handler.setFormatter(formatter)
     root.addHandler(file_handler)
     root.addHandler(console_handler)
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
 
 
 def _logging_listener(config: haconfig.Config, queue: mp.Queue):
@@ -108,7 +112,7 @@ def _configure_log_worker(queue: mp.Queue):
     queue_handler = logging.handlers.QueueHandler(queue)
     root = logging.getLogger()
     root.addHandler(queue_handler)
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
 
 
 def setup(config: haconfig.Config):
@@ -228,25 +232,7 @@ def run_backend_server(config: haconfig.Config, queue: mp.Queue):
     logger.info("Running backend as %s / %s", user, group)
     logger.info("Running backend...")
     try:
-        # sometimes running gunicorn from shell is just equivalent to but way easier than
-        # reverse-engineering gunicorn to get an appropriate entrypoint
-
-        # only bind to localhost so the API isn't exposed outside (if
-        # I need that at any point, an https proxy is a way better idea)
-
-        # proxy for certificate management (don't want to re-configure 20 services
-        # once the certificate changes)
-        interface = (
-            config.api_server.interface if config.api_server.interface else "127.0.0.1"
-        )
-        workers = config.api_server.workers if config.api_server.workers else 2
-        extra_flags = ""
-        if config.api_server.valid_ssl():
-            extra_flags += f"--certfile '{config.api_server.ssl_cert_path}'"
-            extra_flags += f" --keyfile '{config.api_server.ssl_key_path}'"
-        command = f"python3 -m gunicorn --pid /var/run/home_automation/gunicorn.pid -w '{workers}'\
- --bind {interface}:10001 {extra_flags} 'home_automation.server.backend:create_app()'"
-        os.system(command)
+        run_backend_server_blocking(config)
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Stopped gunicorn (backend).")
         sys.exit(0)
@@ -269,6 +255,14 @@ def build_frontend(queue: mp.Queue):
     except (KeyboardInterrupt, _ProcessExit):
         logger.info("Aborted frontend build.")
         sys.exit(0)
+
+
+def deploy_frontend(config: haconfig.Config, queue: mp.Queue):
+    """Deploy frontend k8s infrastructure."""
+    _configure_log_worker(queue)
+    logger = logging.getLogger("home_automation_frontend")
+    logger.info("Deploying frontend infrastructure...")
+    frontend_deployer.build_and_deploy_frontend(config)
 
 
 @pidfile("/var/run/home_automation/runner.pid")
@@ -319,7 +313,12 @@ def main():
             name="home_automation.runner.backend",
         ),
         mp.Process(
-            target=build_frontend, args=(queue,), name="home_automation.runner.frontend"
+            target=deploy_frontend,
+            args=(
+                config_data,
+                queue,
+            ),
+            name="home_automation.runner.frontend",
         ),
     ]
     for process in processes:

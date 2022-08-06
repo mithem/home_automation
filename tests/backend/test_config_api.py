@@ -1,11 +1,10 @@
-from unittest import TestCase
-from home_automation.server.backend import create_app
-import home_automation.config
-
-import os
 import json
-from flask import Response
+import os
+
+import home_automation.config
 import pytest
+from flask import Response
+from home_automation.server.backend import create_app
 
 
 def assert_response_sucessful(response: Response) -> bool:
@@ -28,12 +27,11 @@ def client():
 
 def test_get_config(client):
     res: Response = client.get("/api/config")
-    res_config = home_automation.config.Config(
-        **json.loads(str(res.data, "utf-8")))
+    res_config = home_automation.config.Config(**json.loads(str(res.data, "utf-8")))
 
     expected = home_automation.config.load_config()
-    print(res_config)
-    print(expected)
+    print(res_config.to_dict())
+    print(expected.to_dict())
     assert res_config == expected
 
 

@@ -1,13 +1,14 @@
 """Just some utilities, especially regarding mailing."""
-import os
-import pwd
+import base64
 import grp
 import logging
-import base64
+import os
+import pwd
 from email.mime.text import MIMEText
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from kubernetes import client as klient
 
 from home_automation import config as haconfig
 
@@ -98,3 +99,13 @@ def check_current_user():
     group = grp.getgrgid(gid).gr_name
 
     return (user, group)
+
+
+def get_k8s_client(config: haconfig.Config) -> klient.ApiClient:
+    """Return the k8s client using the specified config."""
+    assert config.kubernetes, "No kubernetes config found."
+    konfig = klient.Configuration()
+    konfig.host = config.kubernetes.url
+    konfig.verify_ssl = not config.kubernetes.insecure_https
+    konfig.api_key = {"authorization": f"Bearer {config.kubernetes.api_key}"}
+    return klient.ApiClient(konfig)

@@ -1,6 +1,8 @@
 """Everything to do with configuration."""
 import os
-from typing import Any, List, Dict, Optional, Union
+import socket
+from typing import Any, Dict, List, Optional, Union
+
 import git as gitlib
 import yaml
 
@@ -36,24 +38,96 @@ class ConfigEmail:
 class ConfigHomeAssistant:
     """Home Assistant configuration."""
 
+    class ConfigHomeAssistantK8sDeployment:
+        """The k8s deployment of Home Assistant."""
+
+        namespace: Optional[str]
+        name: str
+
+        def __init__(self, data: Dict[str, Optional[str]]):
+            namespace = data.get("namespace")
+            name = data["name"]
+            self.namespace = namespace if isinstance(namespace, str) else None
+            if isinstance(name, str):
+                self.name = name
+            else:
+                raise ValueError("Missing home_assistant.deployment.name")
+
+        def __eq__(self, other) -> bool:
+            return self.namespace == other.namespace and self.name == other.name
+
+        def to_dict(self) -> Dict[str, Optional[str]]:
+            """Convert to dictionary."""
+            return {
+                "namespace": self.namespace,
+                "name": self.name,
+            }
+
+    class ConfigHomeAssistantPortainer:
+        """The portainer information for Home Assistant."""
+
+        environment: str
+        stack: str
+
+        def __init__(self, data: Dict[str, Optional[str]]):
+            environment = data["environment"]
+            stack = data["stack"]
+            if environment:
+                self.environment = environment
+            else:
+                raise ConfigError("Missing home_assistant.portainer.environment")
+            if stack:
+                self.stack = stack
+            else:
+                raise ConfigError("Missing home_assistant.portainer.stack")
+
+        def __eq__(self, other) -> bool:
+            return self.environment == other.environment and self.stack == other.stack
+
+        def to_dict(self) -> Dict[str, Optional[str]]:
+            """Convert to dictionary."""
+            return {
+                "environment": self.environment,
+                "stack": self.stack,
+            }
+
     token: Optional[str]
     url: Optional[str]
     insecure_https: bool
+    deployment: Optional[ConfigHomeAssistantK8sDeployment]
+    portainer: Optional[ConfigHomeAssistantPortainer]
 
-    def __init__(self, data: Optional[Dict[str, Union[str, bool]]] = None):
+    def __init__(
+        self,
+        data: Optional[Dict[str, Union[str, bool, Dict[str, Optional[str]]]]] = None,
+    ):
         if not data:
             self.token = None
             self.url = None
             self.insecure_https = False
+            self.deployment = None
+            self.portainer = None
             return
         token = data.get("token")
         url = data.get("url")
+        deployment = data.get("deployment")
+        portainer = data.get("portainer")
         self.token = token if isinstance(token, str) else None
         self.url = url if isinstance(url, str) else None
         self.insecure_https = bool(data.get("insecure_https", False))
+        if isinstance(deployment, dict):
+            self.deployment = ConfigHomeAssistant.ConfigHomeAssistantK8sDeployment(
+                deployment
+            )
+        else:
+            self.deployment = None
+        if isinstance(portainer, dict):
+            self.portainer = ConfigHomeAssistant.ConfigHomeAssistantPortainer(portainer)
+        else:
+            self.portainer = None
 
     def __str__(self) -> str:
-        return str(vars(self))
+        return str(self.to_dict())
 
     def __repr__(self) -> str:
         return str(self)
@@ -63,6 +137,8 @@ class ConfigHomeAssistant:
             self.token == other.token
             and self.url == other.url
             and self.insecure_https == other.insecure_https
+            and self.deployment == other.deployment
+            and self.portainer == other.portainer
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,6 +147,8 @@ class ConfigHomeAssistant:
             "url": self.url,
             "token": self.token,
             "insecure_https": self.insecure_https,
+            "deployment": self.deployment,
+            "portainer": self.portainer,
         }
 
 
@@ -80,8 +158,6 @@ class ConfigPortainer:
     url: Optional[str]
     username: Optional[str]
     password: Optional[str]
-    home_assistant_env: Optional[str]
-    home_assistant_stack: Optional[str]
     insecure_https: bool
 
     def __init__(self, data: Optional[Dict[str, Union[str, bool]]] = None):
@@ -89,24 +165,14 @@ class ConfigPortainer:
             self.url = None
             self.username = None
             self.password = None
-            self.home_assistant_env = None
-            self.home_assistant_stack = None
             self.insecure_https = False
             return
         url = data.get("url")
         username = data.get("username")
         password = data.get("password")
-        home_assistant_env = data.get("home_assistant_env")
-        home_assistant_stack = data.get("home_assistant_stack")
         self.url = url if isinstance(url, str) else None
         self.username = username if isinstance(username, str) else None
         self.password = password if isinstance(password, str) else None
-        self.home_assistant_env = (
-            home_assistant_env if isinstance(home_assistant_env, str) else None
-        )
-        self.home_assistant_stack = (
-            home_assistant_stack if isinstance(home_assistant_stack, str) else None
-        )
         self.insecure_https = bool(data.get("insecure_https", False))
 
     def __str__(self) -> str:
@@ -120,8 +186,6 @@ class ConfigPortainer:
             self.url == other.url
             and self.username == other.username
             and self.password == other.password
-            and self.home_assistant_env == other.home_assistant_env
-            and self.home_assistant_stack == other.home_assistant_stack
             and self.insecure_https == other.insecure_https
         )
 
@@ -131,20 +195,12 @@ class ConfigPortainer:
             "url": self.url,
             "username": self.username,
             "password": self.password,
-            "home_assistant_env": self.home_assistant_env,
-            "home_assistant_stack": self.home_assistant_stack,
             "insecure_https": self.insecure_https,
         }
 
     def valid(self) -> bool:
         """Check if configuration is valid."""
-        return (
-            bool(self.url)
-            and bool(self.username)
-            and bool(self.password)
-            and bool(self.home_assistant_env)
-            and bool(self.home_assistant_stack)
-        )
+        return bool(self.url) and bool(self.username) and bool(self.password)
 
 
 class ConfigThingsServer:
@@ -231,8 +287,6 @@ class ConfigKubernetes:
     insecure_https: bool
     ssl_ca_cert_path: Optional[str]
     api_key: Optional[str]
-    namespace: Optional[str]
-    deployment_name: Optional[str]
 
     def __init__(self, data: Optional[Dict[str, Union[str, bool]]] = None):
         if not data:
@@ -240,24 +294,16 @@ class ConfigKubernetes:
             self.insecure_https = False
             self.ssl_ca_cert_path = None
             self.api_key = None
-            self.namespace = None
-            self.deployment_name = None
             return
         url = data.get("url")
         ssl_ca_cert_path = data.get("ssl_ca_cert_path", None)
         api_key = data.get("api_key")
-        namespace = data.get("namespace")
-        deployment_name = data.get("deployment_name")
         self.insecure_https = bool(data.get("insecure_https", False))
         self.url = url if isinstance(url, str) else None
         self.ssl_ca_cert_path = (
             ssl_ca_cert_path if isinstance(ssl_ca_cert_path, str) else None
         )
         self.api_key = api_key if isinstance(api_key, str) else None
-        self.namespace = namespace if isinstance(namespace, str) else None
-        self.deployment_name = (
-            deployment_name if isinstance(deployment_name, str) else None
-        )
 
     def __eq__(self, other) -> bool:
         return (
@@ -265,8 +311,6 @@ class ConfigKubernetes:
             and self.insecure_https == other.insecure_https
             and self.ssl_ca_cert_path == other.ssl_ca_cert_path
             and self.api_key == other.api_key
-            and self.namespace == other.namespace
-            and self.deployment_name == other.deployment_name
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -276,8 +320,6 @@ class ConfigKubernetes:
             "insecure_https": self.insecure_https,
             "ssl_ca_cert_path": self.ssl_ca_cert_path,
             "api_key": self.api_key,
-            "namespace": self.namespace,
-            "deployment_name": self.deployment_name,
         }
 
     def valid(self) -> bool:
@@ -389,6 +431,163 @@ class ConfigGit:
         return remotes_valid and branch_found
 
 
+class ConfigFrontend:
+    """Configuration for the frontend."""
+
+    image_name: str
+    replicas: int
+    deployment_name: str
+    namespace: str
+    service_name: str
+    backend_ip_address: str
+
+    def __init__(
+        self, data: Optional[Dict[str, Union[str, int]]] = None
+    ):  # pylint: disable=too-many-branches
+        if not data:
+            self.image_name = "home_automation_frontend"
+            self.replicas = 1
+            self.deployment_name = "frontend"
+            self.namespace = "default"
+            self.service_name = "frontend"
+            self.backend_ip_address = socket.gethostbyname(socket.gethostname())
+            return
+        image_name = data.get("image_name")
+        deployment_name = data.get("deployment_name")
+        namespace = data.get("namespace")
+        replicas = data.get("replicas")
+        service_name = data.get("service_name")
+        backend_ip_address = data.get("backend_ip_address")
+        if isinstance(image_name, str):
+            self.image_name = image_name
+        else:
+            self.image_name = "home_automation_frontend"
+        if isinstance(deployment_name, str):
+            self.deployment_name = deployment_name
+        else:
+            self.deployment_name = "frontend"
+        if isinstance(namespace, str):
+            self.namespace = namespace
+        else:
+            self.namespace = "default"
+        if isinstance(replicas, int):
+            self.replicas = replicas
+        else:
+            self.replicas = 1
+        if isinstance(service_name, str):
+            self.service_name = service_name
+        else:
+            self.service_name = "frontend"
+        if isinstance(backend_ip_address, str):
+            self.backend_ip_address = backend_ip_address
+        else:
+            self.backend_ip_address = socket.gethostbyname(socket.gethostname())
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.image_name == other.image_name
+            and self.replicas == other.replicas
+            and self.deployment_name == other.deployment_name
+            and self.namespace == other.namespace
+            and self.service_name == other.service_name
+            and self.backend_ip_address == other.backend_ip_address
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "image_name": self.image_name,
+            "replicas": self.replicas,
+            "deployment_name": self.deployment_name,
+            "namespace": self.namespace,
+            "service_name": self.service_name,
+            "backend_ip_address": self.backend_ip_address,
+        }
+
+    def valid(self) -> bool:
+        """Check if configuration is valid."""
+        return bool(self.image_name)
+
+
+class ConfigDocker:
+    """Docker configuration."""
+
+    class ConfigDockerRegistry:
+        """Docker registry configuration"""
+
+        class ConfigDockerRegistryAuth:
+            """Authentication configuration for docker registry."""
+
+            username: str
+            password: str
+
+            def __init__(self, data: Dict[str, str]):
+                self.username = data["username"]
+                self.password = data["password"]
+
+            def __eq__(self, other) -> bool:
+                return (
+                    self.username == other.username and self.password == other.password
+                )
+
+            def to_dict(self) -> Dict[str, str]:
+                """Convert to dictionary."""
+                return {
+                    "username": self.username,
+                    "password": self.password,
+                }
+
+        auth: Optional[ConfigDockerRegistryAuth]
+        registry_url: str
+
+        def __init__(self, data: Dict[str, Union[Dict, str]]):
+            auth = data.get("auth")
+            registry_url = data["registry_url"]
+            if isinstance(auth, dict):
+                self.auth = ConfigDocker.ConfigDockerRegistry.ConfigDockerRegistryAuth(
+                    auth
+                )
+            else:
+                self.auth = None
+            if isinstance(registry_url, str):
+                self.registry_url = registry_url
+            else:
+                raise ValueError(
+                    f"Unexpected value '{registry_url}' for docker.registry.registry_url."
+                )
+
+        def __eq__(self, other) -> bool:
+            return self.auth == other.auth and self.registry_url == other.registry_url
+
+        def to_dict(self) -> Dict[str, Any]:
+            """Convert to dictionary."""
+            return {
+                "registry_url": self.registry_url,
+                "auth": self.auth.to_dict() if self.auth else None,
+            }
+
+    registry: Optional[ConfigDockerRegistry]
+
+    def __init__(self, data: Optional[Dict[str, Dict]] = None):
+        if not data:
+            self.registry = None
+            return
+        registry = data.get("registry")
+        if registry:
+            self.registry = ConfigDocker.ConfigDockerRegistry(registry)
+        else:
+            self.registry = None
+
+    def __eq__(self, other) -> bool:
+        return self.registry == other.registry
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "registry": self.registry.to_dict() if self.registry else None,
+        }
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
@@ -408,8 +607,10 @@ class Config:  # pylint: disable=too-many-instance-attributes
     kubernetes: ConfigKubernetes
     api_server: ConfigAPIServer
     git: ConfigGit
+    frontend: ConfigFrontend
+    docker: ConfigDocker
 
-    # opress dangerous default values as that"s only dangerous if they are modified
+    # opress dangerous default values as that's only dangerous if they are modified
     def __init__(
         self,
         log_dir: str,
@@ -428,6 +629,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
         kubernetes: Dict[str, Union[str, bool]] = None,
         api_server: Dict[str, str] = None,
         git: Dict[str, Union[List[str], str, bool]] = None,
+        frontend: Dict[str, Union[str, int]] = None,
+        docker: Dict[str, Dict] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -445,6 +648,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.kubernetes = ConfigKubernetes(kubernetes)
         self.api_server = ConfigAPIServer(api_server)
         self.git = ConfigGit(git)
+        self.frontend = ConfigFrontend(frontend)
+        self.docker = ConfigDocker(docker)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -470,6 +675,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.kubernetes == other.kubernetes
             and self.api_server == other.api_server
             and self.git == other.git
+            and self.frontend == other.frontend
+            and self.docker == other.docker
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -495,6 +702,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "kubernetes": self.kubernetes.to_dict() if self.kubernetes else None,
             "api_server": self.api_server.to_dict() if self.api_server else None,
             "git": self.git.to_dict() if self.git else None,
+            "frontend": self.frontend.to_dict() if self.frontend else None,
+            "docker": self.docker.to_dict() if self.docker else None,
         }
 
 

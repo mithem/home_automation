@@ -1,0 +1,24 @@
+events {}
+
+http {
+	include mime.types;
+	server {
+		listen 80;
+
+		location = /status {
+			stub_status;
+		}
+
+		location ~ ^/docker/?$ {
+			return 301 /docker/containers;
+		}
+
+		location ~ ^\/(api|backend).* {
+			proxy_pass "https://${BACKEND_IP_ADDRESS}:10001";
+		}
+
+		location / {
+			root /var/www/html;
+		}
+	}
+}

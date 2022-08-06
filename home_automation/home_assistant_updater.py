@@ -1,11 +1,14 @@
 """Everything responsible for updating home assistant (except the API)"""
-import re
+import asyncio
 import logging
-from typing import Dict, Tuple, Any, Union
+import re
+from typing import Any, Dict, Tuple, Union
 
 import httpx
 from kubernetes import client as klient
-from home_automation.config import Config, ConfigError
+
+from home_automation import utilities
+from home_automation.config import Config, ConfigError, load_config
 
 PORTAINER_CALLS_TIMEOUT = 5
 CURRENT_HASS_VERSION_REGEX = (
@@ -49,8 +52,8 @@ async def _get_portainer_stack(
         raise ConfigError("No portainer configuration provided.")
     if not config.portainer.url:
         raise ConfigError("No portainer URL configured.")
-    if not config.portainer.home_assistant_stack:
-        raise ConfigError("No portainer stack defining home assistant configured.")
+    if not config.home_assistant.portainer:
+        raise ConfigError("No portainer configuration for home_assistant found.")
     response = await client.get(
         config.portainer.url + "/api/stacks",
         headers=headers,
@@ -62,7 +65,8 @@ async def _get_portainer_stack(
         def filter_stacks(
             stack: Dict[str, str]
         ) -> bool:  # pylint: disable=missing-function-docstring
-            return stack.get("Name") == config.portainer.home_assistant_stack
+            # config.home_assistant.portainer already asserted to exist above
+            return stack.get("Name") == config.home_assistant.portainer.stack  # type: ignore
 
         pot_stacks = filter(filter_stacks, stacks)
         stack = list(pot_stacks)[0]
@@ -82,7 +86,7 @@ async def _get_portainer_stack(
         return stack
     except IndexError as err:
         raise UpdaterError(
-            f"Stack '{config.portainer.home_assistant_stack}' not found."
+            f"Stack '{config.home_assistant.portainer.stack}' not found."
         ) from err
 
 
@@ -135,10 +139,9 @@ async def _update_home_assistant_with_portainer(  # pylint: disable=too-many-arg
         raise ConfigError("No portainer configuration provided.")
     if not config.portainer.url:
         raise ConfigError("No portainer URL configured.")
-    if not config.portainer.home_assistant_env:
-        raise ConfigError(
-            "No home assistant environment for portainer specified in .env."
-        )
+    assert (
+        config.home_assistant.portainer
+    ), "No portainer configuration for home_assistant found."
     # don't check whether version_to_update_to is greater than current one
     # with semver to allow forced downgrades
     if current_version != version_to_update_to:
@@ -156,14 +159,18 @@ async def _update_home_assistant_with_portainer(  # pylint: disable=too-many-arg
             def filter_endpoints(
                 endpoint: Dict[str, str]
             ) -> bool:  # pylint: disable=missing-function-docstring
-                return endpoint.get("Name") == config.portainer.home_assistant_env
+                # config.home_assistant.portainer already asserted to exist above
+                return (
+                    endpoint.get("Name")
+                    == config.home_assistant.portainer.environment  # type: ignore
+                )
 
             pot_endpoints = filter(filter_endpoints, endpoints)
             endpoint = list(pot_endpoints)[0]
             endpoint_id = endpoint.get("Id", 0)
         except IndexError:
             return {
-                "error": f"Environment '{config.portainer.home_assistant_env}' not found"
+                "error": f"Environment '{config.home_assistant.portainer.environment}' not found"
             }, 404
         try:
             response = await client.put(
@@ -174,6 +181,7 @@ async def _update_home_assistant_with_portainer(  # pylint: disable=too-many-arg
             )
             return {"success": True, "new_version": version_to_update_to}
         except Exception as error:
+            logging.error(error)
             if str(error) == "":
                 return {"success": True, "new_version": version_to_update_to}
             raise Exception(f"Error applying new stack definition: {error}") from error
@@ -204,37 +212,42 @@ async def update_home_assistant_with_portainer(config: Config):
                 portainer_headers,
             )
     except Exception as exc:  # pylint: disable=broad-except
+        logging.error(exc)
         return {"error": str(exc)}, 500
 
 
 async def update_home_assistant_with_kubernetes(config: Config):
     """Use kubernetes to update Home Assistant."""
-    konfig = klient.Configuration()
-    konfig.host = config.kubernetes.url
-    konfig.verify_ssl = not config.kubernetes.insecure_https
-    konfig.api_key = {"authorization": f"Bearer {config.kubernetes.api_key}"}
+    if not config.home_assistant.deployment:
+        raise ConfigError(
+            "No home_assistant.deployment configuration (for k8s) provided."
+        )
+    k_client = utilities.get_k8s_client(config)
+    apps_v1 = klient.AppsV1Api(k_client)
 
     async with httpx.AsyncClient(
         verify=not config.home_assistant.insecure_https
     ) as client:
         version_to_update_to = await _get_version_to_update_to(config, client)
 
-    k_client = klient.ApiClient(konfig)
-    apps_v1 = klient.AppsV1Api(k_client)
-
     def filter_deploys(
         deploy: klient.V1Deployment,
     ) -> bool:  # pylint: disable=missing-function-docstring
-        return deploy.metadata.name == config.kubernetes.deployment_name
+        # config.home_assistant.portainer already asserted to exist above
+        return deploy.metadata.name == config.home_assistant.deployment.name  # type: ignore
 
     deploys = list(
         filter(
             filter_deploys,
-            apps_v1.list_namespaced_deployment(config.kubernetes.namespace).items,
+            apps_v1.list_namespaced_deployment(
+                config.home_assistant.deployment.namespace
+            ).items,
         )
     )
     if len(deploys) == 0:
-        raise ValueError(f"Deployment {config.kubernetes.deployment_name} not found.")
+        raise ValueError(
+            f"Deployment {config.home_assistant.deployment.name} not found."
+        )
     if len(deploys) > 1:
         raise ValueError("Multiple deployments with same name.")
     dep = deploys[0]
@@ -242,7 +255,9 @@ async def update_home_assistant_with_kubernetes(config: Config):
         0
     ].image = f"homeassistant/home-assistant:{version_to_update_to}"
     apps_v1.patch_namespaced_deployment(
-        config.kubernetes.deployment_name, config.kubernetes.namespace, body=dep
+        config.home_assistant.deployment.name,
+        config.home_assistant.deployment.namespace,
+        body=dep,
     )
 
 
@@ -259,3 +274,13 @@ async def update_home_assistant(config: Config):
     except Exception as error:  # pylint: disable=broad-except
         logging.error(error)
         return {"error": str(error)}, 500
+
+
+async def main():
+    """Main entrypoint for just updating HomeAssistant (standalone)."""
+    config = load_config()
+    await update_home_assistant(config)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

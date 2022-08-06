@@ -18,3 +18,17 @@ home_assistant:
 process:
   user: root
   group: root
+docker:
+  registry:
+    registry_url: https://registry.local
+    auth:
+      username: miguel
+      password: HelloWorld!
+frontend:
+  image_name: registry.local/frontend
+  namespace: home-automation
+  backend_ip_address: 192.168.0.199
+kubernetes:
+  url: https://127.0.0.1:6443
+  insecure_https: true
+  api_key: eyJhbGciOiJSUzI1NiIsImtpZCI6IjR1S1I0TnBJZ3luV0ZTZjNFVVk3SGdqbUR1azR5bmQxN01WUi1SNFpSd1EifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLXBoY2YyIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJmYWQ4NDY5NS05YWMyLTQyYzMtYTkwYS1hYzc3ZTAzNWRiMWIiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6YWRtaW4tdXNlciJ9.vRITe3DUfnsJW0A2kTjWX9920SqfZOc5wXyFY1uySzkTzBoFmSKBU8H2DEk0k2j5GM_Fzp5kjayf-6z_VgSKSIFZljqgQkt6JVYvKGdZ6lVN12FxbPkbrMebITrJMQov9OgTlEFl0nrdeJmq3rnYAmnboYiU4_Ue-77RYQn_-EiztlOj9XwRkW27u9NI_YCohIMALU6Gv9J7LnJx01usu27dH0xtAD8kQoGDR1o8LJE05ftGv4CRF4mcZ39f8r2feC0-75GYRFZWGVd795SDcjcuag0NqZYEKB1U7XOb4Nix2RoHFMlIY1eVIdQLi1PKDxk1FxuwFOj2Onv4rXyNrg
