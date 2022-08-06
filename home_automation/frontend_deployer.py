@@ -6,7 +6,6 @@ import base64
 import json
 import logging
 import re
-import sys
 from typing import List, Tuple
 
 import docker
