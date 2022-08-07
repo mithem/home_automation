@@ -12,4 +12,4 @@ RUN mkdir -p /var/www/html
 RUN cp -r build/* /var/www/html/
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
-CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&  nginx -g 'daemon off;'"]

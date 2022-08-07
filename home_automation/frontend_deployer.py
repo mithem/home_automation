@@ -59,6 +59,18 @@ def _create_new_namespace_if_necessary(config: Config):
 def _get_new_deployment(config: Config) -> klient.V1Deployment:
     tag = _get_image_tag(config)
     _, registry_name = _parse_registry_url(config)
+    env_vars = [
+        klient.V1EnvVar(
+            name="BACKEND_IP_ADDRESS",
+            value=config.frontend.backend_ip_address,
+        ),
+        klient.V1EnvVar(
+            name="HOME_AUTOMATION_VERSION",
+            value=home_automation.VERSION,
+        ),
+    ]
+    if config.heimdall.url:
+        env_vars.append(klient.V1EnvVar(name="HEIMDALL_URL", value=config.heimdall.url))
     return klient.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
@@ -80,12 +92,7 @@ def _get_new_deployment(config: Config) -> klient.V1Deployment:
                             name="frontend",
                             image=tag,
                             ports=[klient.V1ContainerPort(container_port=80)],
-                            env=[
-                                klient.V1EnvVar(
-                                    name="BACKEND_IP_ADDRESS",
-                                    value=config.frontend.backend_ip_address,
-                                )
-                            ],
+                            env=env_vars,
                             liveness_probe=klient.V1Probe(
                                 http_get=klient.V1HTTPGetAction(
                                     path="/status", port=80

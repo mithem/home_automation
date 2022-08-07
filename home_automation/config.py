@@ -620,6 +620,22 @@ class ConfigDocker:
         }
 
 
+class ConfigHeimdall:
+    """Heimdall configuration"""
+
+    url: Optional[str]
+
+    def __init__(self, data: Dict[str, Optional[str]]):
+        self.url = data.get("url")
+
+    def __eq__(self, other) -> bool:
+        return self.url == other.url
+
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dictionary."""
+        return {"url": self.url}
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
@@ -641,6 +657,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     git: ConfigGit
     frontend: ConfigFrontend
     docker: ConfigDocker
+    heimdall: ConfigHeimdall
 
     # opress dangerous default values as that's only dangerous if they are modified
     def __init__(
@@ -663,6 +680,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         git: Dict[str, Union[List[str], str, bool]] = None,
         frontend: Dict[str, Union[str, int]] = None,
         docker: Dict[str, Dict] = None,
+        heimdall: Dict[str, Optional[str]] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -682,6 +700,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.git = ConfigGit(git)
         self.frontend = ConfigFrontend(frontend)
         self.docker = ConfigDocker(docker)
+        self.heimdall = ConfigHeimdall(heimdall)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -709,6 +728,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.git == other.git
             and self.frontend == other.frontend
             and self.docker == other.docker
+            and self.heimdall == other.heimdall
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -736,6 +756,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "git": self.git.to_dict() if self.git else None,
             "frontend": self.frontend.to_dict() if self.frontend else None,
             "docker": self.docker.to_dict() if self.docker else None,
+            "heimdall": self.heimdall.to_dict() if self.heimdall else None,
         }
 
 

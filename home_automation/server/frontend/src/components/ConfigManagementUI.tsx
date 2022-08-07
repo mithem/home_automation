@@ -9,6 +9,7 @@ import {
   revokeGoogleOAuth,
   clearGoogleOAuth,
   requestGoogleOAuth2,
+  restartHomeAutomation,
 } from "../functions";
 import ConfigManagementData from "../models/ConfigManagementData";
 
@@ -68,6 +69,12 @@ export default class ConfigManagementUI extends React.Component<
     });
   }
 
+  restartHomeAutomation() {
+    restartHomeAutomation().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   render() {
     const alert =
       this.state.error !== undefined ? (
@@ -105,6 +112,12 @@ export default class ConfigManagementUI extends React.Component<
           </Button>
           <Button variant="primary" onClick={() => this.clearGoogleOAuth2()}>
             Clear google OAuth2
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => this.restartHomeAutomation()}
+          >
+            Restart
           </Button>
         </Card>
       </div>

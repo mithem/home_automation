@@ -3,11 +3,16 @@ import { useMediaPredicate } from "react-media-hook";
 import { Link } from "react-router-dom";
 import "../style/Navbar.css";
 import ExternalLink from "./ExternalLink";
+import { HEIMDALL_URL } from "../constants";
 
 const Navbar = () => {
   const colorScheme = useMediaPredicate("(prefers-color-scheme: dark)")
     ? "dark"
     : "light";
+  const heimdallLink =
+    HEIMDALL_URL !== "" ? (
+      <ExternalLink target={HEIMDALL_URL} title="Heimdall" />
+    ) : null;
   return (
     <RBNavbar variant={colorScheme}>
       <Container>
@@ -28,7 +33,7 @@ const Navbar = () => {
             <Link className="nav-link" to="/config">
               Config
             </Link>
-            <ExternalLink target="heimdall.mithem.uk" title="Heimdall" />
+            {heimdallLink}
           </Nav>
         </RBNavbar.Collapse>
       </Container>

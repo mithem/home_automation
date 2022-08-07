@@ -221,3 +221,10 @@ export async function clearGoogleOAuth() {
     axiosDefaultConfig
   );
 }
+
+export async function restartHomeAutomation() {
+  await axios.post(
+    BASE_URL + "/api/home_automation/restart",
+    axiosDefaultConfig
+  );
+}

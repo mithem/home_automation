@@ -21,6 +21,7 @@ client_secret.json
 # frontend
 home_automation/server/frontend/node_modules
 home_automation/server/frontend/build
+home_automation/server/frontend/src/constants.ts
 
-#backend
+# backend
 *.db

@@ -1,8 +1,8 @@
 import React from "react";
 
 interface ExternalLinkData {
-  target: String;
-  title: String;
+  target: string;
+  title: string;
   openInCurrentTab?: boolean;
 }
 
@@ -13,7 +13,7 @@ export default class ExternalLink extends React.Component<
   public render() {
     return (
       <a
-        href={"https://" + this.props.target}
+        href={this.props.target}
         className="nav-link"
         target={this.props.openInCurrentTab ? "_self" : "_blank"}
         rel="noopener noreferrer"

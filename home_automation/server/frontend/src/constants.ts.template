@@ -1,0 +1,9 @@
+export const BASE_URL =
+  document.location.protocol +
+  "//" +
+  document.location.hostname +
+  ":" +
+  document.location.port;
+export const refreshInterval = 3 * 1000;
+export const frontendVersion = "${HOME_AUTOMATION_VERSION}";
+export const HEIMDALL_URL = "${HEIMDALL_URL}";

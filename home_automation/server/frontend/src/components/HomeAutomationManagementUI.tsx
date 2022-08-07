@@ -1,6 +1,6 @@
 import React from "react";
 import { Alert, Button, Card } from "react-bootstrap";
-import { refreshInterval } from "../constants";
+import { refreshInterval, frontendVersion } from "../constants";
 import {
   getHomeAutomationManagementData,
   upgradeServer,
@@ -137,12 +137,21 @@ export default class HomeAutomationManagementUI extends React.Component<
         errors.push(<Alert variant="danger">{error.message}</Alert>);
       }
     }
+    let version: string;
+    if (frontendVersion === "" || frontendVersion === undefined) {
+      version = "N/A (missing `HOME_AUTOMATION_VERSION` environment variable)";
+    } else {
+      version = frontendVersion;
+    }
     return (
       <div className="home-automation-management-gui item-list">
         {errors}
         {newHomeAssistantVersionSuccessAlert}
         <Alert variant="secondary" className="version current">
-          <span>Current version: {this.state.version ?? "N/A"}</span>
+          <span>Frontend version: {version}</span>
+        </Alert>
+        <Alert variant="secondary" className="version current">
+          <span>Backend version: {this.state.version ?? "N/A"}</span>
           <Button variant="primary" onClick={() => refreshVersionInfo()}>
             Check for updates
           </Button>
