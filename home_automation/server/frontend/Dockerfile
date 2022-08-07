@@ -4,9 +4,9 @@ RUN mkdir /usr/home_automation_frontend
 COPY . /usr/home_automation_frontend
 WORKDIR /usr/home_automation_frontend
 
-RUN apk add nodejs npm
-RUN npm install
-RUN npm run build
+RUN apk add nodejs yarn
+RUN yarn
+RUN yarn build
 
 RUN mkdir -p /var/www/html
 RUN cp -r build/* /var/www/html/

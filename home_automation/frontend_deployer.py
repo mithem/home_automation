@@ -256,7 +256,10 @@ def build_image(config: Config):
             registry=config.docker.registry.registry_url,
         )
     image, log_stream = client.images.build(
-        path="home_automation/server/frontend", tag=tag, nocache=True
+        path="home_automation/server/frontend",
+        tag=tag,
+        nocache=config.docker.build.no_cache,
+        network_mode=config.docker.build.network,
     )
     for entry in log_stream:
         logging.info(entry.get("stream", entry))

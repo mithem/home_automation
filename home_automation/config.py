@@ -566,25 +566,57 @@ class ConfigDocker:
                 "auth": self.auth.to_dict() if self.auth else None,
             }
 
+    class ConfigDockerBuildConfig:
+        """Configuration for how docker builds images."""
+
+        network: Optional[str]
+        no_cache: bool
+
+        def __init__(self, data: Dict[str, Union[str, bool]]):
+            network = data.get("network")
+            no_cache = data.get("no_cache")
+            if isinstance(network, str):
+                self.network = network
+            else:
+                self.network = None
+            if isinstance(no_cache, bool):
+                self.no_cache = no_cache
+            else:
+                self.no_cache = False
+
+        def __eq__(self, other) -> bool:
+            return self.network == other.network and self.no_cache == other.no_cache
+
+        def to_dict(self) -> Dict[str, Union[Optional[str], bool]]:
+            """Convert to dictionary."""
+            return {
+                "network": self.network,
+                "no_cache": self.no_cache,
+            }
+
     registry: Optional[ConfigDockerRegistry]
+    build: ConfigDockerBuildConfig
 
     def __init__(self, data: Optional[Dict[str, Dict]] = None):
         if not data:
             self.registry = None
+            self.build = ConfigDocker.ConfigDockerBuildConfig({})
             return
         registry = data.get("registry")
         if registry:
             self.registry = ConfigDocker.ConfigDockerRegistry(registry)
         else:
             self.registry = None
+        self.build = ConfigDocker.ConfigDockerBuildConfig(data.get("build", {}))
 
     def __eq__(self, other) -> bool:
-        return self.registry == other.registry
+        return self.registry == other.registry and self.build == other.build
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
             "registry": self.registry.to_dict() if self.registry else None,
+            "build": self.build.to_dict() if self.build else None,
         }
 
 

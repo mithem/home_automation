@@ -65,6 +65,8 @@ frontend:
   replicas: 1
   backend_ip_address: (autodetected) # ip address to reach backend server on (from the frontend pods)
 docker:
+  build:
+    network: (some internal docker network) # may want to use 'host' if docker network environment is misconfigured/restricted
   registry:
     registry_url: <url> # including scheme
     auth:
