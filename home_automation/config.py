@@ -625,13 +625,16 @@ class ConfigHeimdall:
 
     url: Optional[str]
 
-    def __init__(self, data: Dict[str, Optional[str]]):
+    def __init__(self, data: Optional[Dict[str, Optional[str]]] = None):
+        if not data:
+            self.url = None
+            return
         self.url = data.get("url")
 
     def __eq__(self, other) -> bool:
         return self.url == other.url
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> Dict[str, Optional[str]]:
         """Convert to dictionary."""
         return {"url": self.url}
 

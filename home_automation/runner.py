@@ -238,30 +238,9 @@ def run_backend_server(config: haconfig.Config, queue: mp.Queue):
         sys.exit(0)
 
 
-def build_frontend(queue: mp.Queue):
-    """Build the frontend React app (not the backend and don't serve it (that's nginx's job.))."""
-    _configure_log_worker(queue)
-    logger = logging.getLogger("home_automation_frontend")
-    user, group = util.check_current_user()
-    logger.info("Running frontend build as %s / %s", user, group)
-    logger.info("Building frontend.")
-    try:
-        os.system("cd home_automation/server/frontend")
-        if os.path.exists("build"):
-            os.rmdir("build")
-        os.system("yarn build")
-        os.system("script/apply-frontend-build-permissions.py")
-        logger.info("Built frontend.")
-    except (KeyboardInterrupt, _ProcessExit):
-        logger.info("Aborted frontend build.")
-        sys.exit(0)
-
-
-def deploy_frontend(config: haconfig.Config, queue: mp.Queue):
+def deploy_frontend(config: haconfig.Config):
     """Deploy frontend k8s infrastructure."""
-    _configure_log_worker(queue)
-    logger = logging.getLogger("home_automation_frontend")
-    logger.info("Deploying frontend infrastructure...")
+    logging.info("Deploying frontend infrastructure...")
     frontend_deployer.build_and_deploy_frontend(config)
 
 
@@ -281,6 +260,7 @@ def main():
     args = parser.parse_args()
     config_data = haconfig.load_config(args.config)
     setup(config_data)
+    deploy_frontend(config_data)
     queue: mp.Queue = mp.Queue(-1)
     processes = [
         mp.Process(
@@ -311,14 +291,6 @@ def main():
                 queue,
             ),
             name="home_automation.runner.backend",
-        ),
-        mp.Process(
-            target=deploy_frontend,
-            args=(
-                config_data,
-                queue,
-            ),
-            name="home_automation.runner.frontend",
         ),
     ]
     for process in processes:
