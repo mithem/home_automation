@@ -72,4 +72,6 @@ docker:
     auth:
       username: <username>
       password: <password>
+heimdall:
+  url: <url> # including scheme
 ```
