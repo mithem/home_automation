@@ -262,11 +262,15 @@ def build_image(config: Config):
             password=config.docker.registry.auth.password,
             registry=config.docker.registry.registry_url,
         )
+    build_args = {"home_automation_version": home_automation.VERSION}
+    if config.heimdall.url:
+        build_args["heimdall_url"] = config.heimdall.url
     image, log_stream = client.images.build(
         path="home_automation/server/frontend",
         tag=tag,
         nocache=config.docker.build.no_cache,
         network_mode=config.docker.build.network,
+        buildargs=build_args,
     )
     for entry in log_stream:
         logging.info(entry.get("stream", entry))

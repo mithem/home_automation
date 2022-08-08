@@ -137,18 +137,12 @@ export default class HomeAutomationManagementUI extends React.Component<
         errors.push(<Alert variant="danger">{error.message}</Alert>);
       }
     }
-    let version: string;
-    if (frontendVersion === "" || frontendVersion === undefined) {
-      version = "N/A (missing `HOME_AUTOMATION_VERSION` environment variable)";
-    } else {
-      version = frontendVersion;
-    }
     return (
       <div className="home-automation-management-gui item-list">
         {errors}
         {newHomeAssistantVersionSuccessAlert}
         <Alert variant="secondary" className="version current">
-          <span>Frontend version: {version}</span>
+          <span>Frontend version: {frontendVersion}</span>
         </Alert>
         <Alert variant="secondary" className="version current">
           <span>Backend version: {this.state.version ?? "N/A"}</span>

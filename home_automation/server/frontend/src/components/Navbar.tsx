@@ -9,10 +9,6 @@ const Navbar = () => {
   const colorScheme = useMediaPredicate("(prefers-color-scheme: dark)")
     ? "dark"
     : "light";
-  const heimdallLink =
-    HEIMDALL_URL !== "" ? (
-      <ExternalLink target={HEIMDALL_URL} title="Heimdall" />
-    ) : null;
   return (
     <RBNavbar variant={colorScheme}>
       <Container>
@@ -33,7 +29,7 @@ const Navbar = () => {
             <Link className="nav-link" to="/config">
               Config
             </Link>
-            {heimdallLink}
+            <ExternalLink target={HEIMDALL_URL} title="Heimdall" />
           </Nav>
         </RBNavbar.Collapse>
       </Container>
