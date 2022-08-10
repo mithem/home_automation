@@ -2,8 +2,7 @@
 echo Preparing for startup...
 chmod 777 script/*
 sudo mkdir /var/run/home_automation
-sudo chown miguel:miguel /var/run/home_automation
-script/apply-frontend-build-permissions.py
+sudo chown -R miguel:miguel /var/run/home_automation
 echo File-system preps done, installing packages...
 bash script/install-truenas-packages
 script/docker-compose-up.py # necessary for proxy that handles everything (including home_automation)

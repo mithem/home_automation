@@ -1,12 +1,5 @@
 #!/bin/bash
-echo Configuring certificates..
 sudo chmod +x /bin/*
-sudo systemctl stop nginx
-echo "Make sure to forward port 80 to the internet (and vice versa) [press enter when done]"
-read _
-sudo certbot certonly
-echo Configured certificates. You can disable forwarding port 80 to the internet again.
-sudo systemctl start nginx
 sudo systemctl enable --now docker
 script/docker-compose-up.py
 

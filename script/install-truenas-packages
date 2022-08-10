@@ -1,10 +1,9 @@
 #!/bin/bash
 echo "Please enter your password in order for it to be cached for the later commands."
 sudo echo "Thanks!"
-sudo apt-get update && sudo apt-get install -y gh-cli nmap net-tools neovim cmatrix cockpit
+sudo apt-get update && sudo apt-get install -y gh-cli nmap net-tools neovim cmatrix cockpit bluez
 script/install-system-dependencies
 pip3 install -r requirements.txt
 sudo python3 setup.py install &
-bash -c "sudo npm install -g yarn && cd home_automation/server/frontend/ && yarn install" &
 wait
-echo "\n\nHome Automation is now installed. Run python3 -m home_automation.runner in a tmux session or configure the system to run that automatically on startup."
+echo "\n\nInstalled packages."
