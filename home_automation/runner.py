@@ -8,6 +8,7 @@ import signal
 import sys
 import time
 
+import setproctitle
 from crontab import CronTab
 from pid.decorator import pidfile
 from watchdog.events import (
@@ -238,9 +239,13 @@ def run_backend_server(config: haconfig.Config, queue: mp.Queue):
         sys.exit(0)
 
 
-def deploy_frontend(config: haconfig.Config):
+def deploy_frontend(config: haconfig.Config, queue: mp.Queue):
     """Deploy frontend k8s infrastructure."""
-    logging.info("Deploying frontend infrastructure...")
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+    _configure_log_worker(queue)
+    logger = logging.getLogger("home_automation_backend")
+    logger.info("Deploying frontend infrastructure...")
     frontend_deployer.build_and_deploy_frontend(config)
 
 
@@ -248,6 +253,7 @@ def deploy_frontend(config: haconfig.Config):
 def main():
     """Run cron jobs and observe homework dir
     (+ extra dirs and all the other stuff) for changes (blocks permanently)"""
+    setproctitle.setproctitle("home_automation.runner")
     parser = argparse.ArgumentParser()
     # pylint: disable=R0801
     parser.add_argument(
@@ -260,7 +266,6 @@ def main():
     args = parser.parse_args()
     config_data = haconfig.load_config(args.config)
     setup(config_data)
-    deploy_frontend(config_data)
     queue: mp.Queue = mp.Queue(-1)
     processes = [
         mp.Process(
@@ -291,6 +296,11 @@ def main():
                 queue,
             ),
             name="home_automation.runner.backend",
+        ),
+        mp.Process(
+            target=deploy_frontend,
+            args=(config_data, queue),
+            name="home_automation.runner.frontend",
         ),
     ]
     for process in processes:

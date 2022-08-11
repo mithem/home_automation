@@ -242,12 +242,10 @@ def build_image_if_appropriate(config: Config):
     try:
         image: Image = client.images.get(current_tag)
         if not current_tag in image.tags:
-            raise docker.errors.ImageNotFound(
-                f"Image '{config.frontend.image_name}' not found."
-            )
-        logging.info("Image '%s' already found.", config.frontend.image_name)
+            raise docker.errors.ImageNotFound(f"Image '{current_tag}' not found.")
+        logging.info("Image '%s' already found.", current_tag)
     except docker.errors.ImageNotFound:
-        logging.info("Image '%s' not found, building...", config.frontend.image_name)
+        logging.info("Image '%s' not found, building...", current_tag)
         build_image(config)
 
 
