@@ -1,11 +1,17 @@
 #!/bin/bash
 echo Installing the home_automation project...
-sudo cp systemd/home_automation.setup.service /lib/systemd/system/
-sudo cp systemd/home_automation.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-sudo systemctl daemon-reload
+cp systemd/home_automation.setup.service /lib/systemd/system/
+cp systemd/home_automation.service ~/.config/systemd/user/
+systemctl daemon-reload
+if [ $DBUS_SESSION_BUS_ADDRESS != "" ];
+then
+	systemctl --user daemon-reload
+fi
 echo Systemd services are copied and loaded. Enabling and starting...
-systemctl --user enable --now home_automation
 sudo systemctl enable --now home_automation.setup
-loginctl enable-linger "${whoami}"
+if [ $DBUS_SESSION_BUS_ADDRESS != "" ];
+then
+	systemctl --user enable --now home_automation
+	loginctl enable-linger "${whoami}"
+fi
 echo Done
