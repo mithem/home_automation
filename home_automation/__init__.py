@@ -2,4 +2,4 @@
 truenas and related scripts/programs or otherwise useful but maybe unrelated stuff."""
 import os
 
-VERSION="2.1.0"
+VERSION="2.1.1"

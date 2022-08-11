@@ -1,7 +1,5 @@
 [Unit]
 Description=Home Automation Project
-Requires=home_automation.setup.service
-After=home_automation.setup.service
 
 [Service]
 WorkingDirectory=/mnt/FastStorage/mithem-applications/home_automation
