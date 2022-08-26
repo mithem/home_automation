@@ -131,7 +131,7 @@ def start_restart_runner_process():
 def create_app(options=None):  # pylint: disable=too-many-locals, too-many-statements
     """App factory."""
     app = Flask(__name__)
-    state_manager = StateManager(CONFIG.db_path)
+    state_manager = StateManager(CONFIG)
     version_manager = VersionManager(CONFIG)
     start_update_version_info_process(version_manager)
     if options:

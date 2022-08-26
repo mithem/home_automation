@@ -1,7 +1,7 @@
 from setuptools import setup
 import home_automation
 
-VERSION = "2.2.0"
+VERSION = "2.3.0-b1"
 
 with open("home_automation/__init__.py", "r") as f:
     code = f.read()
@@ -52,6 +52,7 @@ requirements = [
     "google-auth-oauthlib",
     "google-auth-httplib2",
     "setproctitle",
+    "redis",
 ]
 
 with open("requirements.txt", "w") as f:

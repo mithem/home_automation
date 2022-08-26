@@ -1,7 +1,9 @@
 log_dir: ./logs
 homework_dir: ./homework
 archive_dir: ./archive
-db_path: ./home_automation.backend.db
+storage:
+  file:
+    path: ./home_automation.backend.db
 compose_file: ~/docker-compose.yml
 moodle_dl_dir: ~/moodle
 email:

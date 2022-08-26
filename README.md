@@ -13,10 +13,17 @@ Required configuration items are left blank (`<value>`), optional ones are popul
 log_dir: <path to log dir>
 homework_dir: <path to homework dir>
 archive_dir: <path to archive dir>
-db_path: <path to backend sqlite db>
 compose_file: docker-compose.yml
 moodle_dl_dir: <path to moodle dir> # dir where moodle-dl will download courses to
 extra_compress_dirs: [] # extra dirs to watch and compress files in when applicable
+storage:
+  file: # either file or redis provider required
+    path: <path to backend sqlite db>
+  redis:
+    host: <host>
+    port: <port>
+    username: (none)
+    password: (none)
 email:
   address: <email>
 home_assistant:

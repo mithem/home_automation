@@ -10,6 +10,7 @@ import git
 import requests
 import semver
 
+from home_automation import constants
 import home_automation.utilities
 from home_automation.config import Config
 from home_automation.server.backend.state_manager import StateManager
@@ -47,7 +48,7 @@ class VersionManager:
     def __init__(self, config: Config):
         global INIT_FILE_URL  # pylint: disable=global-statement
         self.config = config
-        self.state_manager = StateManager(config.db_path)
+        self.state_manager = StateManager(config)
         if testing:
             INIT_FILE_URL = REPO_INIT_FILE_URL
             self.update_version_info()
@@ -75,10 +76,13 @@ class VersionManager:
             "version_available_since": datetime.datetime
         }"""
         data = {}
-        elements = self.state_manager.execute(
-            "SELECT * FROM status WH\
-ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'"
-        )
+        keys = [
+            "home_automation-status-" + key
+            for key in ["version", "versionAvailable", "versionAvailableSince"]
+        ]
+        elements = []
+        for key in keys:
+            elements.append((key, self.state_manager.get_value(key)))
         for elem in elements:
             key = SQL_TO_PYTHON_KEY_NAME.get(elem[0], elem[0])
             value = VersionManager._make_value(key, elem[1])
@@ -105,7 +109,9 @@ ERE key='version' OR key='versionAvailable' OR key='versionAvailableSince'"
 
         logging.info("Updating version info...")
         try:
-            response = requests.get(INIT_FILE_URL, None)
+            response = requests.get(
+                INIT_FILE_URL, None, timeout=constants.NETWORK_CALLS_TIMEOUT
+            )
             text = "\n".join(
                 filter(lambda x: x.startswith("VERSION"), response.text.split("\n"))
             )

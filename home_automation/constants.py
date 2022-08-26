@@ -29,3 +29,5 @@ ABBR_TO_SUBJECT = {
     "SW": "SoWi",
     "SP": "Sport",
 }
+
+NETWORK_CALLS_TIMEOUT = 20

@@ -639,13 +639,124 @@ class ConfigHeimdall:
         return {"url": self.url}
 
 
+class ConfigStorageSQLite:
+    """SQLite storage configuration."""
+
+    path: str
+
+    def __init__(self, data: Optional[Dict[str, str]] = None):
+        if not data:
+            self.path = "home_automation_backend.db"
+            return
+        self.path = data["path"]
+
+    def __eq__(self, other) -> bool:
+        return self.path == other.path
+
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dictionary."""
+        return {"path": self.path}
+
+    def valid(self) -> bool:
+        """Check if configuration is valid."""
+        return bool(self.path)
+
+
+class ConfigStorageRedis:
+    """Redis storage configuration."""
+
+    host: str
+    port: int
+    user: Optional[str]
+    password: Optional[str]
+
+    def __init__(self, data: Dict[str, Union[str, int]]):
+        assert isinstance(data["host"], str)
+        assert isinstance(data["port"], int)
+        user = data.get("user")
+        password = data.get("password")
+        if isinstance(user, str):
+            self.user = user
+        if isinstance(password, str):
+            self.password = password
+        self.host = data["host"]
+        self.port = data["port"]
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.host == other.host
+            and self.port == other.port
+            and self.user == other.user
+            and self.password == other.password
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "host": self.host,
+            "port": self.port,
+            "user": self.user,
+            "password": self.password,
+        }
+
+    def valid(self) -> bool:
+        """Check if configuration is valid."""
+        return bool(self.host) and bool(self.port)
+
+
+class ConfigStorage:
+    """Storage configuration"""
+
+    file: Optional[ConfigStorageSQLite]
+    redis: Optional[ConfigStorageRedis]
+
+    def __init__(self, data: Optional[Dict[str, Dict]] = None):
+        if not data:
+            self.file = ConfigStorageSQLite()
+            self.redis = None
+            return
+        file = data.get("file")
+        if file:
+            self.file = ConfigStorageSQLite(file)
+        else:
+            self.file = None
+        redis = data.get("redis")
+        if redis:
+            self.redis = ConfigStorageRedis(redis)
+        else:
+            self.redis = None
+
+    def __eq__(self, other) -> bool:
+        return self.file == other.file and self.redis == other.redis
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "file": self.file.to_dict() if self.file else None,
+            "redis": self.redis.to_dict() if self.redis else None,
+        }
+
+    def valid(self) -> bool:
+        """Check if configuration is valid."""
+        if self.redis:
+            return self.redis.valid()
+        if self.file:
+            return self.file.valid()
+        return False
+
+    def use_redis(self) -> bool:
+        """Check if redis is used."""
+        if self.redis:
+            return self.redis.valid()
+        return False
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
     log_dir: str
     homework_dir: str
     archive_dir: str
-    db_path: str
     compose_file: str
     extra_compress_dirs: List[str]
     moodle_dl_dir: Optional[str]
@@ -661,6 +772,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     frontend: ConfigFrontend
     docker: ConfigDocker
     heimdall: ConfigHeimdall
+    storage: ConfigStorage
 
     # opress dangerous default values as that's only dangerous if they are modified
     def __init__(
@@ -668,7 +780,6 @@ class Config:  # pylint: disable=too-many-instance-attributes
         log_dir: str,
         homework_dir: str,
         archive_dir: str,
-        db_path: str,
         email: Dict[str, Any],
         compose_file: str = None,
         home_assistant: Dict[str, Any] = None,
@@ -684,11 +795,11 @@ class Config:  # pylint: disable=too-many-instance-attributes
         frontend: Dict[str, Union[str, int]] = None,
         docker: Dict[str, Dict] = None,
         heimdall: Dict[str, Optional[str]] = None,
+        storage: Dict[str, Dict] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
         self.archive_dir = archive_dir
-        self.db_path = db_path
         self.compose_file = compose_file if compose_file else "docker-compose.yml"
         self.moodle_dl_dir = moodle_dl_dir
         self.extra_compress_dirs = extra_compress_dirs if extra_compress_dirs else []
@@ -704,6 +815,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.frontend = ConfigFrontend(frontend)
         self.docker = ConfigDocker(docker)
         self.heimdall = ConfigHeimdall(heimdall)
+        self.storage = ConfigStorage(storage)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -716,7 +828,6 @@ class Config:  # pylint: disable=too-many-instance-attributes
             self.log_dir == other.log_dir
             and self.homework_dir == other.homework_dir
             and self.archive_dir == other.archive_dir
-            and self.db_path == other.db_path
             and self.compose_file == other.compose_file
             and self.moodle_dl_dir == other.moodle_dl_dir
             and self.email == other.email
@@ -732,6 +843,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.frontend == other.frontend
             and self.docker == other.docker
             and self.heimdall == other.heimdall
+            and self.storage == other.storage
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -740,7 +852,6 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "log_dir": self.log_dir,
             "homework_dir": self.homework_dir,
             "archive_dir": self.archive_dir,
-            "db_path": self.db_path,
             "compose_file": self.compose_file,
             "moodle_dl_dir": self.moodle_dl_dir,
             "email": self.email.to_dict() if self.email else None,
@@ -760,6 +871,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "frontend": self.frontend.to_dict() if self.frontend else None,
             "docker": self.docker.to_dict() if self.docker else None,
             "heimdall": self.heimdall.to_dict() if self.heimdall else None,
+            "storage": self.storage.to_dict() if self.storage else None,
         }
 
 

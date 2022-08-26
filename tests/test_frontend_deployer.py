@@ -19,10 +19,10 @@ class ParseRegistryURLTestRun:
             log_dir="",
             homework_dir="",
             archive_dir="",
-            db_path="",
             compose_file="",
             email={},
             docker={"registry": {"registry_url": self.input}},
+            frontend={"backend_ip_address": ""},
         )
         assert fd._parse_registry_url(config) == (self.output[0], self.output[1])
 
@@ -40,10 +40,9 @@ class GetImageTagTestRun:
             log_dir="",
             homework_dir="",
             archive_dir="",
-            db_path="",
             compose_file="",
             email={},
-            frontend={"image_name": self.input},
+            frontend={"image_name": self.input, "backend_ip_address": ""},
         )
         assert fd._get_image_tag(config) == self.output
 
