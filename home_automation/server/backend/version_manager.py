@@ -4,7 +4,7 @@ import datetime
 import re
 import os
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import git
 import requests
@@ -24,11 +24,6 @@ testing = os.environ.get("TESTING", False)
 if int(testing):
     print("Testing mode active!")
     INIT_FILE_URL = TESTING_INIT_FILE_URL
-
-SQL_TO_PYTHON_KEY_NAME = {
-    "versionAvailable": "version_available",
-    "versionAvailableSince": "version_available_since",
-}
 
 
 class RemoteNotFoundError(Exception):
@@ -78,25 +73,28 @@ class VersionManager:
         data = {}
         keys = [
             "home_automation-status-" + key
-            for key in ["version", "versionAvailable", "versionAvailableSince"]
+            for key in ["version", "version_available", "version_available_since"]
         ]
-        elements = []
+        elements: List[Tuple[str, str]] = []
         for key in keys:
-            elements.append((key, self.state_manager.get_value(key)))
-        for elem in elements:
-            key = SQL_TO_PYTHON_KEY_NAME.get(elem[0], elem[0])
-            value = VersionManager._make_value(key, elem[1])
-            data[key] = value
+            value = self.state_manager.get_value(key)
+            if not value:
+                elements.append((key, None))
+            else:
+                elements.append((key, str(value, encoding="utf-8")))
+        for key, value in elements:
+            value = VersionManager._make_value(key, value)
+            data[key.replace("home_automation-status-", "")] = value
         return data
 
     def new_version_available(self) -> Optional[str]:
         """Return any new version available. None if no new version is available."""
         info = self.get_version_info()
-        if not info["version_available"] or not info["version"]:
+        if not info.get("version_available") or not info.get("version"):
             raise ValueError("No version_available or version data.")
-        ver_comp = semver.compare(info["version_available"], info["version"])
+        ver_comp = semver.compare(info.get("version_available"), info.get("version"))
         if ver_comp > 0:
-            return info["version_available"]
+            return info.get("version_available")
         return None
 
     def update_version_info(self):
@@ -104,8 +102,8 @@ class VersionManager:
 
         def fallback():
             self.state_manager.update_status("version", home_automation.VERSION)
-            self.state_manager.update_status("versionAvailable", "")
-            self.state_manager.update_status("versionAvailableSince", "")
+            self.state_manager.update_status("version_available", "")
+            self.state_manager.update_status("version_available_since", "")
 
         logging.info("Updating version info...")
         try:
@@ -133,8 +131,8 @@ class VersionManager:
         version_available = groupd.get("version")
         available_since = datetime.datetime.now().isoformat()
         self.state_manager.update_status("version", home_automation.VERSION)
-        self.state_manager.update_status("versionAvailable", version_available)
-        self.state_manager.update_status("versionAvailableSince", available_since)
+        self.state_manager.update_status("version_available", version_available)
+        self.state_manager.update_status("version_available_since", available_since)
         logging.info("Version available: %s", version_available)
 
     def upgrade_server(self):

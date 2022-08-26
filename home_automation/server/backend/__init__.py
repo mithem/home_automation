@@ -285,22 +285,25 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     def home_automation_state():
         try:
             info = version_manager.get_version_info()
-            if not info["version_available"] or not info["version"]:
+            if not info.get("version_available") or not info.get("version"):
                 raise ValueError("No version_available or version data.")
-            ver_comp = semver.compare(info["version_available"], info["version"])
+            ver_comp = semver.compare(
+                info.get("version_available"), info.get("version")
+            )
             if ver_comp > 0:
                 return {
-                    "version": info["version"],
+                    "version": info.get("version"),
                     "available": {
-                        "version": info["version_available"],
-                        "availableSince": info["version_available_since"],
+                        "version": info.get("version_available"),
+                        "availableSince": info.get("version_available_since"),
                     },
                 }
-            return {"version": info["version"]}
+            return {"version": info.get("version")}
         except ValueError as err:
             logging.info(err)
-            return {"version": info["version"]}
-        except Exception:  # pylint: disable=broad-except
+            return {"version": info.get("version")}
+        except Exception as err:  # pylint: disable=broad-except
+            logging.error(err)
             return {}, 500
 
     @app.route("/api/home_automation/versioninfo/refresh", methods=["POST"])
