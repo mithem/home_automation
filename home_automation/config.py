@@ -677,8 +677,12 @@ class ConfigStorageRedis:
         password = data.get("password")
         if isinstance(user, str):
             self.user = user
+        else:
+            self.user = None
         if isinstance(password, str):
             self.password = password
+        else:
+            self.password = None
         self.host = data["host"]
         self.port = data["port"]
 
