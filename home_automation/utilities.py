@@ -12,15 +12,15 @@ from kubernetes import client as klient
 
 from home_automation import config as haconfig
 
-CONFIG = haconfig.load_config()
 
-
-def send_mail(credentials: Credentials, subject: str, body: str = ""):
+def send_mail(
+    config: haconfig.Config, credentials: Credentials, subject: str, body: str = ""
+):
     """Send mail now."""
     gmail = build("gmail", "v1", credentials=credentials)
     message = MIMEText(body)
-    message["To"] = CONFIG.email.address
-    message["From"] = CONFIG.email.address
+    message["To"] = config.email.address
+    message["From"] = config.email.address
     message["Subject"] = subject
     encoded = base64.urlsafe_b64encode(message.as_bytes()).decode()
     payload = {"raw": encoded}
@@ -34,7 +34,7 @@ def check_for_root_privileges() -> bool:
     return os.getuid() == 0
 
 
-def drop_privileges(logger: logging.Logger = None):
+def drop_privileges(config: haconfig.Config, logger: logging.Logger = None):
     """Drop root privileges for those of the user & group
     specified in env-values `HOME_AUTOMATION_USER` & `HOME_AUTOMATION_GROUP`.
 
@@ -42,7 +42,7 @@ def drop_privileges(logger: logging.Logger = None):
     - OSError (error setting uid & gid)"""
     if logger:
         logger.info("Dropping privileges")
-    if not CONFIG.process:
+    if not config.process:
         return
     if not check_for_root_privileges():
         return
@@ -52,8 +52,8 @@ def drop_privileges(logger: logging.Logger = None):
     # only the first error will actually be thrown, though
     errors = []
 
-    target_username = CONFIG.process.user
-    target_group = CONFIG.process.group
+    target_username = config.process.user
+    target_group = config.process.group
 
     current_uid = os.getuid()
     current_gid = os.getgid()

@@ -95,7 +95,7 @@ def _logging_listener(config: haconfig.Config, queue: mp.Queue):
             logger.handle(record)
 
     try:
-        util.drop_privileges()
+        util.drop_privileges(config)
         signal.signal(signal.SIGINT, _signal_handler)
         signal.signal(signal.SIGTERM, _signal_handler)
         _configure_log_listener(config)
@@ -134,7 +134,7 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
     signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_cron")
-    util.drop_privileges(logger)
+    util.drop_privileges(config, logger)
     user, group = util.check_current_user()
     logger.info("Running cron jobs as %s / %s", user, group)
     if config.runner:
@@ -199,7 +199,7 @@ def run_watchdog(config: haconfig.Config, queue: mp.Queue):
     signal.signal(signal.SIGTERM, _signal_handler)
     _configure_log_worker(queue)
     logger = logging.getLogger("home_automation_runner_watchdog")
-    util.drop_privileges(logger)
+    util.drop_privileges(config, logger)
     user, group = util.check_current_user()
     logger.info("Running watchdog as %s / %s", user, group)
     event_handler = _WatchdogEventHandler()

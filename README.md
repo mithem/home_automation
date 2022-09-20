@@ -81,4 +81,7 @@ docker:
       password: <password>
 heimdall:
   url: <url> # including scheme
+admin: # optional. When given, config file will be made accessible to this user only
+  user: <username>
+  password: <password>
 ```

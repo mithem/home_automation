@@ -10,8 +10,10 @@ import git
 import requests
 import semver
 
+import home_automation
+import home_automation.config
 from home_automation import constants
-import home_automation.utilities
+from home_automation import utilities
 from home_automation.config import Config
 from home_automation.server.backend.state_manager import StateManager
 
@@ -165,6 +167,9 @@ class VersionManager:
         logging.info("Pulling from remote%s: %s", plural, remotes_str)
         for remote in remotes:
             repo.git.pull(remote.name, branch)
+        home_automation.config.execute_privileged_shell_command(
+            self.config, "script/install"
+        )
         os.system("bash script/restart-runner &")
 
     def auto_upgrade(self):
@@ -179,7 +184,8 @@ class VersionManager:
     def inform_user_of_upgrade(self):
         """Inform user via mail about upgrading to new version."""
         version_available = self.get_version_info()["version_available"]
-        home_automation.utilities.send_mail(
+        utilities.send_mail(
+            self.config,
             "Home Automation - VersionManager",
             f"Home Automation will now update to {version_available}",
         )

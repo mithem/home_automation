@@ -79,6 +79,9 @@ class TestConfig:
             cron_user: 'user'
         frontend:
             backend_ip_address: 192.168.0.1
+        admin:
+            user: "admin"
+            password: "admin"
         """
 
         expected = Config(
@@ -99,6 +102,7 @@ class TestConfig:
             runner={"cron_user": "user"},
             storage={"file": {"path": "./home_automation.backend.db"}},
             frontend={"backend_ip_address": "192.168.0.1"},
+            admin={"user": "admin", "password": "admin"},
         )
 
         result = parse_config(config)

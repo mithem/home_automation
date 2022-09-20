@@ -1,5 +1,6 @@
 """Everything to do with configuration."""
 import os
+import pwd
 import socket as socketlib
 from typing import Any, Dict, List, Optional, Union
 
@@ -755,6 +756,31 @@ class ConfigStorage:
         return False
 
 
+class ConfigAdminPermissions:
+    """Admin permissions configuration."""
+
+    user: Optional[str]
+    password: Optional[str]
+
+    def __init__(self, data: Dict[Optional[str], Optional[str]] = None):
+        if data:
+            self.user = data.get("user")
+            self.password = data.get("password")
+        else:
+            self.user = None
+            self.password = None
+
+    def __eq__(self, other) -> bool:
+        return self.user == other.user and self.password == other.password
+
+    def to_dict(self) -> Dict[Optional[str], Optional[str]]:
+        """Convert to dictionary."""
+        return {"user": self.user, "password": self.password}
+
+    def __str__(self):
+        return f"AdminPermissions(user='{self.user}', password=******)"
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
@@ -777,6 +803,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     docker: ConfigDocker
     heimdall: ConfigHeimdall
     storage: ConfigStorage
+    admin: ConfigAdminPermissions
 
     # opress dangerous default values as that's only dangerous if they are modified
     def __init__(
@@ -800,6 +827,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         docker: Dict[str, Dict] = None,
         heimdall: Dict[str, Optional[str]] = None,
         storage: Dict[str, Dict] = None,
+        admin: Dict[Optional[str], Optional[str]] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -820,6 +848,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.docker = ConfigDocker(docker)
         self.heimdall = ConfigHeimdall(heimdall)
         self.storage = ConfigStorage(storage)
+        self.admin = ConfigAdminPermissions(admin)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -848,6 +877,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.docker == other.docker
             and self.heimdall == other.heimdall
             and self.storage == other.storage
+            and self.admin == other.admin
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -876,6 +906,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "docker": self.docker.to_dict() if self.docker else None,
             "heimdall": self.heimdall.to_dict() if self.heimdall else None,
             "storage": self.storage.to_dict() if self.storage else None,
+            "admin": self.admin.to_dict() if self.admin else None,
         }
 
 
@@ -888,10 +919,31 @@ def load_config(path: Optional[str] = None) -> Config:
     if not path:
         path = "home_automation.conf.yml"
     with open(path, "r", encoding="utf-8") as file_obj:
-        return parse_config(file_obj.read())
+        config = parse_config(file_obj.read())
+        apply_config_file_permissions(path, config)
+        return config
+
+
+def apply_config_file_permissions(path: str, config: Config) -> None:
+    """Apply the config file permissions in order to not leak the root password."""
+    if config.admin:
+        if config.admin.user:
+            gid = pwd.getpwnam(config.admin.user).pw_gid
+            execute_privileged_shell_command(
+                config, f"chown '{config.admin.user}':'{gid}' '{path}'"
+            )
+            execute_privileged_shell_command(config, f"sudo -Sp '' chmod 110 '{path}'")
 
 
 def parse_config(config: str) -> Config:
     """Parse config from string and return it."""
     data = yaml.safe_load(config)
     return Config(**data)
+
+
+# not really appropriate here, but there's a circular import
+# when putting it in either utilities or home_automation(.__init__)
+def execute_privileged_shell_command(config: Config, command: str):
+    """Execute the specified command as root."""
+    escaped_command = command.replace('"', "'")
+    os.system(f"echo '{config.admin.password}' | sudo -Sp '' \"{escaped_command}\"")
