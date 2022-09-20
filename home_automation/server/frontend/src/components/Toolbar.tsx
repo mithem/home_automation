@@ -4,7 +4,7 @@ import {
   composePull,
   composeUp,
   composeDown,
-  dockerStatus,
+  getStatus,
   dockerPrune,
 } from "../functions";
 import DockerComposeStatusDescription from "./DockerComposeStatusDescription";
@@ -35,12 +35,19 @@ export default class Toolbar extends React.Component<
   async getDockerStatus() {
     if (!this.state.loading) {
       this.setState({ loading: true });
-      dockerStatus()
+      getStatus()
         .then((state) => {
-          this.setState(state);
-          this.setState({ loading: false });
+          this.setState({
+            pulling: state.pulling,
+            upping: state.upping,
+            downing: state.downing,
+            pruning: state.pruning,
+            loading: false,
+          });
         })
-        .catch((_) => {});
+        .catch((_) => {
+          this.setState({ loading: false });
+        });
     }
   }
   runCatchingExceptions(f: CallableFunction) {

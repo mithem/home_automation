@@ -3,4 +3,4 @@ truenas and related scripts/programs or otherwise useful but maybe unrelated stu
 import os
 from home_automation.config import Config
 
-VERSION = "2.4.0-b1"
+VERSION = "2.4.0-b2"

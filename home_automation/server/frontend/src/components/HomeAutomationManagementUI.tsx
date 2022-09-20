@@ -8,6 +8,7 @@ import {
   upgradeHomeAssistant,
   compress,
   archive,
+  getStatus,
 } from "../functions";
 import HomeAutomationManagementData from "../models/HomeAutomationManagementData";
 
@@ -28,6 +29,14 @@ export default class HomeAutomationManagementUI extends React.Component<
       upgradeServerError: undefined,
       newHomeAssistantVersion: undefined,
       otherError: undefined,
+      status: {
+        pulling: false,
+        upping: false,
+        downing: false,
+        pruning: false,
+        building_frontend_image: false,
+        pushing_frontend_image: false,
+      },
     };
     this.timerID = undefined;
   }
@@ -55,6 +64,9 @@ export default class HomeAutomationManagementUI extends React.Component<
           versionAvailableFetchingError: error as Error,
         });
       });
+    getStatus().then((status) => {
+      this.setState({ status: status });
+    });
   }
 
   upgradeServer() {
@@ -126,6 +138,16 @@ export default class HomeAutomationManagementUI extends React.Component<
           {this.state.newHomeAssistantVersion ?? "(N/A)"}!
         </Alert>
       ) : null;
+    const specialStatus = this.state.status.building_frontend_image
+      ? "Building frontend image"
+      : this.state.status.pushing_frontend_image
+      ? "Pushing frontend image"
+      : null;
+    const specialStatusAlert = specialStatus ? (
+      <Alert variant="info" className="">
+        {specialStatus}
+      </Alert>
+    ) : null;
     const errors = [];
     for (const error of [
       this.state.versionAvailableFetchingError,
@@ -150,6 +172,7 @@ export default class HomeAutomationManagementUI extends React.Component<
             Check for updates
           </Button>
         </Alert>
+        {specialStatusAlert}
         {newVersionAvailableAlert}
         <Card>
           <Card.Body>

@@ -9,7 +9,14 @@ import home_automation
 from home_automation import config as haconfig
 
 CONFIG = haconfig.load_config()
-STATUS_KEYS = ["pulling", "upping", "downing", "pruning"]
+STATUS_KEYS = [
+    "pulling",
+    "upping",
+    "downing",
+    "pruning",
+    "building_frontend_image",
+    "pushing_frontend_image",
+]
 
 STATUS_DEFAULT_VALUES = [
     ("pulling", False),
@@ -21,6 +28,8 @@ STATUS_DEFAULT_VALUES = [
     ("versionAvailableSince", ""),
     ("testingInitfileVersion", ""),
     ("test_email_pending", False),
+    ("building_frontend_image", False),
+    ("pushing_frontend_image", False),
 ]
 
 OAUTH2_DEFAULT_VALUES = [("access_token", "")]
@@ -260,7 +269,9 @@ ERE key=:key",
             "pulling": bool,
             "upping": bool,
             "downing": bool,
-            "pruning": bool
+            "pruning": bool,
+            "building_frontend_image": bool,
+            "pushing_frontend_image": bool
         }
         """
         if self.rsdb:

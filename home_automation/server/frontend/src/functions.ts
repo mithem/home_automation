@@ -3,6 +3,7 @@ import axios from "axios";
 import HomeAutomationManagementData from "./models/HomeAutomationManagementData";
 import DockerContainerData from "./models/DockerContainerData";
 import DockerVolumeListData from "./models/DockerVolumeListData";
+import HomeAutomationStatus from "./components/HomeAutomationStatus";
 
 const axiosDefaultConfig = {
   // for axios to handle the response as a response (not an error) when the status code isn't 2xx
@@ -69,17 +70,12 @@ export async function composeDown() {
   return res.status === 202;
 }
 
-export async function dockerStatus() {
+export async function getStatus() {
   const response = await axios.get(
     BASE_URL + "/api/status",
     axiosDefaultConfig
   );
-  return response.data as {
-    pulling: boolean;
-    upping: boolean;
-    downing: boolean;
-    pruning: boolean;
-  };
+  return response.data as HomeAutomationStatus;
 }
 
 export async function dockerPrune() {

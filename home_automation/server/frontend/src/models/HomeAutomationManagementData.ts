@@ -1,3 +1,5 @@
+import HomeAutomationStatus from "../components/HomeAutomationStatus";
+
 export default interface HomeAutomationManagementData {
   version?: string;
   available?: VersionAvailable;
@@ -6,6 +8,7 @@ export default interface HomeAutomationManagementData {
   homeAssistantUpdateError?: Error;
   upgradeServerError?: Error;
   otherError?: Error;
+  status: HomeAutomationStatus;
 }
 
 interface VersionAvailable {
