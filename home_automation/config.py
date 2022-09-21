@@ -945,5 +945,4 @@ def parse_config(config: str) -> Config:
 # when putting it in either utilities or home_automation(.__init__)
 def execute_privileged_shell_command(config: Config, command: str):
     """Execute the specified command as root."""
-    escaped_command = command.replace('"', "'")
-    os.system(f"echo '{config.admin.password}' | sudo -Sp '' \"{escaped_command}\"")
+    os.system(f"echo '{config.admin.password}' | sudo -Sp '' {command}")

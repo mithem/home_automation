@@ -253,7 +253,7 @@ def build_image_if_appropriate(config: Config):
 def build_image(config: Config):
     """Build the frontend image."""
     state_manager = StateManager(config)
-    state_manager.update_status("building_frontend_image", True)
+    state_manager.update_status("building_frontend_image", 1)
     tag = _get_image_tag(config)
     logging.info("Building frontend image under '%s'...", tag)
     client = docker.from_env()
@@ -287,9 +287,9 @@ def build_image(config: Config):
         for tag in prod_tags:
             image.tag(tag)
     logging.info("Built image.")
-    state_manager.update_status("building_frontend_image", False)
+    state_manager.update_status("building_frontend_image", 0)
     logging.info("Pushing image '%s' to registry...", tag)
-    state_manager.update_status("pushing_frontend_image", True)
+    state_manager.update_status("pushing_frontend_image", 1)
     results_str = client.images.push(tag)
     if not version.prerelease:
         for tag in prod_tags:
@@ -307,7 +307,7 @@ def build_image(config: Config):
         logging.error("Error pushing image: %s", error)
         raise Exception(error)
     logging.info("Pushed image.")
-    state_manager.update_status("pushing_frontend_image", False)
+    state_manager.update_status("pushing_frontend_image", 0)
 
 
 def deployonly_frontend(config: Config):

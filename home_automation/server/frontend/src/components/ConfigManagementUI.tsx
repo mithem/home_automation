@@ -10,6 +10,8 @@ import {
   clearGoogleOAuth,
   requestGoogleOAuth2,
   restartHomeAutomation,
+  buildFrontend,
+  deployFrontend,
 } from "../functions";
 import ConfigManagementData from "../models/ConfigManagementData";
 
@@ -75,6 +77,18 @@ export default class ConfigManagementUI extends React.Component<
     });
   }
 
+  buildFrontend() {
+    buildFrontend().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
+  deployFrontend() {
+    deployFrontend().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   render() {
     const alert =
       this.state.error !== undefined ? (
@@ -118,6 +132,12 @@ export default class ConfigManagementUI extends React.Component<
             onClick={() => this.restartHomeAutomation()}
           >
             Restart
+          </Button>
+          <Button variant="primary" onClick={this.buildFrontend}>
+            Build frontend
+          </Button>
+          <Button variant="primary" onClick={this.deployFrontend}>
+            Deploy frontend
           </Button>
         </Card>
       </div>

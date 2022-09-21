@@ -1,4 +1,5 @@
 """Just some utilities, especially regarding mailing."""
+import argparse
 import base64
 import grp
 import logging
@@ -71,11 +72,13 @@ def drop_privileges(config: haconfig.Config, logger: logging.Logger = None):
         target_gid = current_gid
 
     try:
-        os.setuid(target_uid)
+        # first set group, then user as doing otherwise
+        # doesn't permit new non-root user to set group
+        os.setgid(target_gid)
     except OSError as err:
         errors.append(err)
     try:
-        os.setgid(target_gid)
+        os.setuid(target_uid)
     except OSError as err:
         errors.append(err)
 
@@ -109,3 +112,17 @@ def get_k8s_client(config: haconfig.Config) -> klient.ApiClient:
     konfig.verify_ssl = not config.kubernetes.insecure_https
     konfig.api_key = {"authorization": f"Bearer {config.kubernetes.api_key}"}
     return klient.ApiClient(konfig)
+
+
+def argparse_add_argument_for_config_file_path(
+    parser: argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Add an argument for the config file path to the specified parser."""
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default="/etc/home_automation/config.yaml",
+        help="Path to the config file.",
+    )
+    return parser

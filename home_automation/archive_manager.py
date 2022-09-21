@@ -287,12 +287,8 @@ def main(arguments: Optional[Sequence[str]] = None):
         action="store_true",
         help="verbose mode (additional logging (to stdout))",
     )
-    parser.add_argument(
-        "--config",
-        "-c",
-        type=str,
-        default=None,
-        help="path to config file (default='home_automation.conf.yml')",
+    parser = home_automation.utilities.argparse_add_argument_for_config_file_path(
+        parser
     )
     args = parser.parse_args(arguments)
     config_data = haconfig.load_config(path=args.config)

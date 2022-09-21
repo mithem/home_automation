@@ -2,12 +2,11 @@
 
 Yes, I absolutely couldn't use Portainer!
 (Well, I use it but this has more requirements.)"""
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Dict
 import json
 import os
 import time
 import multiprocessing as mp
-import re
 
 import logging
 import semver
@@ -21,9 +20,6 @@ from docker.errors import NotFound as ContainerNotFound, DockerException, APIErr
 from google.auth.transport.requests import Request
 import google.auth.exceptions
 from google.oauth2.credentials import Credentials
-import google_auth_oauthlib.flow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 from home_automation import config as haconfig
 from home_automation import archive_manager, compression_manager
@@ -32,6 +28,7 @@ from home_automation.server.backend.version_manager import VersionManager
 import home_automation.utilities
 import home_automation.home_assistant_updater
 from home_automation.server.backend import oauth2_helpers
+from home_automation import frontend_deployer
 
 
 class ServerAPIError(Exception):
@@ -124,6 +121,26 @@ def start_restart_runner_process():
     """Start restart process, nonblocking."""
     process = mp.Process(
         target=restart_runner_exec, name="home_automation.runner.restart_runner"
+    )
+    process.start()
+
+
+def start_frontend_build_process():
+    """Start frontend build process, nonblocking."""
+    process = mp.Process(
+        target=frontend_deployer.build_image,
+        name="home_automation.runner.build_frontend",
+        args=(CONFIG,),
+    )
+    process.start()
+
+
+def start_frontend_deploy_process():
+    """Start frontend deploy process, nonblocking."""
+    process = mp.Process(
+        target=frontend_deployer.build_and_deploy_frontend,
+        name="home_automation.runner.deploy_frontend",
+        args=(CONFIG,),
     )
     process.start()
 
@@ -457,6 +474,16 @@ use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_
     @app.route("/api/home_automation/oauth2/google/clear", methods=["DELETE"])
     def clear_google_oauth2_credentials():
         oauth2_helpers.clear_credentials(state_manager)
-        return ("", 204)
+        return "", 204
+
+    @app.route("/api/home_automation/frontend/build", methods=["POST"])
+    def build_frontend():
+        start_frontend_build_process()
+        return "", 202
+
+    @app.route("/api/home_automation/frontend/deploy", methods=["POST"])
+    def deploy_frontend():
+        start_frontend_deploy_process()
+        return "", 202
 
     return app

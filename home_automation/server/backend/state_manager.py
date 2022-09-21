@@ -8,7 +8,6 @@ import redis
 import home_automation
 from home_automation import config as haconfig
 
-CONFIG = haconfig.load_config()
 STATUS_KEYS = [
     "pulling",
     "upping",
@@ -144,6 +143,8 @@ ERE key=:key",
 
     def update_status(self, key: str, status):
         """Change the status of the dictionary-like key-value pair."""
+        if isinstance(status, int):
+            status = int(status)
         if self.rsdb:
             self._update_status_redis(key, status)
         else:
@@ -259,7 +260,11 @@ ERE key=:key",
         data = {}
         for key in STATUS_KEYS:
             new_key = "home_automation-status-" + key
-            data[key] = self.rsdb.get(new_key)
+            value = self.rsdb.get(new_key)
+            if value:
+                data[key] = bool(int(value))
+            else:
+                data[key] = None
         return data
 
     def get_status(self):

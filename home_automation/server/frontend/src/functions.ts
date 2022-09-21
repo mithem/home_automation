@@ -14,23 +14,35 @@ const axiosDefaultConfig = {
 };
 
 export async function stopContainer(container: string) {
-  const res = await axios.post(BASE_URL + "/api/containers/stop", {
-    container: container,
-  });
+  const res = await axios.post(
+    BASE_URL + "/api/containers/stop",
+    {
+      container: container,
+    },
+    axiosDefaultConfig
+  );
   return res.status === 200;
 }
 
 export async function startContainer(container: string) {
-  const res = await axios.post(BASE_URL + "/api/containers/start", {
-    container: container,
-  });
+  const res = await axios.post(
+    BASE_URL + "/api/containers/start",
+    {
+      container: container,
+    },
+    axiosDefaultConfig
+  );
   return res.status === 200;
 }
 
 export async function removeContainer(container: string) {
-  const res = await axios.post(BASE_URL + "/api/containers/remove", {
-    container: container,
-  });
+  const res = await axios.post(
+    BASE_URL + "/api/containers/remove",
+    {
+      container: container,
+    },
+    axiosDefaultConfig
+  );
   return res.status === 200;
 }
 
@@ -79,20 +91,26 @@ export async function getStatus() {
 }
 
 export async function dockerPrune() {
-  const response = await axios.delete(BASE_URL + "/api/prune");
+  const response = await axios.delete(
+    BASE_URL + "/api/prune",
+    axiosDefaultConfig
+  );
   return response.status === 202;
 }
 
 export async function getHomeAutomationManagementData() {
   const response = await axios.get(
-    BASE_URL + "/api/home_automation/versioninfo"
+    BASE_URL + "/api/home_automation/versioninfo",
+    axiosDefaultConfig
   );
   return response.data as HomeAutomationManagementData;
 }
 
 export async function refreshVersionInfo() {
   const response = await axios.post(
-    BASE_URL + "/api/home_automation/versioninfo/refresh"
+    BASE_URL + "/api/home_automation/versioninfo/refresh",
+    null,
+    axiosDefaultConfig
   );
   return response.status === 202;
 }
@@ -100,6 +118,7 @@ export async function refreshVersionInfo() {
 export async function upgradeServer() {
   const response = await axios.post(
     BASE_URL + "/api/home_automation/upgrade",
+    null,
     axiosDefaultConfig
   );
   if (response.status >= 400) {
@@ -143,6 +162,7 @@ export async function testingSetVersionAvailable() {
 export async function testingInitiateAutoUpgrade() {
   const response = await axios.post(
     BASE_URL + "/api/home_automation/autoupgrade",
+    null,
     axiosDefaultConfig
   );
   return response.status === 202;
@@ -151,6 +171,7 @@ export async function testingInitiateAutoUpgrade() {
 export async function upgradeHomeAssistant() {
   const response = await axios.post(
     BASE_URL + "/api/update-home-assistant",
+    null,
     axiosDefaultConfig
   );
   if (response.status >= 400) {
@@ -181,15 +202,15 @@ export async function forceHomeAssistantUpdate(forcedVersion: string) {
 }
 
 export async function compress() {
-  await axios.post(BASE_URL + "/api/compress", axiosDefaultConfig);
+  await axios.post(BASE_URL + "/api/compress", null, axiosDefaultConfig);
 }
 
 export async function archive() {
-  await axios.post(BASE_URL + "/api/archive", axiosDefaultConfig);
+  await axios.post(BASE_URL + "/api/archive", null, axiosDefaultConfig);
 }
 
 export async function reloadConfig() {
-  await axios.post(BASE_URL + "/api/config/reload", axiosDefaultConfig);
+  await axios.post(BASE_URL + "/api/config/reload", null, axiosDefaultConfig);
 }
 
 export function requestGoogleOAuth2() {
@@ -198,7 +219,7 @@ export function requestGoogleOAuth2() {
 
 export async function sendTestMail() {
   try {
-    await axios.post(BASE_URL + "/api/mail/test", axiosDefaultConfig);
+    await axios.post(BASE_URL + "/api/mail/test", null, axiosDefaultConfig);
   } catch (e) {
     requestGoogleOAuth2();
   }
@@ -207,6 +228,7 @@ export async function sendTestMail() {
 export async function revokeGoogleOAuth() {
   await axios.post(
     BASE_URL + "/api/home_automation/oauth2/google/revoke",
+    null,
     axiosDefaultConfig
   );
 }
@@ -221,6 +243,23 @@ export async function clearGoogleOAuth() {
 export async function restartHomeAutomation() {
   await axios.post(
     BASE_URL + "/api/home_automation/restart",
+    null,
+    axiosDefaultConfig
+  );
+}
+
+export async function buildFrontend() {
+  await axios.post(
+    BASE_URL + "/api/home_automation/frontend/build",
+    null,
+    axiosDefaultConfig
+  );
+}
+
+export async function deployFrontend() {
+  await axios.post(
+    BASE_URL + "/api/home_automation/frontend/deploy",
+    null,
     axiosDefaultConfig
   );
 }

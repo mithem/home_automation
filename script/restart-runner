@@ -1,2 +1,2 @@
 #!/bin/bash
-systemctl --user restart home_automation
+systemctl restart home_automation

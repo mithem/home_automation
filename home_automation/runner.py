@@ -44,12 +44,18 @@ class _ProcessExit(Exception):
 
 
 class _WatchdogEventHandler(FileSystemEventHandler):
+    config: haconfig.Config
+
+    def __init__(self, config: haconfig.Config):
+        super().__init__()
+        self.config = config
+
     def act(self):  # pylint: disable=R0102
         """React to a event triggering compression of HOMEWORK_DIR"""
         # this is so much simpler than observing file size over time
         # or implementing inotify etc. and does the job just fine
         time.sleep(5)
-        compression_manager.run_main()
+        compression_manager.run_compress(self.config)
 
     def dispatch(self, event):
         event_types = [
@@ -202,7 +208,7 @@ def run_watchdog(config: haconfig.Config, queue: mp.Queue):
     util.drop_privileges(config, logger)
     user, group = util.check_current_user()
     logger.info("Running watchdog as %s / %s", user, group)
-    event_handler = _WatchdogEventHandler()
+    event_handler = _WatchdogEventHandler(config)
     observer = WatchdogObserver()
     observer.schedule(event_handler, config.homework_dir, True)
     extra_dirs = config.extra_compress_dirs if config.extra_compress_dirs else []

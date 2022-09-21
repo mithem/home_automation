@@ -2,15 +2,18 @@
 import argparse
 import asyncio
 import os
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 import fileloghelper
+
 from home_automation import config as haconfig
-from home_automation.constants import ABBR_TO_SUBJECT
+from home_automation import utilities
 from home_automation.compression_middleware import (
-    ChangeStatusInThingsMiddleware, CompressionMiddleware,
-    FlashLightsInHomeAssistantMiddleware
+    ChangeStatusInThingsMiddleware,
+    CompressionMiddleware,
+    FlashLightsInHomeAssistantMiddleware,
 )
+from home_automation.constants import ABBR_TO_SUBJECT
 
 BLACKLIST = ["@eaDir"]
 BLACKLIST_BEGINNINGS = ["Scan ", ".", "_", "Scanned Document"]
@@ -25,14 +28,16 @@ class LoopBreakingException(Exception):
 
 class CompressionManager:
     """Manages compressing files."""
+
     logger: fileloghelper.Logger
     config: haconfig.Config
     debug: bool
     middleware: List[CompressionMiddleware]
 
     def __init__(self, config: haconfig.Config, debug=False, testing=False):
-        self.logger = fileloghelper.Logger(os.path.join(
-            LOG_DIR, "compression_manager.log"), autosave=debug)
+        self.logger = fileloghelper.Logger(
+            os.path.join(LOG_DIR, "compression_manager.log"), autosave=debug
+        )
         self.config = config
         if not testing:
             # introduces weird fomatting in pytest
@@ -78,10 +83,12 @@ class CompressionManager:
     def file_should_be_skipped(self, path: str, fname: str, dirlist: List[str]):
         """Decide, whether file should be skipped.
         Deal with logging and return True/False respectively."""
+
         def skip(path: str):
             self.logger.debug(
                 f"Skipping {path} as it doesn't qualify for \
-                            compression")
+                            compression"
+            )
 
         if fname in BLACKLIST or fname + ".small.pdf" in dirlist:
             skip(path)
@@ -107,15 +114,15 @@ class CompressionManager:
     async def apply_middleware(self, path: str):
         """Let all middleware act on `path`."""
         for middleware in self.middleware:
-            task = asyncio.create_task(
-                middleware.act(path))
+            task = asyncio.create_task(middleware.act(path))
             if self.debug:
                 self.logger.debug(
                     "Invoking middleware: '"
                     + middleware.__class__.__name__
                     + "' for '"
                     + path
-                    + "'")
+                    + "'"
+                )
             try:
                 await task
             except Exception as error:  # pylint: disable=broad-except
@@ -148,8 +155,9 @@ class CompressionManager:
         """Register a new `CompressionMiddleware` to be called whenever a new file gets compressed.
         Required to be actually useful."""
         self.middleware.append(middleware)
-        self.logger.info("Registered middleware "
-                         + f"'{middleware.__class__.__name__}'", self.debug)
+        self.logger.info(
+            "Registered middleware " + f"'{middleware.__class__.__name__}'", self.debug
+        )
 
 
 async def main(arguments: Union[str, List[str]] = None):
@@ -157,10 +165,8 @@ async def main(arguments: Union[str, List[str]] = None):
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", "-v",
-                        action="store_true", help="verbose mode")
-    parser.add_argument("--config", "-c", type=str, default=None,
-                        help="path to config file (default='home_automation.conf.yml')")
+    parser.add_argument("--verbose", "-v", action="store_true", help="verbose mode")
+    parser = utilities.argparse_add_argument_for_config_file_path(parser)
     args = parser.parse_args(arguments)
     config = haconfig.load_config(args.config)
     await compress(config)
@@ -177,7 +183,7 @@ async def compress(config: Optional[haconfig.Config] = None):
 
     middleware = [
         FlashLightsInHomeAssistantMiddleware(config_data, manager.logger),
-        ChangeStatusInThingsMiddleware(config_data, manager.logger)
+        ChangeStatusInThingsMiddleware(config_data, manager.logger),
     ]
 
     for midware in middleware:
@@ -195,6 +201,11 @@ async def compress(config: Optional[haconfig.Config] = None):
 def run_main(arguments: Union[str, List[str]] = None):
     """Run the main coroutine via asyncio.run."""
     asyncio.run(main(arguments))
+
+
+def run_compress(config: haconfig.Config):
+    """Run the compress coroutine via asyncio.run."""
+    asyncio.run(compress(config))
 
 
 if __name__ == "__main__":

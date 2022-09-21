@@ -139,9 +139,9 @@ export default class HomeAutomationManagementUI extends React.Component<
         </Alert>
       ) : null;
     const specialStatus = this.state.status.building_frontend_image
-      ? "Building frontend image"
+      ? "Building frontend image..."
       : this.state.status.pushing_frontend_image
-      ? "Pushing frontend image"
+      ? "Pushing frontend image..."
       : null;
     const specialStatusAlert = specialStatus ? (
       <Alert variant="info" className="">
