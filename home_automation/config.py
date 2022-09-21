@@ -1,4 +1,5 @@
 """Everything to do with configuration."""
+# pylint: disable=too-many-lines
 import os
 import pwd
 import socket as socketlib
@@ -781,6 +782,64 @@ class ConfigAdminPermissions:
         return f"AdminPermissions(user='{self.user}', password=******)"
 
 
+class ConfigMiddlewareLaTeXToPDFMiddleware:
+    """Configuration for the LaTeXToPDFMiddleware."""
+
+    delete_log_file: bool
+    delete_aux_file: bool
+    delete_dvi_file: bool
+
+    def __init__(self, data: Optional[Dict[str, bool]] = None):
+        if not data:
+            self.delete_log_file = False
+            self.delete_aux_file = False
+            self.delete_dvi_file = False
+            return
+        self.delete_log_file = data.get("delete_log_file", False)
+        self.delete_aux_file = data.get("delete_aux_file", False)
+        self.delete_dvi_file = data.get("delete_dvi_file", False)
+
+    def __eq__(self, other) -> bool:
+        if not other:
+            return False
+        return (
+            self.delete_log_file == other.delete_log_file
+            and self.delete_aux_file == other.delete_aux_file
+            and self.delete_dvi_file == other.delete_dvi_file
+        )
+
+    def to_dict(self) -> Dict[str, bool]:
+        """Convert to dictionary."""
+        return {
+            "delete_log_file": self.delete_log_file,
+            "delete_aux_file": self.delete_aux_file,
+            "delete_dvi_file": self.delete_dvi_file,
+        }
+
+
+class ConfigMiddleware:
+    """Middleware configuration."""
+
+    latex_to_pdf: Optional[ConfigMiddlewareLaTeXToPDFMiddleware]
+
+    def __init__(self, data: Optional[Dict[str, Dict]] = None):
+        if data:
+            self.latex_to_pdf = ConfigMiddlewareLaTeXToPDFMiddleware(
+                data.get("latex_to_pdf")
+            )
+        else:
+            self.latex_to_pdf = None
+
+    def __eq__(self, other) -> bool:
+        return self.latex_to_pdf == other.latex_to_pdf
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "latex_to_pdf": self.latex_to_pdf.to_dict() if self.latex_to_pdf else None,
+        }
+
+
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration data."""
 
@@ -804,6 +863,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     heimdall: ConfigHeimdall
     storage: ConfigStorage
     admin: ConfigAdminPermissions
+    middleware: ConfigMiddleware
 
     # opress dangerous default values as that's only dangerous if they are modified
     def __init__(
@@ -828,6 +888,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         heimdall: Dict[str, Optional[str]] = None,
         storage: Dict[str, Dict] = None,
         admin: Dict[Optional[str], Optional[str]] = None,
+        middleware: Dict[str, Dict] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir
@@ -849,6 +910,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.heimdall = ConfigHeimdall(heimdall)
         self.storage = ConfigStorage(storage)
         self.admin = ConfigAdminPermissions(admin)
+        self.middleware = ConfigMiddleware(middleware)
 
     def __str__(self) -> str:
         return str(vars(self))
@@ -878,6 +940,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.heimdall == other.heimdall
             and self.storage == other.storage
             and self.admin == other.admin
+            and self.middleware == other.middleware
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -907,6 +970,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "heimdall": self.heimdall.to_dict() if self.heimdall else None,
             "storage": self.storage.to_dict() if self.storage else None,
             "admin": self.admin.to_dict() if self.admin else None,
+            "middleware": self.middleware.to_dict() if self.middleware else None,
         }
 
 

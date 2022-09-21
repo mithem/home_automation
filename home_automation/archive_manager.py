@@ -15,7 +15,7 @@ from home_automation import config as haconfig
 from home_automation.constants import MONTH_TO_DIR, ABBR_TO_SUBJECT
 
 BLACKLIST_FILES = [".DS_Store", "@eaDir"]
-BLACKLIST_EXT = ["sh", "@SynoRessource"]
+BLACKLIST_EXT = ["aux", "log", "dvi"]
 
 TODAY = datetime.date.today()
 TRESHOLD_DATE = TODAY - datetime.timedelta(days=5)
