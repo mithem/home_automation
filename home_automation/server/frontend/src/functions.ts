@@ -263,3 +263,10 @@ export async function deployFrontend() {
     axiosDefaultConfig
   );
 }
+
+export async function resetFrontendImageStatus() {
+  await axios.delete(
+    BASE_URL + "/api/home_automation/frontend/reset-image-status",
+    axiosDefaultConfig
+  );
+}

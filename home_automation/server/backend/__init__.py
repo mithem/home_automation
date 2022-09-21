@@ -486,4 +486,10 @@ use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_
         start_frontend_deploy_process()
         return "", 202
 
+    @app.route("/api/home_automation/frontend/reset-image-status", methods=["DELETE"])
+    def reset_frontend_image_status():
+        state_manager.update_status("building_frontend_image", False)
+        state_manager.update_status("pushing_frontend_image", False)
+        return "", 204
+
     return app

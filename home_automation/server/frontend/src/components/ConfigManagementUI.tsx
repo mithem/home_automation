@@ -12,6 +12,7 @@ import {
   restartHomeAutomation,
   buildFrontend,
   deployFrontend,
+  resetFrontendImageStatus,
 } from "../functions";
 import ConfigManagementData from "../models/ConfigManagementData";
 
@@ -89,6 +90,12 @@ export default class ConfigManagementUI extends React.Component<
     });
   }
 
+  resetFrontendImageStatus() {
+    resetFrontendImageStatus().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   render() {
     const alert =
       this.state.error !== undefined ? (
@@ -100,37 +107,31 @@ export default class ConfigManagementUI extends React.Component<
       <div className="testing-management">
         {alert}
         <Card>
-          <Button variant="primary" onClick={() => this.setVersionAvailable()}>
+          <Button variant="primary" onClick={this.setVersionAvailable}>
             Set version available
           </Button>
-          <Button variant="primary" onClick={() => this.initiateAutoUpgrade()}>
+          <Button variant="primary" onClick={this.initiateAutoUpgrade}>
             Initiate auto upgrade
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => this.forceHomeAssistantUpdate()}
-          >
+          <Button variant="primary" onClick={this.forceHomeAssistantUpdate}>
             Force home assistant update
           </Button>
-          <Button variant="primary" onClick={() => this.reloadConfig()}>
+          <Button variant="primary" onClick={this.reloadConfig}>
             Reload config
           </Button>
-          <Button variant="primary" onClick={() => this.sendTestMail()}>
+          <Button variant="primary" onClick={this.sendTestMail}>
             Send test mail
           </Button>
-          <Button variant="primary" onClick={() => requestGoogleOAuth2()}>
+          <Button variant="primary" onClick={requestGoogleOAuth2}>
             Authorize with gmail
           </Button>
-          <Button variant="primary" onClick={() => this.revokeGoogleOAuth2()}>
+          <Button variant="primary" onClick={this.revokeGoogleOAuth2}>
             Revoke google OAuth2
           </Button>
-          <Button variant="primary" onClick={() => this.clearGoogleOAuth2()}>
+          <Button variant="primary" onClick={this.clearGoogleOAuth2}>
             Clear google OAuth2
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => this.restartHomeAutomation()}
-          >
+          <Button variant="primary" onClick={this.restartHomeAutomation}>
             Restart
           </Button>
           <Button variant="primary" onClick={this.buildFrontend}>
@@ -138,6 +139,9 @@ export default class ConfigManagementUI extends React.Component<
           </Button>
           <Button variant="primary" onClick={this.deployFrontend}>
             Deploy frontend
+          </Button>
+          <Button variant="primary" onClick={this.resetFrontendImageStatus}>
+            Reset frontend image status
           </Button>
         </Card>
       </div>
