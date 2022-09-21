@@ -29,7 +29,7 @@ class FileCoordinator:  # pylint: disable=too-few-public-methods
         for fname in os.listdir(path):
             full_path = os.path.join(path, fname)
             for middleware in self.middlewares:
-                if middleware.test(full_path):
+                if await middleware.test(full_path):
                     await middleware.act(full_path)
 
 
