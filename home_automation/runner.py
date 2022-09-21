@@ -22,7 +22,7 @@ from watchdog.observers import Observer as WatchdogObserver
 
 from home_automation import compression_manager
 from home_automation import config as haconfig
-from home_automation import frontend_deployer
+from home_automation import file_coordinator, frontend_deployer
 from home_automation import utilities as util
 from home_automation.server.backend.run_backend_server import (
     run_backend_server as run_backend_server_blocking,
@@ -51,11 +51,13 @@ class _WatchdogEventHandler(FileSystemEventHandler):
         self.config = config
 
     def act(self):  # pylint: disable=R0102
-        """React to a event triggering compression of HOMEWORK_DIR"""
+        """React to a event triggering compression of the homework
+        directroy as well as invoking `FileCoordinator`"""
         # this is so much simpler than observing file size over time
         # or implementing inotify etc. and does the job just fine
         time.sleep(5)
         compression_manager.run_compress(self.config)
+        file_coordinator.run_file_coordinator(self.config, self.config.homework_dir)
 
     def dispatch(self, event):
         event_types = [
