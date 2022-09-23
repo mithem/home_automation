@@ -207,8 +207,7 @@ ERE key=:key",
         keys = self.rsdb.keys("home_automation-status-*")
         self.rsdb.delete(*keys)
         for key, value in STATUS_DEFAULT_VALUES:
-            new_key = "home_automation-status-" + key
-            self.rsdb.set(new_key, value)
+            self.update_status(key, value)
 
     def reset_status(self):
         """Reset status data."""
