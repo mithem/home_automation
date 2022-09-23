@@ -5,4 +5,5 @@ export default interface HomeAutomationStatus {
   pruning: boolean;
   building_frontend_image: boolean;
   pushing_frontend_image: boolean;
+  updating: boolean;
 }

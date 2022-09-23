@@ -1,4 +1,4 @@
-import HomeAutomationStatus from "../components/HomeAutomationStatus";
+import HomeAutomationStatus from "./HomeAutomationStatus";
 
 export default interface HomeAutomationManagementData {
   version?: string;

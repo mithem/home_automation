@@ -36,6 +36,7 @@ export default class HomeAutomationManagementUI extends React.Component<
         pruning: false,
         building_frontend_image: false,
         pushing_frontend_image: false,
+        updating: false,
       },
     };
     this.timerID = undefined;
@@ -144,9 +145,10 @@ export default class HomeAutomationManagementUI extends React.Component<
       ? "Pushing frontend image..."
       : null;
     const specialStatusAlert = specialStatus ? (
-      <Alert variant="info" className="">
-        {specialStatus}
-      </Alert>
+      <Alert variant="info">{specialStatus}</Alert>
+    ) : null;
+    const updatingAlert = this.state.status.updating ? (
+      <Alert variant="info">Updating...</Alert>
     ) : null;
     const errors = [];
     for (const error of [
@@ -173,6 +175,7 @@ export default class HomeAutomationManagementUI extends React.Component<
           </Button>
         </Alert>
         {specialStatusAlert}
+        {updatingAlert}
         {newVersionAvailableAlert}
         <Card>
           <Card.Body>

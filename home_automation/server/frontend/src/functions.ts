@@ -3,7 +3,7 @@ import axios from "axios";
 import HomeAutomationManagementData from "./models/HomeAutomationManagementData";
 import DockerContainerData from "./models/DockerContainerData";
 import DockerVolumeListData from "./models/DockerVolumeListData";
-import HomeAutomationStatus from "./components/HomeAutomationStatus";
+import HomeAutomationStatus from "./models/HomeAutomationStatus";
 
 const axiosDefaultConfig = {
   // for axios to handle the response as a response (not an error) when the status code isn't 2xx

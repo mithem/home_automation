@@ -117,7 +117,7 @@ def get_k8s_client(config: haconfig.Config) -> klient.ApiClient:
 def argparse_add_argument_for_config_file_path(
     parser: argparse.ArgumentParser,
 ) -> argparse.ArgumentParser:
-    """Add an argument for the config file path to the specified parser."""
+    """Add an argument for the config file path to the specified parser. (args.config is set to the path to config file)"""
     parser.add_argument(
         "-c",
         "--config",

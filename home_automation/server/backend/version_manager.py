@@ -140,6 +140,7 @@ class VersionManager:
     def upgrade_server(self):
         """Upgrade the server. Restarts it. BLOCKING!"""
         logging.info("Upgrading server...")
+        self.state_manager.update_status("updating", True)
         repo = git.Repo(os.curdir)
         if self.config.git.discard_changes:
             logging.info("Discarding changes in repo...")
@@ -171,6 +172,7 @@ class VersionManager:
             self.config, "script/install"
         )
         os.system("bash script/restart-runner &")
+        self.state_manager.update_status("updating", False)
 
     def auto_upgrade(self):
         """Check for updated version. If upgrade is available, upgrade. Inform user via mail."""

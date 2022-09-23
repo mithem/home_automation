@@ -15,6 +15,7 @@ STATUS_KEYS = [
     "pruning",
     "building_frontend_image",
     "pushing_frontend_image",
+    "updating",
 ]
 
 STATUS_DEFAULT_VALUES = [
@@ -29,6 +30,7 @@ STATUS_DEFAULT_VALUES = [
     ("test_email_pending", False),
     ("building_frontend_image", False),
     ("pushing_frontend_image", False),
+    ("updating", False),
 ]
 
 OAUTH2_DEFAULT_VALUES = [("access_token", "")]
@@ -276,7 +278,8 @@ ERE key=:key",
             "downing": bool,
             "pruning": bool,
             "building_frontend_image": bool,
-            "pushing_frontend_image": bool
+            "pushing_frontend_image": bool,
+            "updating": bool
         }
         """
         if self.rsdb:

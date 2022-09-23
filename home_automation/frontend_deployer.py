@@ -335,11 +335,12 @@ def delete_frontend(config: Config):
 
 def main():
     """Deploy the frontend."""
-    config = load_config()
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["deploy", "deployonly", "build", "delete"])
     parser.add_argument("--force", action="store_true")
+    parser = utilities.argparse_add_argument_for_config_file_path(parser)
     args = parser.parse_args()
+    config = load_config(args.config)
     action = args.action
     if action == "deploy":
         build_and_deploy_frontend(config)
