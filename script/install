@@ -4,6 +4,6 @@ cp systemd/home_automation.setup.service /lib/systemd/system/
 cp systemd/home_automation.service /lib/systemd/system/
 systemctl daemon-reload
 echo Systemd services are copied and loaded. Enabling and starting...
-systemctl enable --now home_automation.setup
+systemctl enable home_automation.setup
 systemctl enable --now home_automation
 echo Done
