@@ -13,6 +13,7 @@ import {
   buildFrontend,
   deployFrontend,
   resetFrontendImageStatus,
+  resetStatus,
 } from "../functions";
 import ConfigManagementData from "../models/ConfigManagementData";
 
@@ -90,6 +91,12 @@ export default class ConfigManagementUI extends React.Component<
     });
   }
 
+  resetStatus() {
+    resetStatus().catch((error) => {
+      this.setState({ error: new Error(error.response.data.error) });
+    });
+  }
+
   resetFrontendImageStatus() {
     resetFrontendImageStatus().catch((error) => {
       this.setState({ error: new Error(error.response.data.error) });
@@ -139,6 +146,9 @@ export default class ConfigManagementUI extends React.Component<
           </Button>
           <Button variant="primary" onClick={this.deployFrontend}>
             Deploy frontend
+          </Button>
+          <Button variant="primary" onClick={this.resetStatus}>
+            Reset status
           </Button>
           <Button variant="primary" onClick={this.resetFrontendImageStatus}>
             Reset frontend image status

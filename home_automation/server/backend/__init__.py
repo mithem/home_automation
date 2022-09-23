@@ -347,9 +347,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
         start_restart_runner_process()
         return "Restarting.", 202
 
-    @app.route("/api/status")
+    @app.route("/api/status", methods=["GET", "DELETE"])
     def compose_status():
-        return state_manager.get_status()
+        if request.method == "GET":
+            return state_manager.get_status()
+        if request.method == "DELETE":
+            state_manager.reset_status()
+            return "Status reset."
+        return "Method not allowed.", 405
 
     @app.route("/api/testing/version-initfile/set", methods=["POST"])
     def set_testing_version_initfile():

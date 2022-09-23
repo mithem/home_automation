@@ -90,6 +90,14 @@ export async function getStatus() {
   return response.data as HomeAutomationStatus;
 }
 
+export async function resetStatus() {
+  const response = await axios.delete(
+    BASE_URL + "/api/status",
+    axiosDefaultConfig
+  );
+  return response.status === 200;
+}
+
 export async function dockerPrune() {
   const response = await axios.delete(
     BASE_URL + "/api/prune",
