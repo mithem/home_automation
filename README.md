@@ -16,6 +16,10 @@ archive_dir: <path to archive dir>
 compose_file: docker-compose.yml
 moodle_dl_dir: <path to moodle dir> # dir where moodle-dl will download courses to
 extra_compress_dirs: [] # extra dirs to watch and compress files in when applicable
+domain: <externally available domain with port if required>
+subject_abbreviations: # optional
+  GE: General # just examples, can be anything
+  T: Test
 storage:
   file: # either file or redis provider required
     path: <path to backend sqlite db>
@@ -84,4 +88,7 @@ heimdall:
 admin: # optional. When given, config file will be made accessible to this user only
   user: <username>
   password: <password>
+middleware: # optional
+  latex_to_pdf: # optional
+    delete_byproducts: false
 ```

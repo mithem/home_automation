@@ -2,8 +2,11 @@
 import os
 from logging import Logger
 from typing import Optional
+import shutil
 
 from home_automation.config import Config
+
+BYPRODUCTS_FILE_EXTENSIONS = ["aux", "dvi", "log", "out", "synctex.gz", "toc"]
 
 
 class FileCoordinatorMiddleware:
@@ -40,27 +43,21 @@ class LaTeXToPDFMiddleware(FileCoordinatorMiddleware):
         """Act on the file."""
         directory = os.path.dirname(path)
         home = os.path.expanduser("~")
-        os.system(f"cd '{home}' && pdflatex -output-directory={directory} {path}")
+        command = f"cd '{home}' && pdflatex -output-directory='{directory}' '{path}'"
+        os.system(command)
+        os.system(command)  # always compile twice (e.g. for a table of contents)
         if self.logger:
             self.logger.info("Rendered LaTeX file to PDF: %s", path)
         if self.config.middleware.latex_to_pdf:
-            if self.config.middleware.latex_to_pdf.delete_aux_file:
-                to_delete = path.replace(".tex", ".aux")
-                if os.path.isfile(to_delete):
+            if self.config.middleware.latex_to_pdf.delete_byproducts:
+                for byproduct in BYPRODUCTS_FILE_EXTENSIONS:
+                    byproduct_path = path.replace(".tex", f".{byproduct}")
+                    if os.path.isfile(byproduct_path):
+                        os.remove(byproduct_path)
+                        if self.logger:
+                            self.logger.info("Deleted byproduct: %s", byproduct_path)
+                texlive_dir = os.path.join(directory, "texlive2020")
+                if os.path.isdir(texlive_dir):
+                    shutil.rmtree(texlive_dir)
                     if self.logger:
-                        self.logger.info(
-                            "Deleting corresponding aux file: %s", to_delete
-                        )
-                    os.remove(to_delete)
-            if self.config.middleware.latex_to_pdf.delete_dvi_file:
-                to_delete = path.replace(".tex", ".dvi")
-                if os.path.isfile(to_delete):
-                    if self.logger:
-                        self.logger.info("Deleting corresponding dvi file: %s", path)
-                    os.remove(path.replace(".tex", ".dvi"))
-            if self.config.middleware.latex_to_pdf.delete_log_file:
-                to_delete = path.replace(".tex", ".log")
-                if os.path.isfile(to_delete):
-                    if self.logger:
-                        self.logger.info("Deleting corresponding log file: %s", path)
-                    os.remove(path.replace(".tex", ".log"))
+                        self.logger.info("Deleted byproduct: %s", texlive_dir)

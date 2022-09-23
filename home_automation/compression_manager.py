@@ -178,6 +178,7 @@ async def compress(config: Optional[haconfig.Config] = None):
         config_data = config
     else:
         config_data = haconfig.load_config()
+    utilities.drop_privileges(config_data)
 
     manager = CompressionManager(config_data)
 

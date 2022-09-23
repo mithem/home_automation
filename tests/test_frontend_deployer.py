@@ -20,6 +20,7 @@ class ParseRegistryURLTestRun:
             homework_dir="",
             archive_dir="",
             compose_file="",
+            domain="",
             email={},
             docker={"registry": {"registry_url": self.input}},
             frontend={"backend_ip_address": ""},
@@ -41,6 +42,7 @@ class GetImageTagTestRun:
             homework_dir="",
             archive_dir="",
             compose_file="",
+            domain="",
             email={},
             frontend={"image_name": self.input, "backend_ip_address": ""},
         )

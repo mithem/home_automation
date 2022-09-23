@@ -5,10 +5,12 @@ from flask import Flask, request
 from flask.wrappers import Response
 from home_automation.constants import ABBR_TO_SUBJECT
 
-SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = \
+SCRIPT_LOC_MARK_HOMEWORK_AS_DONE = (
     "/Users/miguel/repos/home_automation/script/MarkHomeworkAsDone.scpt"
-SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = \
+)
+SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS = (
     "/Users/miguel/repos/home_automation/script/CreateThingsTaskToUpdateHass.scpt"
+)
 
 # pylint: disable=consider-iterating-dictionary
 VALID_SUBJECT_ABBRS = [s.upper() for s in ABBR_TO_SUBJECT.keys()]
@@ -49,8 +51,7 @@ def create_app() -> Flask:
         if testing:
             return RAN_SCRIPT
 
-        os.system(
-            f"osascript '{SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS}'")
+        os.system(f"osascript '{SCRIPT_LOC_CREATE_TASK_IN_THINGS_TO_UPDATE_HASS}'")
         return RAN_SCRIPT
 
     @app.route("/")

@@ -5,14 +5,15 @@ import datetime
 import os
 import re
 import shutil
-from typing import List, Sequence, Optional
+from typing import Dict, List, Optional, Sequence
 
 import fileloghelper
-import home_automation.utilities
+
 import home_automation.server.backend.state_manager
-from home_automation.server.backend import oauth2_helpers
+import home_automation.utilities
 from home_automation import config as haconfig
-from home_automation.constants import MONTH_TO_DIR, ABBR_TO_SUBJECT
+from home_automation.constants import ABBR_TO_SUBJECT, MONTH_TO_DIR
+from home_automation.server.backend import oauth2_helpers
 
 BLACKLIST_FILES = [".DS_Store", "@eaDir"]
 BLACKLIST_EXT = ["aux", "log", "dvi"]
@@ -46,6 +47,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
     transferred_files: List[str]
     not_transferred_files: List[str]
     debug: bool
+    abbr_to_subject: Dict[str, str]
 
     def __init__(self, config: haconfig.Config, debug=False):
         self.config = config
@@ -55,9 +57,13 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         self.transferred_files = []
         self.not_transferred_files = []
         self.debug = debug
+        # merge operator just in python 3.9+
+        self.abbr_to_subject = {
+            **ABBR_TO_SUBJECT,
+            **config.subject_abbreviations,
+        }
 
-    @staticmethod
-    def parse_filename(path: str):
+    def parse_filename(self, path: str):
         """parse filename and return (subject, year, month), each as
         the name of the directory the file is supposed to go in."""
         date_str = None
@@ -75,7 +81,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             year_str = groups.get("year", "")
         try:
             abbr = fname.split(" ")[0]
-            subject = ABBR_TO_SUBJECT[abbr]
+            subject = self.abbr_to_subject[abbr]
         except (KeyError, IndexError) as error:
             raise InvalidFormattingException(path) from error
         try:
@@ -111,7 +117,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
             no_transfer_match = re.match(NO_TRANSFER_REGEX, path, re.IGNORECASE)
             if no_transfer_match:
                 return path
-            subject, year, month = ArchiveManager.parse_filename(path)
+            subject, year, month = self.parse_filename(path)
             if year is None or month is None:
                 # e.g. is in Archive/Physik/2021/Juni or lower
                 a_dir = (
@@ -134,7 +140,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                     return return_timestamped_filepath()
                 # Put files that were in the wrong subject folder in the same
                 # substructure (e.g. /Subject/2020) but for another subject
-                for sub in ABBR_TO_SUBJECT.values():
+                for sub in self.abbr_to_subject.values():
                     path = path.replace(sub, subject)
                 return path
             return return_timestamped_filepath()
@@ -185,7 +191,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
                     # ...with validly formatted files
                     subject = None
                     try:
-                        subject, _, _ = ArchiveManager.parse_filename(filepath)
+                        subject, _, _ = self.parse_filename(filepath)
                     except InvalidFormattingException:
                         did_move_invalidly_formatted_directory = True
                     if subject is not None:
@@ -242,7 +248,7 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         mail_body += f"\nThat's {len(self.transferred_files)} files."
         mail_subject = "[NAS] Archiving at end of week"
         state_manager = home_automation.server.backend.state_manager.StateManager(
-            self.config.db_path
+            self.config
         )
         creds = oauth2_helpers.get_google_oauth2_credentials(state_manager)
         home_automation.utilities.send_mail(creds, mail_subject, mail_body)
@@ -259,17 +265,17 @@ class ArchiveManager:  # pylint: disable=too-many-instance-attributes
         # I mean, common!
 
 
-def archive():
+def archive(config: haconfig.Config):
     """Archive with the default config loaded (still from filesystem)"""
-    config_data = haconfig.load_config()
-    manager = ArchiveManager(config_data)
+    home_automation.utilities.drop_privileges(config)
+    manager = ArchiveManager(config)
     manager.transfer_all_files()
 
 
-def reorganize():
+def reorganize(config: haconfig.Config):
     """Reorganize with the default config loaded (still from filesystem)"""
-    config_data = haconfig.load_config()
-    manager = ArchiveManager(config_data)
+    home_automation.utilities.drop_privileges(config)
+    manager = ArchiveManager(config)
     manager.reorganize_all_files()
 
 
@@ -292,6 +298,7 @@ def main(arguments: Optional[Sequence[str]] = None):
     )
     args = parser.parse_args(arguments)
     config_data = haconfig.load_config(path=args.config)
+    home_automation.utilities.drop_privileges(config_data)
     manager = ArchiveManager(config_data, args.verbose)
     manager.logger.header(True, True)
     manager.logger.autosave = manager.debug

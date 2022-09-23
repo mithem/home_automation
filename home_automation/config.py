@@ -785,35 +785,23 @@ class ConfigAdminPermissions:
 class ConfigMiddlewareLaTeXToPDFMiddleware:
     """Configuration for the LaTeXToPDFMiddleware."""
 
-    delete_log_file: bool
-    delete_aux_file: bool
-    delete_dvi_file: bool
+    delete_byproducts: bool
 
     def __init__(self, data: Optional[Dict[str, bool]] = None):
         if not data:
-            self.delete_log_file = False
-            self.delete_aux_file = False
-            self.delete_dvi_file = False
+            self.delete_byproducts = False
             return
-        self.delete_log_file = data.get("delete_log_file", False)
-        self.delete_aux_file = data.get("delete_aux_file", False)
-        self.delete_dvi_file = data.get("delete_dvi_file", False)
+        self.delete_byproducts = data.get("delete_byproducts", False)
 
     def __eq__(self, other) -> bool:
         if not other:
             return False
-        return (
-            self.delete_log_file == other.delete_log_file
-            and self.delete_aux_file == other.delete_aux_file
-            and self.delete_dvi_file == other.delete_dvi_file
-        )
+        return self.delete_byproducts == other.delete_byproducts
 
     def to_dict(self) -> Dict[str, bool]:
         """Convert to dictionary."""
         return {
-            "delete_log_file": self.delete_log_file,
-            "delete_aux_file": self.delete_aux_file,
-            "delete_dvi_file": self.delete_dvi_file,
+            "delete_byproducts": self.delete_byproducts,
         }
 
 
@@ -849,6 +837,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
     compose_file: str
     extra_compress_dirs: List[str]
     moodle_dl_dir: Optional[str]
+    domain: str
+    subject_abbreviations: Dict[str, str]
     email: ConfigEmail
     home_assistant: ConfigHomeAssistant
     portainer: ConfigPortainer
@@ -872,6 +862,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
         homework_dir: str,
         archive_dir: str,
         email: Dict[str, Any],
+        domain: str,
+        subject_abbreviations: Dict[str, str] = None,
         compose_file: str = None,
         home_assistant: Dict[str, Any] = None,
         portainer: Dict[str, Any] = None,
@@ -895,6 +887,10 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.archive_dir = archive_dir
         self.compose_file = compose_file if compose_file else "docker-compose.yml"
         self.moodle_dl_dir = moodle_dl_dir
+        self.domain = domain
+        self.subject_abbreviations = (
+            subject_abbreviations if subject_abbreviations else {}
+        )
         self.extra_compress_dirs = extra_compress_dirs if extra_compress_dirs else []
         self.email = ConfigEmail(email)
         self.home_assistant = ConfigHomeAssistant(home_assistant)
@@ -925,6 +921,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.archive_dir == other.archive_dir
             and self.compose_file == other.compose_file
             and self.moodle_dl_dir == other.moodle_dl_dir
+            and self.domain == other.domain
+            and self.subject_abbreviations == other.subject_abbreviations
             and self.email == other.email
             and self.home_assistant == other.home_assistant
             and self.portainer == other.portainer
@@ -951,6 +949,8 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "archive_dir": self.archive_dir,
             "compose_file": self.compose_file,
             "moodle_dl_dir": self.moodle_dl_dir,
+            "domain": self.domain,
+            "subject_abbreviations": self.subject_abbreviations,
             "email": self.email.to_dict() if self.email else None,
             "home_assistant": self.home_assistant.to_dict()
             if self.home_assistant

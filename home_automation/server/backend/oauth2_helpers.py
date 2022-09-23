@@ -3,17 +3,18 @@ import google_auth_oauthlib.flow
 
 from google.oauth2.credentials import Credentials
 from home_automation.server.backend.state_manager import StateManager
+from home_automation.config import Config
 
 GOOGLE_MAIL_SEND_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 
-def get_oauth_flow() -> google_auth_oauthlib.flow.Flow:
+def get_oauth_flow(config: Config) -> google_auth_oauthlib.flow.Flow:
     """Get the OAuth2 flow for Google's OAuth2."""
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         "client_secret.json", GOOGLE_MAIL_SEND_SCOPES
     )
     flow.redirect_uri = (
-        "https://helix2.ddns.net:10000/backend/home_automation/oauth2/google/callback"
+        f"https://{config.domain}/backend/home_automation/oauth2/google/callback"
     )
     return flow
 

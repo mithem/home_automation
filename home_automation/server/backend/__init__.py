@@ -398,12 +398,12 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
 
     @app.route("/api/archive", methods=["POST"])
     def archive():
-        archive_manager.archive()
+        archive_manager.archive(CONFIG)
         return {"success": True}
 
     @app.route("/api/reorganize", methods=["POST"])
     def reorganize():
-        archive_manager.reorganize()
+        archive_manager.reorganize(CONFIG)
         return {"success": True}
 
     @app.route("/api/mail/test", methods=["POST"])
@@ -423,7 +423,9 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/backend/home_automation/oauth2/google/callback")
     def google_oauth2_callback():
         authorization_response = request.url
-        flow = oauth2_helpers.get_oauth_flow()
+        flow = oauth2_helpers.get_oauth_flow(CONFIG)
+        print(authorization_response)
+        print(flow)
         try:
             flow.fetch_token(authorization_response=authorization_response)
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError:
@@ -454,7 +456,7 @@ use ssl in order to meet the requirements for OAuth2 (.ssl_cert_path & .ssl_key_
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                flow = oauth2_helpers.get_oauth_flow()
+                flow = oauth2_helpers.get_oauth_flow(CONFIG)
                 authorization_url, _ = flow.authorization_url(
                     access_type="offline", include_granted_scopes="true"
                 )

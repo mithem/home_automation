@@ -1,19 +1,21 @@
-from tests.test_config import TESTING_CONFIG
-
 import datetime
 import os
 from typing import Dict, Optional
 
 import pytest
-from pyfakefs.fake_filesystem_unittest import TestCase
-from home_automation.archive_manager import (BLACKLIST_EXT,
-                                             BLACKLIST_FILES,
-                                             TRESHOLD_DATE,
-                                             ArchiveManager,
-                                             InvalidFormattingException,
-                                             IsCompressedFileException)
-from home_automation.constants import ABBR_TO_SUBJECT, MONTH_TO_DIR
 from home_automation import config
+from home_automation.archive_manager import (
+    BLACKLIST_EXT,
+    BLACKLIST_FILES,
+    TRESHOLD_DATE,
+    ArchiveManager,
+    InvalidFormattingException,
+    IsCompressedFileException,
+)
+from home_automation.constants import ABBR_TO_SUBJECT, MONTH_TO_DIR
+from pyfakefs.fake_filesystem_unittest import TestCase
+
+from tests.test_config import TESTING_CONFIG
 
 _NOW = datetime.datetime.now()
 CURRENT_YEAR = str(_NOW.year)
@@ -25,7 +27,7 @@ class AnyTestCase(TestCase):
         self.manager = ArchiveManager(TESTING_CONFIG, debug=True)
         self.useful_data = {
             "year": str(TRESHOLD_DATE.year),
-            "month": MONTH_TO_DIR[TRESHOLD_DATE.month]
+            "month": MONTH_TO_DIR[TRESHOLD_DATE.month],
         }
         self.extra_setup()
 
@@ -34,11 +36,9 @@ class AnyTestCase(TestCase):
 
 
 class TestParseFilename(AnyTestCase):
-
     def evaluate(self, f, s, y, m):
         _s, _y, _m = self.manager.parse_filename(f)
-        assert _s == ABBR_TO_SUBJECT[s] and _y == str(
-            y) and _m == MONTH_TO_DIR[m]
+        assert _s == ABBR_TO_SUBJECT[s] and _y == str(y) and _m == MONTH_TO_DIR[m]
 
     def year_and_month_for_calendar_week(self, week):
         # https://stackoverflow.com/questions/17087314/get-date-from-week-number,
@@ -64,8 +64,7 @@ class TestParseFilename(AnyTestCase):
         self.evaluate("/volume2/PH HA 2021-12-01.pdf", "PH", 2021, 12)
 
     def test_parse_filename_partial_formatting(self):
-        s, y, m = self.manager.parse_filename(
-            "/volume1/PH Klausurvorbereitung.pdf")
+        s, y, m = self.manager.parse_filename("/volume1/PH Klausurvorbereitung.pdf")
 
         assert s == ABBR_TO_SUBJECT["PH"]
         assert y is None
@@ -80,13 +79,13 @@ class TestParseFilename(AnyTestCase):
 
         with pytest.raises(InvalidFormattingException):
             _ = self.manager.parse_filename(
-                "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf")
+                "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/test.pdf"
+            )
 
 
 class TestGetDestinationForFile(AnyTestCase):
     def test_get_destination_for_file_same_origin_and_destination(self):
-        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-            + "PH HA 22-06-2021.pdf"
+        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/" + "PH HA 22-06-2021.pdf"
 
         dest = self.manager.get_destination_for_file(s)
 
@@ -105,9 +104,10 @@ class TestGetDestinationForFile(AnyTestCase):
         with pytest.raises(InvalidFormattingException):
             _ = self.manager.get_destination_for_file(s)
 
-    def test_get_destination_for_file_file_in_correct_substructure_but_wrong_subject_directory(self):
-        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-            + "M HA 22-06-2021.pdf"
+    def test_get_destination_for_file_file_in_correct_substructure_but_wrong_subject_directory(
+        self,
+    ):
+        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/" + "M HA 22-06-2021.pdf"
 
         dest = self.manager.get_destination_for_file(s)
 
@@ -115,22 +115,32 @@ class TestGetDestinationForFile(AnyTestCase):
 
     def test_get_destination_for_file_messed_up_archive(self):
         # yup, something similar happened 😅
-        s = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/Physik/2021/Juni/"\
+        s = (
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/Physik/2021/Juni/"
             + "2021/Juni/Physik/Juni/2021/PH HA 22-06-2021.pdf"
+        )
 
         dest = self.manager.get_destination_for_file(s)
 
-        assert dest == "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
+        assert (
+            dest
+            == "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"
             + "PH HA 22-06-2021.pdf"
+        )
 
     def test_get_destination_for_file_messed_up_archive_2(self):
         s = "/volume2/Hausaufgaben/Archive/PH HA 22-06-2021.pdf"
 
         dest = self.manager.get_destination_for_file(s)
 
-        assert dest == "/volume2/Hausaufgaben/Archive/"\
-            + ABBR_TO_SUBJECT["PH"] + "/2021/" + \
-            MONTH_TO_DIR[6] + "/PH HA 22-06-2021.pdf"
+        assert (
+            dest
+            == "/volume2/Hausaufgaben/Archive/"
+            + ABBR_TO_SUBJECT["PH"]
+            + "/2021/"
+            + MONTH_TO_DIR[6]
+            + "/PH HA 22-06-2021.pdf"
+        )
 
     def test_get_destination_for_file_messed_up_archive_3(self):
         s = "/volume2/Hausaufgaben/Archive/Mathe/2021/Juni/PH KW25.pdf"
@@ -141,8 +151,9 @@ class TestGetDestinationForFile(AnyTestCase):
 
     def test_get_destination_for_file_from_HAs_date_parsable(self):
         s = "/volume2/Hausaufgaben/HAs/PH HA 22-06-2021.pdf"
-        expected = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-            + "PH HA 22-06-2021.pdf"
+        expected = (
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/" + "PH HA 22-06-2021.pdf"
+        )
 
         dest = self.manager.get_destination_for_file(s)
 
@@ -150,10 +161,13 @@ class TestGetDestinationForFile(AnyTestCase):
 
     def test_get_destination_for_file_from_HAs_date_not_parsable(self):
         s = "/volume2/Hausaufgaben/HAs/PH Klausurvorbereitung.pdf"
-        expected = "/volume2/Hausaufgaben/Archive/Physik/"\
-            + self.useful_data['year'] + "/"\
-            + self.useful_data['month']\
+        expected = (
+            "/volume2/Hausaufgaben/Archive/Physik/"
+            + self.useful_data["year"]
+            + "/"
+            + self.useful_data["month"]
             + "/PH Klausurvorbereitung.pdf"
+        )
 
         dest = self.manager.get_destination_for_file(s)
 
@@ -161,10 +175,13 @@ class TestGetDestinationForFile(AnyTestCase):
 
     def test_get_destination_for_file_from_somewhere_in_archive_date_not_parsable(self):
         s = "/volume2/Hausaufgaben/Archive/Physik/PH HA.pdf"
-        expected = "/volume2/Hausaufgaben/Archive/Physik/"\
-            + self.useful_data["year"] + "/"\
-            + self.useful_data["month"]\
+        expected = (
+            "/volume2/Hausaufgaben/Archive/Physik/"
+            + self.useful_data["year"]
+            + "/"
+            + self.useful_data["month"]
             + "/PH HA.pdf"
+        )
 
         dest = self.manager.get_destination_for_file(s)
 
@@ -181,8 +198,14 @@ class TestGetDestinationForFile(AnyTestCase):
         start = "/volume2/Hausaufgaben/HAs/"
         end = ".pdf"
         data_arr = ["D", "HA", "27-01-2022"]
-        flags = ["NO_TRANSFER", "NO-TRANSFER", "NOTRANSFER",
-                 "no_transfer", "no-transfer", "notransfer"]
+        flags = [
+            "NO_TRANSFER",
+            "NO-TRANSFER",
+            "NOTRANSFER",
+            "no_transfer",
+            "no-transfer",
+            "notransfer",
+        ]
         combinations = []  # for debugging this test's logic only
         for flag in flags:
             for flag_pos in range(len(data_arr) + 1):
@@ -239,8 +262,9 @@ class TestTransferFile(AnyTestCase):
 
     def test_transfer_file_from_HAs(self):
         s = "/volume2/Hausaufgaben/HAs/PH HA 22-06-2021.pdf"
-        expected = "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/"\
-            + "PH HA 22-06-2021.pdf"
+        expected = (
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/" + "PH HA 22-06-2021.pdf"
+        )
         self.fs.create_file(s)
 
         self.manager.transfer_file(s)
@@ -301,9 +325,13 @@ class TestTransferFile(AnyTestCase):
 
         self.manager.transfer_file(root)
 
-        new_root = "/volume2/Hausaufgaben/Archive/Physik/" + \
-            str(self.useful_data["year"]) + "/" + \
-            self.useful_data["month"] + "/PH KW25/"
+        new_root = (
+            "/volume2/Hausaufgaben/Archive/Physik/"
+            + str(self.useful_data["year"])
+            + "/"
+            + self.useful_data["month"]
+            + "/PH KW25/"
+        )
         assert not self.fs.exists(root)
         assert self.fs.exists(new_root)
         for f in f_list:
@@ -318,9 +346,13 @@ class TestTransferFile(AnyTestCase):
 
         self.manager.transfer_file(root)
 
-        new_root = "/volume2/Hausaufgaben/Archive/Physik/" + \
-            str(self.useful_data["year"]) + "/" + \
-            self.useful_data["month"] + "/PH Material/"
+        new_root = (
+            "/volume2/Hausaufgaben/Archive/Physik/"
+            + str(self.useful_data["year"])
+            + "/"
+            + self.useful_data["month"]
+            + "/PH Material/"
+        )
         assert not self.fs.exists(root)
         assert self.fs.exists(new_root)
         for f in f_list:
@@ -335,16 +367,17 @@ class TestTransferFile(AnyTestCase):
 
         assert not self.fs.exists(s)
         assert self.fs.exists(
-            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA 22-06-2021.pdf")
+            "/volume2/Hausaufgaben/Archive/Physik/2021/Juni/PH HA 22-06-2021.pdf"
+        )
         assert self.manager.transferred_files == [s]
         assert self.manager.not_transferred_files == []
 
 
 class TestTransferDirectory(AnyTestCase):
-
     def test_transfer_directory(self):
         def f(name: str) -> str:
             return "/volume2/Hausaufgaben/Archive/" + name
+
         s1 = f("Physik/PH HA 22-06-2021.pdf")
         s2 = f("Physik/PH HA 22-05-2021.pdf")
         s3 = f("Physik/M HA 22-06-2021.pdf")
@@ -373,17 +406,20 @@ class TestTransferDirectory(AnyTestCase):
 
     def test_transfer_directory_with_folder_valid_formatting(self):
         def f1(name: str) -> str:
-            return "/volume2/Hausaufgaben/HAs"\
-                + ("/" if len(name) > 0 else "")\
-                + name
+            return "/volume2/Hausaufgaben/HAs" + ("/" if len(name) > 0 else "") + name
 
         def f2(name: str) -> str:
-            return "/volume2/Hausaufgaben/Archive/" + ABBR_TO_SUBJECT['PH'] \
-                + "/"\
-                + self.useful_data['year']\
-                + "/"\
-                + self.useful_data['month']\
-                + "/PH KW25/" + name
+            return (
+                "/volume2/Hausaufgaben/Archive/"
+                + ABBR_TO_SUBJECT["PH"]
+                + "/"
+                + self.useful_data["year"]
+                + "/"
+                + self.useful_data["month"]
+                + "/PH KW25/"
+                + name
+            )
+
         dir_files = ["PH run.py", "PH lib.py"]
         self.fs.create_dir(f1(""))
         for fname in dir_files:
@@ -401,15 +437,15 @@ class TestTransferDirectory(AnyTestCase):
 
     def test_transfer_directory_with_folder_invalid_formatting_files_valid(self):
         def f1(name: str) -> str:
-            return "/volume2/Hausaufgaben/HAs"\
-                + ("/" if len(name) > 0 else "")\
-                + name
+            return "/volume2/Hausaufgaben/HAs" + ("/" if len(name) > 0 else "") + name
 
         def f2(name: str) -> str:
-            return "/volume2/Hausaufgaben/Archive/"\
-                + ABBR_TO_SUBJECT['PH'] \
-                + "/2021/Juni/" \
+            return (
+                "/volume2/Hausaufgaben/Archive/"
+                + ABBR_TO_SUBJECT["PH"]
+                + "/2021/Juni/"
                 + name
+            )
 
         dir_files = ["PH HA 22-06-2021.pdf", "PH HA 23-06-2021.pdf"]
         self.fs.create_dir(f1(""))
@@ -430,9 +466,7 @@ class TestTransferDirectory(AnyTestCase):
 
     def test_transfer_directory_with_folder_invalid_formatting_files_invalid(self):
         def f1(name: str) -> str:
-            return "/volume2/Hausaufgaben/HAs"\
-                + ("/" if len(name) > 0 else "")\
-                + name
+            return "/volume2/Hausaufgaben/HAs" + ("/" if len(name) > 0 else "") + name
 
         dir_files = ["lib.py", "main.py"]
         self.fs.create_dir(f1(""))
@@ -451,9 +485,8 @@ class TestTransferDirectory(AnyTestCase):
 
     def test_transfer_directory_BLACKLIST_FILES(self):
         def f(name: str) -> str:
-            return "/volume2/Hausaufgaben/HAs"\
-                + ("/" if len(name) > 0 else "")\
-                + name
+            return "/volume2/Hausaufgaben/HAs" + ("/" if len(name) > 0 else "") + name
+
         # not sure why i need to do that
         self.fs.create_dir("/volume2/Hausaufgaben/HAs")
         for fname in BLACKLIST_FILES:
@@ -472,9 +505,8 @@ class TestTransferDirectory(AnyTestCase):
 
     def test_transfer_directory_BLACKLIST_EXT(self):
         def f(name: str) -> str:
-            return "/volume2/Hausaufgaben/HAs"\
-                + ("/" if len(name) > 0 else "")\
-                + name
+            return "/volume2/Hausaufgaben/HAs" + ("/" if len(name) > 0 else "") + name
+
         self.fs.create_dir("/volume2/Hausaufgaben/HAs")
         for ext in BLACKLIST_EXT:
             self.fs.create_file("hello" + ext)
@@ -503,6 +535,7 @@ class TestReorganizeAllFiles(AnyTestCase):
         }
         ```
         """
+
         def create_dir(directory: Dict[str, Optional[Dict]], path: str):
             for relative_path, value in directory.items():
                 p = os.path.join(path, relative_path)
@@ -517,6 +550,7 @@ class TestReorganizeAllFiles(AnyTestCase):
     def evaluate_root_directory_with_files(self, structure):
         """The same as `setup_root_directory_with_files`, just the existance of the files is
         asserted (and that there aren't any other files in that directory)"""
+
         def check_dir(directory: Dict[str, Optional[Dict]], path: str):
             for relative_path, value in directory.items():
                 p = os.path.join(path, relative_path)
@@ -532,8 +566,10 @@ class TestReorganizeAllFiles(AnyTestCase):
 
     def test_setup_root_directory_with_files(self):
         """Yep, a test for a test!"""
+
         def f(name: str) -> str:
             return "/volume2/Hausaufgaben/" + name
+
         s1 = "test.pdf"
         s2 = "HAs/test2.pdf"
         s3 = "HAs/PH Material/text1.pdf"
@@ -545,18 +581,12 @@ class TestReorganizeAllFiles(AnyTestCase):
                 "test2.pdf": None,
                 "PH Material": {
                     "text1.pdf": None,
-                }
+                },
             },
             "Archive": {
                 "test3.pdf": None,
-                "Physik": {
-                    "2021": {
-                        "Juni": {
-                            "PH HA 22-06-2021.pdf": None
-                        }
-                    }
-                }
-            }
+                "Physik": {"2021": {"Juni": {"PH HA 22-06-2021.pdf": None}}},
+            },
         }
         self.setup_root_directory_with_files(inp)
 
@@ -574,8 +604,8 @@ class TestReorganizeAllFiles(AnyTestCase):
                 "PH Material": {
                     "text1.pdf": None,
                     "PH HA 22-06-2021.pdf": None,
-                    "text2.pdf": None
-                }
+                    "text2.pdf": None,
+                },
             },
             "Archive": {
                 "something_lost.pdf": None,
@@ -596,19 +626,13 @@ class TestReorganizeAllFiles(AnyTestCase):
                             "text1.pdf": None,
                             "PH Materialien": {  # just not a duplicate of 'PH Material'
                                 "text1.pdf": None,
-                                "PH 3 HA 22-06-2021.pdf": None
-                            }
-                        }
-                    }
+                                "PH 3 HA 22-06-2021.pdf": None,
+                            },
+                        },
+                    },
                 },
-                "Mathe": {
-                    "2021": {
-                        "Juni": {
-                            "M HA 24-06-2021.pdf": None
-                        }
-                    }
-                }
-            }
+                "Mathe": {"2021": {"Juni": {"M HA 24-06-2021.pdf": None}}},
+            },
         }
         expected = {
             "HAs": {
@@ -628,10 +652,10 @@ class TestReorganizeAllFiles(AnyTestCase):
                             "text1.pdf": None,
                             "PH Materialien": {
                                 "text1.pdf": None,
-                                "PH 3 HA 22-06-2021.pdf": None
-                            }
-                        }
-                    }
+                                "PH 3 HA 22-06-2021.pdf": None,
+                            },
+                        },
+                    },
                 },
                 "Mathe": {
                     "2021": {
@@ -641,8 +665,8 @@ class TestReorganizeAllFiles(AnyTestCase):
                             "M HA 24-06-2021.pdf": None,
                         }
                     }
-                }
-            }
+                },
+            },
         }
 
         year = self.useful_data["year"]
@@ -658,12 +682,12 @@ class TestReorganizeAllFiles(AnyTestCase):
             "PH Material": {
                 "text1.pdf": None,
                 "PH HA 22-06-2021.pdf": None,
-                "text2.pdf": None
-            }
+                "text2.pdf": None,
+            },
         }
         expected["Archive"]["Mathe"][year][self.useful_data["month"]] = {
             "M HA.pdf": None,
-            "M 2 HA.pdf": None
+            "M 2 HA.pdf": None,
         }
         self.setup_root_directory_with_files(structure)
         print(self.manager.config)
@@ -672,3 +696,17 @@ class TestReorganizeAllFiles(AnyTestCase):
         self.manager.reorganize_all_files()
 
         self.evaluate_root_directory_with_files(expected)
+
+
+def test_does_override_default_subject_abbreviations():
+    conf = config.Config(
+        "",
+        "",
+        "",
+        {},
+        "",
+        subject_abbreviations={"PH": "Physics"},
+        frontend={"backend_ip_address": "192.168.0.2"},
+    )
+    manager = ArchiveManager(conf)
+    assert manager.abbr_to_subject["PH"] == "Physics"
