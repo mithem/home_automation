@@ -173,12 +173,13 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
         raise Exception(f"Directory not found: {config.moodle_dl_dir}")
     moodle_dl_job = cron.new(command="script/run-moodle-dl.py")
     auto_upgrade_job = cron.new(
-        command="curl -X POST --insecure https://localhost:10000/api/home_automation/autoupgrade"
+        command=f"curl -X POST --insecure \
+https://{config.local_hostname}/api/home_automation/autoupgrade"
     )
 
-    archiving_job.minute.on(5)
-    archiving_job.hour.on(13)
-    archiving_job.dow.on("FRI")
+    archiving_job.minute.on(0)
+    archiving_job.hour.on(0)
+    archiving_job.dow.on("SAT")
 
     reorganization_job.minute.on(0)
     reorganization_job.hour.on(0)

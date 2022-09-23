@@ -101,6 +101,7 @@ class VersionManager:
 
     def update_version_info(self):
         """Refresh the version information. BLOCKING!"""
+        utilities.drop_privileges(self.config)
 
         def fallback():
             self.state_manager.update_status("version", home_automation.VERSION)
@@ -139,6 +140,7 @@ class VersionManager:
 
     def upgrade_server(self):
         """Upgrade the server. Restarts it. BLOCKING!"""
+        utilities.drop_privileges(self.config)
         logging.info("Upgrading server...")
         self.state_manager.update_status("updating", True)
         repo = git.Repo(os.curdir)
@@ -185,6 +187,7 @@ class VersionManager:
 
     def inform_user_of_upgrade(self):
         """Inform user via mail about upgrading to new version."""
+        utilities.drop_privileges(self.config)
         version_available = self.get_version_info()["version_available"]
         utilities.send_mail(
             self.config,

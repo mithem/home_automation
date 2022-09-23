@@ -7,6 +7,7 @@ import redis
 
 import home_automation
 from home_automation import config as haconfig
+from home_automation import utilities
 
 STATUS_KEYS = [
     "pulling",
@@ -62,6 +63,7 @@ class StateManager:
     def _prepare_db(self):
         """Prepare the DB for usage (create, initialize with default,
         repair broken values)"""
+        utilities.drop_privileges(self.config)
         logging.info("Preparing DB...")
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -87,6 +89,7 @@ master WHERE type IN ('table', 'view')"
 
     def _create_status_table(self):
         """Create the table for storing status information."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("CREATE TABLE status (key text, value text)")
@@ -96,6 +99,7 @@ master WHERE type IN ('table', 'view')"
 
     def _create_oauth2_table(self):
         """Create the table for storing oauth2 information."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("CREATE TABLE oauth2 (key text, value text)")
@@ -105,6 +109,7 @@ master WHERE type IN ('table', 'view')"
 
     def _drop_status_table(self):
         """Drop/Delete the table for status information."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("DROP TABLE IF EXISTS status")
@@ -113,6 +118,7 @@ master WHERE type IN ('table', 'view')"
 
     def _drop_oauth2_table(self):
         """Drop/Delete the table for oauth2 information."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("DROP TABLE IF EXISTS oauth2")
@@ -123,6 +129,7 @@ master WHERE type IN ('table', 'view')"
         """Update the status in the sqlite database."""
         assert self.config.storage.file
         try:
+            utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
             cur = connection.cursor()
             cur.execute(
@@ -156,6 +163,7 @@ ERE key=:key",
         """Change the value for the specified key in the oauth2 database."""
         assert self.config.storage.file
         try:
+            utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
             cur = connection.cursor()
             cur.execute(
@@ -184,6 +192,7 @@ ERE key=:key",
 
     def _reset_status_sqlite(self):
         """Reset the status table."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("DELETE FROM status WHERE true")
@@ -210,6 +219,7 @@ ERE key=:key",
 
     def reset_oauth2_sqlite(self):
         """Reset the oauth2 table."""
+        utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
         cur.execute("DELETE FROM oauth2 WHERE true")
@@ -242,6 +252,7 @@ ERE key=:key",
     def get_status_sqlite(self):
         """Get the status from the sqlite database."""
         try:
+            utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
             cur = connection.cursor()
             data = {}
@@ -290,6 +301,7 @@ ERE key=:key",
         """Return the value for the corresponding key."""
         assert self.config.storage.file
         try:
+            utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
             cur = connection.cursor()
             elements = cur.execute("SELECT key, value FROM status WHERE key=?", [key])
@@ -321,6 +333,7 @@ ERE key=:key",
     def get_oauth2_credentials_sqlite(self):
         """Return oauth2 credentials as returned from the db."""
         try:
+            utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
             cur = connection.cursor()
             keys = [pair[0] for pair in OAUTH2_DEFAULT_VALUES]

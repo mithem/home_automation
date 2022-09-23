@@ -705,6 +705,7 @@ def test_does_override_default_subject_abbreviations():
         "",
         {},
         "",
+        "",
         subject_abbreviations={"PH": "Physics"},
         frontend={"backend_ip_address": "192.168.0.2"},
     )

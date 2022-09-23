@@ -245,6 +245,9 @@ def build_image_if_appropriate(config: Config):
         if not current_tag in image.tags:
             raise docker.errors.ImageNotFound(f"Image '{current_tag}' not found.")
         logging.info("Image '%s' already found.", current_tag)
+        state_manager = StateManager(config)
+        state_manager.update_status("building_frontend_image", False)
+        state_manager.update_status("pushing_frontend_image", False)
     except docker.errors.ImageNotFound:
         logging.info("Image '%s' not found, building...", current_tag)
         build_image(config)

@@ -7,6 +7,7 @@ storage:
 compose_file: ~/docker-compose.yml
 moodle_dl_dir: ~/moodle
 domain: example.com
+local_hostname: home_automation.local
 email:
   address: hello
 portainer:

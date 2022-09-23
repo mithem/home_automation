@@ -838,6 +838,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     extra_compress_dirs: List[str]
     moodle_dl_dir: Optional[str]
     domain: str
+    local_hostname: str
     subject_abbreviations: Dict[str, str]
     email: ConfigEmail
     home_assistant: ConfigHomeAssistant
@@ -863,6 +864,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         archive_dir: str,
         email: Dict[str, Any],
         domain: str,
+        local_hostname: str,
         subject_abbreviations: Dict[str, str] = None,
         compose_file: str = None,
         home_assistant: Dict[str, Any] = None,
@@ -888,6 +890,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self.compose_file = compose_file if compose_file else "docker-compose.yml"
         self.moodle_dl_dir = moodle_dl_dir
         self.domain = domain
+        self.local_hostname = local_hostname
         self.subject_abbreviations = (
             subject_abbreviations if subject_abbreviations else {}
         )
@@ -922,6 +925,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             and self.compose_file == other.compose_file
             and self.moodle_dl_dir == other.moodle_dl_dir
             and self.domain == other.domain
+            and self.local_hostname == other.local_hostname
             and self.subject_abbreviations == other.subject_abbreviations
             and self.email == other.email
             and self.home_assistant == other.home_assistant
@@ -950,6 +954,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
             "compose_file": self.compose_file,
             "moodle_dl_dir": self.moodle_dl_dir,
             "domain": self.domain,
+            "local_hostname": self.local_hostname,
             "subject_abbreviations": self.subject_abbreviations,
             "email": self.email.to_dict() if self.email else None,
             "home_assistant": self.home_assistant.to_dict()

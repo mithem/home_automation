@@ -12,6 +12,7 @@ TESTING_CONFIG = Config(
     extra_compress_dirs=["/mnt/extra1", "/mnt/extra2"],
     moodle_dl_dir="~/moodle",
     domain="example.com",
+    local_hostname="home_automation.local",
     email={"address": "hello@github.com"},
     home_assistant={"url": "http://homeassistant.local:8123", "token": "abcABC123!"},
     portainer={},
@@ -29,6 +30,7 @@ class TestConfig:
         archive_dir: /mnt/MassStorage/Hausaufgaben/Archive
         compose_file: /mnt/FastStorage/docker-compose.yml
         domain: example.com
+        local_hostname: home_automation.local
         email:
             address: 'hello@example.com'
         storage:
@@ -44,6 +46,7 @@ class TestConfig:
             archive_dir="/mnt/MassStorage/Hausaufgaben/Archive",
             compose_file="/mnt/FastStorage/docker-compose.yml",
             domain="example.com",
+            local_hostname="home_automation.local",
             email={"address": "hello@example.com"},
             storage={"file": {"path": "./home_automation.backend.db"}},
             frontend={"backend_ip_address": "192.168.0.1"},
@@ -64,6 +67,7 @@ class TestConfig:
             - extr2
         moodle_dl_dir: ~/moodle
         domain: example.com
+        local_hostname: home_automation.local
         storage:
             file:
                 path: ./home_automation.backend.db
@@ -99,6 +103,7 @@ class TestConfig:
             extra_compress_dirs=["extra1", "extr2"],
             moodle_dl_dir="~/moodle",
             domain="example.com",
+            local_hostname="home_automation.local",
             subject_abbreviations={"AL": "Allgemein", "t": "Test"},
             email={"address": "hello@example.com"},
             home_assistant={

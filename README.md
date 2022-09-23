@@ -17,6 +17,7 @@ compose_file: docker-compose.yml
 moodle_dl_dir: <path to moodle dir> # dir where moodle-dl will download courses to
 extra_compress_dirs: [] # extra dirs to watch and compress files in when applicable
 domain: <externally available domain with port if required>
+local_hostname: <locally accessible hostname (and optionally port) where the home_automation backend is reachable via HTTPS (doesn't need to be a valid cert, though)>
 subject_abbreviations: # optional
   GE: General # just examples, can be anything
   T: Test
