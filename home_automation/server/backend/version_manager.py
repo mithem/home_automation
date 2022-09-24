@@ -173,7 +173,9 @@ class VersionManager:
         home_automation.config.execute_privileged_shell_command(
             self.config, "script/install"
         )
-        os.system("bash script/restart-runner &")
+        home_automation.config.execute_privileged_shell_command(
+            self.config, "bash script/restart-runner &"
+        )
         self.state_manager.update_status("updating", False)
 
     def auto_upgrade(self):
