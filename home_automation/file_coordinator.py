@@ -8,6 +8,7 @@ from home_automation.config import Config
 from home_automation.file_coordinator_middleware import (
     FileCoordinatorMiddleware,
     LaTeXToPDFMiddleware,
+    MarkdownToPDFMiddleware,
 )
 
 
@@ -22,7 +23,10 @@ class FileCoordinator:  # pylint: disable=too-few-public-methods
     def __init__(self, config: Config, logger: Logger = None):
         self.config = config
         self.logger = logger
-        self.middlewares = [LaTeXToPDFMiddleware(config, logger)]
+        self.middlewares = [
+            LaTeXToPDFMiddleware(config, logger),
+            MarkdownToPDFMiddleware(config, logger),
+        ]
 
     async def handle_directory(self, path: str):
         """Handle the directory."""

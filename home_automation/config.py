@@ -782,7 +782,7 @@ class ConfigAdminPermissions:
         return f"AdminPermissions(user='{self.user}', password=******)"
 
 
-class ConfigMiddlewareLaTeXToPDFMiddleware:
+class ConfigMiddlewareLaTeX:
     """Configuration for the LaTeXToPDFMiddleware."""
 
     delete_byproducts: bool
@@ -808,23 +808,21 @@ class ConfigMiddlewareLaTeXToPDFMiddleware:
 class ConfigMiddleware:
     """Middleware configuration."""
 
-    latex_to_pdf: Optional[ConfigMiddlewareLaTeXToPDFMiddleware]
+    latex: Optional[ConfigMiddlewareLaTeX]
 
     def __init__(self, data: Optional[Dict[str, Dict]] = None):
         if data:
-            self.latex_to_pdf = ConfigMiddlewareLaTeXToPDFMiddleware(
-                data.get("latex_to_pdf")
-            )
+            self.latex = ConfigMiddlewareLaTeX(data.get("latex"))
         else:
-            self.latex_to_pdf = None
+            self.latex = None
 
     def __eq__(self, other) -> bool:
-        return self.latex_to_pdf == other.latex_to_pdf
+        return self.latex == other.latex
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
-            "latex_to_pdf": self.latex_to_pdf.to_dict() if self.latex_to_pdf else None,
+            "latex": self.latex.to_dict() if self.latex else None,
         }
 
 

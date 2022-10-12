@@ -17,6 +17,7 @@ tests/*.pdf
 home_automation.tab
 home_automation.conf.yml
 client_secret.json
+.idea
 
 # frontend
 home_automation/server/frontend/node_modules
