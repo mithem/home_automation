@@ -65,7 +65,11 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
 
     async def flash_lights_in_home_assistant(self):
         """What could be tried here?"""
-        if not self.config.home_assistant:
+        if (
+            not self.config.home_assistant
+            or not self.config.home_assistant.token
+            or not self.config.home_assistant.url
+        ):
             raise Exception("Home Assistant data not configured.")
         headers = {"Authorization": "Bearer " + self.config.home_assistant.token}
         async with httpx.AsyncClient(

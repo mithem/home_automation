@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import re
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import httpx
 from kubernetes import client as klient
@@ -100,7 +100,9 @@ def _get_current_version_from_portainer_stack(stack: Dict[str, str]):
 
 
 async def _get_version_to_update_to(
-    config: Config, client: httpx.AsyncClient, user_payload: Dict[str, str] = None
+    config: Config,
+    client: httpx.AsyncClient,
+    user_payload: Optional[Dict[str, str]] = None,
 ) -> str:
     """Get version of home assistant to update to. Might throw ServerAPIError."""
     if not config.home_assistant:
