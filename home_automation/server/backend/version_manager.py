@@ -1,10 +1,10 @@
 """VersionManager is responsible for comparing the current
 to the available version and upgrading if wanted."""
 import datetime
-import re
-import os
 import logging
-from typing import List, Optional, Tuple
+import os
+import re
+from typing import Dict, List, Optional, Tuple, Union
 
 import git
 import requests
@@ -12,8 +12,7 @@ import semver
 
 import home_automation
 import home_automation.config
-from home_automation import constants
-from home_automation import utilities
+from home_automation import constants, utilities
 from home_automation.config import Config
 from home_automation.server.backend.state_manager import StateManager
 
@@ -64,7 +63,7 @@ class VersionManager:
         except ValueError:
             return value
 
-    def get_version_info(self):
+    def get_version_info(self) -> Dict[str, Union[str, datetime.datetime]]:
         """Return version information in the following format:
 
         {
@@ -77,7 +76,7 @@ class VersionManager:
             "home_automation-status-" + key
             for key in ["version", "version_available", "version_available_since"]
         ]
-        elements: List[Tuple[str, str]] = []
+        elements: List[Tuple[str, Optional[str]]] = []
         for key in keys:
             value = self.state_manager.get_value(key)
             if not value:
@@ -96,7 +95,8 @@ class VersionManager:
             raise ValueError("No version_available or version data.")
         ver_comp = semver.compare(info.get("version_available"), info.get("version"))
         if ver_comp > 0:
-            return info.get("version_available")
+            result = info.get("version_available")
+            return str(result) if result else None
         return None
 
     def update_version_info(self):
@@ -138,7 +138,7 @@ class VersionManager:
         self.state_manager.update_status("version_available_since", available_since)
         logging.info("Version available: %s", version_available)
 
-    def upgrade_server(self):
+    def upgrade_server(self) -> None:
         """Upgrade the server. Restarts it. BLOCKING!"""
         utilities.drop_privileges(self.config)
         logging.info("Upgrading server...")
@@ -152,17 +152,24 @@ class VersionManager:
         if branch_name is None:
             branch_name = "master"
         try:
-            branch = list(filter(lambda b: b.name == branch_name, repo.branches))[0]
+
+            def test_branch(branch: git.Head) -> bool:
+                return branch.name == branch_name
+
+            branches: List[git.Head] = list(repo.branches())
+            branch = list(filter(test_branch, branches))[0]
         except IndexError:
             raise BranchNotFoundError(  # pylint: disable=raise-missing-from
                 f"Branch {branch_name} not found."
             )
         # seriously, though, that should not happen and isn't this project's responsibility
-        remotes: List[str] = []
+        remotes: List[git.Remote] = []
         if len(self.config.git.remotes) == 0:
             remotes = repo.remotes
         else:
-            remotes = filter(lambda r: r.name in self.config.git.remotes, repo.remotes)
+            remotes = list(
+                filter(lambda r: r.name in self.config.git.remotes, repo.remotes)
+            )
         plural = "s" if len(remotes) > 1 else ""
         remotes_str = ", ".join(map(lambda r: r.name, remotes))
         if len(remotes) == 0:

@@ -20,7 +20,7 @@ class FileCoordinator:  # pylint: disable=too-few-public-methods
     logger: Optional[Logger]
     middlewares: List[FileCoordinatorMiddleware]
 
-    def __init__(self, config: Config, logger: Logger = None):
+    def __init__(self, config: Config, logger: Optional[Logger] = None):
         self.config = config
         self.logger = logger
         self.middlewares = [
@@ -37,7 +37,7 @@ class FileCoordinator:  # pylint: disable=too-few-public-methods
                     await middleware.act(full_path)
 
 
-def run_file_coordinator(config: Config, path: str, logger: Logger = None):
+def run_file_coordinator(config: Config, path: str, logger: Optional[Logger] = None):
     """Run the file coordinator."""
     coordinator = FileCoordinator(config, logger)
     asyncio.run(coordinator.handle_directory(path))

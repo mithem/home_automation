@@ -763,7 +763,7 @@ class ConfigAdminPermissions:
     user: Optional[str]
     password: Optional[str]
 
-    def __init__(self, data: Dict[Optional[str], Optional[str]] = None):
+    def __init__(self, data: Optional[Dict[Optional[str], Optional[str]]] = None):
         if data:
             self.user = data.get("user")
             self.password = data.get("password")
@@ -863,24 +863,24 @@ class Config:  # pylint: disable=too-many-instance-attributes
         email: Dict[str, Any],
         domain: str,
         local_hostname: str,
-        subject_abbreviations: Dict[str, str] = None,
-        compose_file: str = None,
-        home_assistant: Dict[str, Any] = None,
-        portainer: Dict[str, Any] = None,
-        things_server: Dict[str, Any] = None,
-        process: Dict[str, str] = None,
-        runner: Dict[str, str] = None,
-        extra_compress_dirs: List[str] = None,
+        subject_abbreviations: Optional[Dict[str, str]] = None,
+        compose_file: Optional[str] = None,
+        home_assistant: Optional[Dict[str, Any]] = None,
+        portainer: Optional[Dict[str, Any]] = None,
+        things_server: Optional[Dict[str, Any]] = None,
+        process: Optional[Dict[str, str]] = None,
+        runner: Optional[Dict[str, str]] = None,
+        extra_compress_dirs: Optional[List[str]] = None,
         moodle_dl_dir: Optional[str] = None,
-        kubernetes: Dict[str, Union[str, bool]] = None,
-        api_server: Dict[str, str] = None,
-        git: Dict[str, Union[List[str], str, bool]] = None,
-        frontend: Dict[str, Union[str, int]] = None,
-        docker: Dict[str, Dict] = None,
-        heimdall: Dict[str, Optional[str]] = None,
-        storage: Dict[str, Dict] = None,
-        admin: Dict[Optional[str], Optional[str]] = None,
-        middleware: Dict[str, Dict] = None,
+        kubernetes: Optional[Dict[str, Union[str, bool]]] = None,
+        api_server: Optional[Dict[str, str]] = None,
+        git: Optional[Dict[str, Union[List[str], str, bool]]] = None,
+        frontend: Optional[Dict[str, Union[str, int]]] = None,
+        docker: Optional[Dict[str, Dict]] = None,
+        heimdall: Optional[Dict[str, Optional[str]]] = None,
+        storage: Optional[Dict[str, Dict]] = None,
+        admin: Optional[Dict[Optional[str], Optional[str]]] = None,
+        middleware: Optional[Dict[str, Dict]] = None,
     ):  # pylint: disable=too-many-arguments,too-many-locals
         self.log_dir = log_dir
         self.homework_dir = homework_dir

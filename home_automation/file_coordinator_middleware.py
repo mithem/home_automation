@@ -16,7 +16,7 @@ class FileCoordinatorMiddleware(ABC):
     config: Config
     logger: Optional[Logger]
 
-    def __init__(self, config: Config, logger: Logger = None):
+    def __init__(self, config: Config, logger: Optional[Logger] = None):
         self.config = config
         self.logger = logger
 
