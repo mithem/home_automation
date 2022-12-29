@@ -28,6 +28,6 @@ jobs:
       - name: Copy config files
         run: cp home_automation_ci.conf.yml home_automation.conf.yml
       - name: Install tox
-        run: pip3 install -r requirements.txt | grep tox
+        run: pip3 install -r requirements.txt
       - name: Run tox
         run: tox
