@@ -1,7 +1,7 @@
 """StateManager manages the sqlite3 database under $DB_PATH."""
 import logging
 import sqlite3
-from typing import Optional
+from typing import Dict, Optional
 
 import redis
 
@@ -53,6 +53,7 @@ class StateManager:
 
     def _prepare_redis(self):
         """Prepare redis client."""
+        assert self.config.storage.redis
         self.rsdb = redis.Redis(
             host=self.config.storage.redis.host,
             port=self.config.storage.redis.port,
@@ -63,6 +64,7 @@ class StateManager:
     def _prepare_db(self):
         """Prepare the DB for usage (create, initialize with default,
         repair broken values)"""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         logging.info("Preparing DB...")
         connection = sqlite3.connect(self.config.storage.file.path)
@@ -89,6 +91,7 @@ master WHERE type IN ('table', 'view')"
 
     def _create_status_table(self):
         """Create the table for storing status information."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -99,6 +102,7 @@ master WHERE type IN ('table', 'view')"
 
     def _create_oauth2_table(self):
         """Create the table for storing oauth2 information."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -109,6 +113,7 @@ master WHERE type IN ('table', 'view')"
 
     def _drop_status_table(self):
         """Drop/Delete the table for status information."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -118,6 +123,7 @@ master WHERE type IN ('table', 'view')"
 
     def _drop_oauth2_table(self):
         """Drop/Delete the table for oauth2 information."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -192,6 +198,7 @@ ERE key=:key",
 
     def _reset_status_sqlite(self):
         """Reset the status table."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -218,6 +225,7 @@ ERE key=:key",
 
     def reset_oauth2_sqlite(self):
         """Reset the oauth2 table."""
+        assert self.config.storage.file
         utilities.drop_privileges(self.config)
         connection = sqlite3.connect(self.config.storage.file.path)
         cur = connection.cursor()
@@ -250,6 +258,7 @@ ERE key=:key",
 
     def get_status_sqlite(self):
         """Get the status from the sqlite database."""
+        assert self.config.storage.file
         try:
             utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)
@@ -269,7 +278,7 @@ ERE key=:key",
     def get_status_redis(self):
         """Get the status from the redis database."""
         assert self.rsdb
-        data = {}
+        data: Dict[str, Optional[bool]] = {}
         for key in STATUS_KEYS:
             new_key = "home_automation-status-" + key
             value = self.rsdb.get(new_key)
@@ -331,6 +340,7 @@ ERE key=:key",
 
     def get_oauth2_credentials_sqlite(self):
         """Return oauth2 credentials as returned from the db."""
+        assert self.config.storage.file
         try:
             utilities.drop_privileges(self.config)
             connection = sqlite3.connect(self.config.storage.file.path)

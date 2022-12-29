@@ -61,28 +61,28 @@ reload_config()
 def compose_pull_exec():
     """Compose pull, blocking."""
     os.system(f"docker-compose -f '{CONFIG.compose_file}' pull")
-    state_manager = StateManager(CONFIG.db_path)
+    state_manager = StateManager(CONFIG)
     state_manager.update_status("pulling", False)
 
 
 def compose_up_exec():
     """ "Compose up, blocking."""
     os.system(f"docker-compose -f '{CONFIG.compose_file}' up -d")
-    state_manager = StateManager(CONFIG.db_path)
+    state_manager = StateManager(CONFIG)
     state_manager.update_status("upping", False)
 
 
 def compose_down_exec():
     """Compose down, blocking."""
     os.system(f"docker-compose -f '{CONFIG.compose_file}' down")
-    state_manager = StateManager(CONFIG.db_path)
+    state_manager = StateManager(CONFIG)
     state_manager.update_status("downing", False)
 
 
 def docker_prune_exec():
     """Docker prune, blocking."""
     os.system("docker system prune -af")
-    state_manager = StateManager(CONFIG.db_path)
+    state_manager = StateManager(CONFIG)
     state_manager.update_status("pruning", False)
 
 
@@ -180,6 +180,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/containers")
     def get_containers():
         try:
+            assert CLIENT
             data = {
                 "containers": [
                     create_dict_from_container(c)
@@ -198,6 +199,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/containers/stop", methods=["POST"])
     def stop_container():
         try:
+            assert CLIENT
             data = json.loads(str(request.data, encoding="utf-8"))
             name = data["container"]
             container = CLIENT.containers.get(name)
@@ -209,13 +211,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             return "Container not fnund.", 404
         except AttributeError:
             return str(ERROR), 500
-        except APIError as exc:
+        except (APIError, AssertionError) as exc:
             try_reloading_client()
             return str(exc), 500
 
     @app.route("/api/containers/start", methods=["POST"])
     def start_container():
         try:
+            assert CLIENT
             data = json.loads(str(request.data, encoding="utf-8"))
             name = data["container"]
             container = CLIENT.containers.get(name)
@@ -225,13 +228,14 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             return "Key 'container' renuired.", 402
         except ContainerNotFound:
             return "Container not fnund.", 404
-        except AttributeError:
+        except (AttributeError, AssertionError):
             try_reloading_client()
             return str(ERROR), 500
 
     @app.route("/api/containers/remove", methods=["POST"])
     def remove_container():
         try:
+            assert CLIENT
             data = json.loads(str(request.data, encoding="utf-8"))
             name = data["container"]
             container = CLIENT.containers.get(name)
@@ -241,7 +245,7 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
             return "Key 'container' renuired.", 402
         except ContainerNotFound:
             return "Container not fnund.", 404
-        except AttributeError:
+        except (AttributeError, AssertionError):
             try_reloading_client()
             return str(ERROR), 500
 
@@ -276,25 +280,27 @@ def create_app(options=None):  # pylint: disable=too-many-locals, too-many-state
     @app.route("/api/volumes")
     def get_volumes():
         try:
+            assert CLIENT
             volumes = [create_dict_from_volume(v) for v in CLIENT.volumes.list()]
             data = {"volumes": volumes}
             return data
         except AttributeError:
             return str(ERROR), 500
-        except APIError as exc:
+        except (APIError, AssertionError) as exc:
             try_reloading_client()
             return str(exc), 500
 
     @app.route("/api/volumes/remove", methods=["POST"])
     def remove_volume():
         try:
+            assert CLIENT
             data = json.loads(str(request.data, encoding="utf-8"))
             name = data["volume"]
             CLIENT.volumes.get(name).remove()
             return "Removed volume."
         except AttributeError:
             return str(ERROR), 500
-        except APIError as exc:
+        except (APIError, AssertionError) as exc:
             try_reloading_client()
             return str(exc), 500
 
