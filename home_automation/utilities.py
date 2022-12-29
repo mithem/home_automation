@@ -6,6 +6,7 @@ import logging
 import os
 import pwd
 from email.mime.text import MIMEText
+from typing import Optional
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -35,7 +36,7 @@ def check_for_root_privileges() -> bool:
     return os.getuid() == 0
 
 
-def drop_privileges(config: haconfig.Config, logger: logging.Logger = None):
+def drop_privileges(config: haconfig.Config, logger: Optional[logging.Logger] = None):
     """Drop root privileges for those of the user & group
     specified in env-values `HOME_AUTOMATION_USER` & `HOME_AUTOMATION_GROUP`.
 

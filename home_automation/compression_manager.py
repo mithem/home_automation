@@ -45,7 +45,7 @@ class CompressionManager:
         self.debug = debug
         self.middleware = []
 
-    async def compress_directory(self, directory: str = None):
+    async def compress_directory(self, directory: Optional[str] = None):
         """For each file or directory in `directory`, compress it."""
         if directory:
             dir_to_compress = directory
@@ -128,7 +128,7 @@ class CompressionManager:
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.handle_exception(error)
 
-    def clean_up_directory(self, directory: str = None):
+    def clean_up_directory(self, directory: Optional[str] = None):
         """Clean files added by another service, like ".M HA" etc.\
                 (might come from Documents by Readdle or so)"""
         if directory:
@@ -160,7 +160,7 @@ class CompressionManager:
         )
 
 
-async def main(arguments: Union[str, List[str]] = None):
+async def main(arguments: Optional[Union[str, List[str]]] = None):
     """Main entry point with parsing argumets from cli."""
     if isinstance(arguments, str):
         arguments = arguments.split(" ")
@@ -199,7 +199,7 @@ async def compress(config: Optional[haconfig.Config] = None):
     manager.clean_up_directory()
 
 
-def run_main(arguments: Union[str, List[str]] = None):
+def run_main(arguments: Optional[Union[str, List[str]]] = None):
     """Run the main coroutine via asyncio.run."""
     asyncio.run(main(arguments))
 
