@@ -322,7 +322,7 @@ ERE key=:key",
                 return elems[0][1]  # each element: (key, value)
             # I know, the db will already by reset, but "reset db" is ambiguous
             self.reset_db()
-            raise Exception("Multiple elements found for the same key. Resetting db.")
+            raise ValueError("Multiple elements found for the same key. Resetting db.")
         except sqlite3.OperationalError:
             self._prepare_db()
             return self.get_value_sqlite(key)
