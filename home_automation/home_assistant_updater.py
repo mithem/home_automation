@@ -186,7 +186,7 @@ async def _update_home_assistant_with_portainer(  # pylint: disable=too-many-arg
             logging.error(error)
             if str(error) == "":
                 return {"success": True, "new_version": version_to_update_to}
-            raise Exception(f"Error applying new stack definition: {error}") from error
+            raise UpdaterError(f"Error applying new stack definition: {error}") from error
     return {"previous_version": current_version, "new_version": version_to_update_to}
 
 

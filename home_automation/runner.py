@@ -22,6 +22,7 @@ from watchdog.observers import Observer as WatchdogObserver
 
 from home_automation import compression_manager
 from home_automation import config as haconfig
+from home_automation.config import ConfigError
 from home_automation import file_coordinator, frontend_deployer
 from home_automation import utilities as util
 from home_automation.server.backend.run_backend_server import (
@@ -170,7 +171,7 @@ def run_cron_jobs(config: haconfig.Config, queue: mp.Queue):
         command="python3 -m home_automation.archive_manager reorganize"
     )
     if config.moodle_dl_dir is not None and not os.path.isdir(config.moodle_dl_dir):
-        raise Exception(f"Directory not found: {config.moodle_dl_dir}")
+        raise ConfigError(f"Directory not found: {config.moodle_dl_dir}")
     moodle_dl_job = cron.new(command="script/run-moodle-dl.py")
     auto_upgrade_job = cron.new(
         command=f"curl -X POST --insecure \
