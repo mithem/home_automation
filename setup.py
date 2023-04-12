@@ -26,7 +26,7 @@ requirements = [
     "argparse",
     "flask[async]",
     "fileloghelper",
-    "httpx>=0.18,<0.24",
+    "httpx>=0.18,<0.25",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
