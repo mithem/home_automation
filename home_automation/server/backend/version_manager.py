@@ -150,7 +150,7 @@ class VersionManager:
         # please (don't) fail spectaculary
         branch_name = self.config.git.branch
         if branch_name is None:
-            branch_name = "master"
+            branch_name = "main"
         try:
 
             def test_branch(branch: git.Head) -> bool:
