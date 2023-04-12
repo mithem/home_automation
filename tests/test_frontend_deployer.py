@@ -3,7 +3,7 @@ from typing import Tuple
 import pytest
 from home_automation import VERSION
 from home_automation import frontend_deployer as fd
-from home_automation.config import Config
+from home_automation.config import Config, ConfigError
 
 
 class ParseRegistryURLTestRun:
@@ -170,8 +170,8 @@ def test_get_image_tag_raises_value_error_frontend_image_name_already_tagged():
         output="hello_world:2.0.0",
     )
     with pytest.raises(
-        ValueError,
-        match=r"Invalid frontend image name 'hello_world:2.0.0'\. Image name already contains a tag\.",
+        ConfigError,
+        match=r"Invalid frontend image name 'hello_world:2\.0\.0'\. Image name already contains a tag\.",
     ):
         run.run()
 
