@@ -1,17 +1,22 @@
 from setuptools import setup
-import home_automation
 
-VERSION = "2.6.0-b7"
+VERSION = "2.6.0-b8"
 
-with open("home_automation/__init__.py", "r") as f:
-    code = f.read()
+try:
+    import home_automation
 
-code = code.replace(home_automation.VERSION, VERSION, 1)
+    with open("home_automation/__init__.py", "r", encoding="utf-8") as f:
+        code = f.read()
 
-with open("home_automation/__init__.py", "w") as f:
-    f.write(code)
+    code = code.replace(home_automation.VERSION, VERSION, 1)
 
-with open("VERSION", "w") as f:
+    with open("home_automation/__init__.py", "w", encoding="utf-8") as f:
+        f.write(code)
+except ImportError:
+    pass
+
+
+with open("VERSION", "w", encoding="utf-8") as f:
     f.write(VERSION)
 
 packages = ["home_automation"]
@@ -34,7 +39,7 @@ requirements = [
     "mypy",
     "mypy-extensions",
     "types-requests",
-    "tox==3.*",
+    "tox==4.*",
     "python-crontab",
     "croniter",
     "watchdog",

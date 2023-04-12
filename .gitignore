@@ -18,6 +18,7 @@ home_automation.tab
 home_automation.conf.yml
 client_secret.json
 .idea
+*.pyc
 
 # frontend
 home_automation/server/frontend/node_modules

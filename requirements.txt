@@ -14,7 +14,7 @@ aiohttp
 mypy
 mypy-extensions
 types-requests
-tox==3.*
+tox==4.*
 python-crontab
 croniter
 watchdog
