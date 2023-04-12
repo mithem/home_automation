@@ -16,7 +16,7 @@ from kubernetes import client as klient
 
 import home_automation
 from home_automation import utilities
-from home_automation.config import Config, load_config
+from home_automation.config import Config, ConfigError, load_config
 from home_automation.server.backend.state_manager import StateManager
 
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +28,7 @@ def _get_image_tag(config: Config) -> str:
     match = re.match(pattern, config.frontend.image_name)
     if match:
         if match.group("tag"):
-            raise ValueError(
+            raise ConfigError(
                 f"Invalid frontend image name '{config.frontend.image_name}'. \
 Image name already contains a tag."
             )
@@ -308,7 +308,7 @@ def build_image(config: Config):
         logging.error(potential_errors)
         error = json.loads(potential_errors[0])["errorDetail"]["message"]
         logging.error("Error pushing image: %s", error)
-        raise Exception(error)
+        raise DeploymentError(error)
     logging.info("Pushed image.")
     state_manager.update_status("pushing_frontend_image", 0)
 
@@ -334,6 +334,9 @@ def delete_frontend(config: Config):
     v1 = klient.CoreV1Api(k_client)
     v1.delete_namespace(config.frontend.namespace)
     logging.info("Deleted frontend infrastructure.")
+
+class DeploymentError(Exception):
+    "Error for when a step in the deployment process fails."
 
 
 def main():

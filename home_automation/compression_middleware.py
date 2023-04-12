@@ -8,6 +8,7 @@ import httpx
 
 from home_automation.constants import ABBR_TO_SUBJECT
 from home_automation import config as haconfig
+from home_automation.config import ConfigError
 
 TIMEOUT = 10
 SUBJECT_ABBRS = ABBR_TO_SUBJECT.keys()
@@ -70,7 +71,7 @@ class FlashLightsInHomeAssistantMiddleware(CompressionMiddleware):
             or not self.config.home_assistant.token
             or not self.config.home_assistant.url
         ):
-            raise Exception("Home Assistant data not configured.")
+            raise ConfigError("Home Assistant data not configured.")
         headers = {"Authorization": "Bearer " + self.config.home_assistant.token}
         async with httpx.AsyncClient(
             verify=not self.config.home_assistant.insecure_https
@@ -98,9 +99,9 @@ class ChangeStatusInThingsMiddleware(SubjectCompressionMiddleware):
     async def change_status_in_things(self, path: str):
         """What could be tried here?"""
         if not self.config.things_server:
-            raise Exception("Things server data not configured.")
+            raise ConfigError("Things server data not configured.")
         if not self.config.things_server.url:
-            raise Exception("Things server URL not configured.")
+            raise ConfigError("Things server URL not configured.")
         _, filename = os.path.split(path)
         subject = filename.split(" ")[0].upper()
         async with httpx.AsyncClient(
