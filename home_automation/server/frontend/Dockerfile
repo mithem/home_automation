@@ -9,6 +9,9 @@ ARG heimdall_url
 
 ENV HOME_AUTOMATION_VERSION=$home_automation_version
 ENV HEIMDALL_URL=$heimdall_url
+
+# otherwise webpack fails
+ENV NODE_OPTIONS=--openssl-legacy-provider
 RUN envsubst < src/constants.ts.template > src/constants.ts
 
 RUN apk add nodejs yarn

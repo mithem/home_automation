@@ -135,7 +135,7 @@ Could not extract host from it."
         )
     host = match.group("host")
     registry_name = host.replace(".", "-")
-    return (host, registry_name)
+    return host, registry_name
 
 
 def _get_new_registry_authentication_secret(config: Config) -> klient.V1Secret:
@@ -242,7 +242,7 @@ def build_image_if_appropriate(config: Config):
     current_tag = _get_image_tag(config)
     try:
         image: Image = client.images.get(current_tag)
-        if not current_tag in image.tags:
+        if current_tag not in image.tags:
             raise docker.errors.ImageNotFound(f"Image '{current_tag}' not found.")
         logging.info("Image '%s' already found.", current_tag)
         state_manager = StateManager(config)
@@ -334,6 +334,7 @@ def delete_frontend(config: Config):
     v1 = klient.CoreV1Api(k_client)
     v1.delete_namespace(config.frontend.namespace)
     logging.info("Deleted frontend infrastructure.")
+
 
 class DeploymentError(Exception):
     "Error for when a step in the deployment process fails."
