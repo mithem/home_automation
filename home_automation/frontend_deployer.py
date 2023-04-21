@@ -337,7 +337,7 @@ def delete_frontend(config: Config):
 
 
 class DeploymentError(Exception):
-    "Error for when a step in the deployment process fails."
+    """Error for when a step in the deployment process fails."""
 
 
 def main():
@@ -348,18 +348,20 @@ def main():
     parser = utilities.argparse_add_argument_for_config_file_path(parser)
     args = parser.parse_args()
     config = load_config(args.config)
-    action = args.action
-    if action == "deploy":
-        build_and_deploy_frontend(config)
-    elif action == "deployonly":
-        deployonly_frontend(config)
-    elif action == "build":
-        if args.force:
-            build_image(config)
-        else:
-            build_image_if_appropriate(config)
-    elif action == "delete":
-        delete_frontend(config)
+    match args.action:
+        case "deploy":
+            build_and_deploy_frontend(config)
+        case "deployonly":
+            deployonly_frontend(config)
+        case "build":
+            if args.force:
+                build_image(config)
+            else:
+                build_image_if_appropriate(config)
+        case "delete":
+            delete_frontend(config)
+        case _:
+            parser.print_help()
 
 
 if __name__ == "__main__":
