@@ -302,12 +302,13 @@ def main(arguments: Optional[Sequence[str]] = None):
     manager = ArchiveManager(config_data, args.verbose)
     manager.logger.header(True, True)
     manager.logger.autosave = manager.debug
-    if args.action == "archive":
-        manager.transfer_all_files()
-    elif args.action == "reorganize":
-        manager.reorganize_all_files()
-    else:
-        parser.print_help()
+    match args.action:
+        case "archive":
+            manager.transfer_all_files()
+        case "reorganize":
+            manager.reorganize_all_files()
+        case _:
+            parser.print_help()
     manager.logger.save()
 
 
